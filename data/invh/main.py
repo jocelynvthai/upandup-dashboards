@@ -1,14 +1,21 @@
+import os
 import json
 import requests
-import csv
 from datetime import datetime, timezone
+from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 # Configuration
 class Config:
     API_BASE_URL = "https://www.invitationhomes.com/property/api/geo-search"
+    PROJECT_ID = 'homevest-data'
+    DATASET_ID = 'sfr_rental_listings'
+    TABLE_ID = f'{PROJECT_ID}.{DATASET_ID}.invh_raw'
+
     DELTA_LAT = 12.5
     DELTA_LONG = 29.1
-    CSV_PATH = 'src/invh/invh.csv'
     
     API_PARAMS = {
         'baths_min': 1,
@@ -26,15 +33,26 @@ class Config:
         'US': (36.8904, -95.9673),
     }
 
-def setup_csv():
-    """Initialize CSV file with headers"""
-    fieldnames = ['property_id', 'pull_timestamp', 'data']
-    with open(Config.CSV_PATH, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+
+def setup_bigquery():
+    client = bigquery.Client(project=Config.PROJECT_ID)
+    schema = [
+        bigquery.SchemaField("property_id", "STRING"),
+        bigquery.SchemaField("pull_timestamp", "STRING"),
+        bigquery.SchemaField("data", "JSON"),
+    ]
+    try:
+        client.get_table(Config.TABLE_ID)
+        print(f"Table {Config.TABLE_ID} already exists.")
+    except NotFound:
+        print(f"Creating table {Config.TABLE_ID} with JSON schema...")
+        table = bigquery.Table(Config.TABLE_ID, schema=schema)
+        client.create_table(table)
+        print(f"Table {Config.TABLE_ID} created.")
+    return client
+
 
 def fetch_properties(lat, lng, offset=0):
-    """Fetch properties from API for given coordinates"""
     params = Config.API_PARAMS.copy()
     params.update({
         'south': lat - Config.DELTA_LAT,
@@ -45,16 +63,26 @@ def fetch_properties(lat, lng, offset=0):
         'long': lng,
         'offset': offset,
     })
-    
     response = requests.get(Config.API_BASE_URL, params=params)
     response.raise_for_status()
     return response.json()
 
-def main():
-    setup_csv()
+
+def send_slack_message(text: str):
+    slack_client = WebClient(token=os.getenv("SLACK_TOKEN"))
+    try:
+        resp = slack_client.chat_postMessage(channel='dashboard-data-alerts', text=text)
+        if not resp["ok"]:
+            print(f"Slack API error: {resp['error']}")
+    except SlackApiError as e:
+        print(f"Slack request failed: {e.response['error']}")
+
+
+def main(event, context):
+    bigquery_client = setup_bigquery()
     pull_timestamp = datetime.now(timezone.utc).isoformat()
+
     inserted_ids = set()
-    
     for market, (lat, lng) in Config.MARKETS.items():
         offset = 0
         market_inserted_ids = set()
@@ -78,25 +106,22 @@ def main():
                         market_inserted_ids.add(prop_id)
                 
                 if new_props:
-                    with open(Config.CSV_PATH, 'a', newline='') as csvfile:
-                        writer = csv.DictWriter(csvfile, fieldnames=['property_id', 'pull_timestamp', 'data'])
-                        writer.writerows(new_props)
+                    errors = bigquery_client.insert_rows_json(Config.TABLE_ID, new_props)
+                    if errors:
+                        print(f"Errors at offset {offset}: {errors}")
                 
-                print(f"Offset: {offset}, Total: {total}, Inserted: {len(new_props)}, Total Inserted: {len(inserted_ids)}")
+                print(f"Offset: {offset}, Total: {total}, Inserted: {len(new_props)}")
 
                 if offset + len(props) >= total or not props:
                     break
                 offset += data.get('limit', Config.API_PARAMS['limit'])
-                
+
             except (requests.RequestException, json.JSONDecodeError) as e:
+                send_slack_message(f"❌ INVH scraper failed: {e}")
                 print(f"Error processing {market} at offset {offset}: {e}")
                 break
-                
-        print()
-        print(f"Completed {market}: {len(market_inserted_ids)} unique properties")
+        print(f"Completed {market}: {len(market_inserted_ids)} new properties")
     
-    print()
-    print(f"Total properties inserted: {len(inserted_ids)}")
+    print(f"TOTAL inserted: {len(inserted_ids)}")
+    send_slack_message(f"✅ INVH scraper succeeded: {len(inserted_ids)} records inserted.")
 
-if __name__ == "__main__":
-    main()

@@ -1,0 +1,21 @@
+gcloud pubsub topics create run-progress-scraper-job-trigger
+
+gcloud functions deploy progress-scraper \
+  --gen2 \
+  --runtime python310 \
+  --entry-point main \
+  --trigger-topic run-progress-scraper-job-trigger \
+  --region us-central1 \
+  --memory=512Mi \
+  --timeout=540s \
+  --set-secrets "SLACK_TOKEN=SLACK_TOKEN:latest"
+
+gcloud scheduler jobs create pubsub daily-run-progress-job \
+  --schedule="30 23 * * *" \
+  --time-zone="America/New_York" \
+  --topic=run-progress-scraper-job-trigger \
+  --message-body="Run progress scraper daily" \
+  --location=us-central1
+
+gcloud pubsub topics publish run-progress-scraper-job-trigger --message="test"
+gcloud functions logs read progress-scraper --region=us-central1
