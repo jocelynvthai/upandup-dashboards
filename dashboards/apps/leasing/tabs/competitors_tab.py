@@ -56,7 +56,6 @@ def metrics():
 
 def clearance_rates(leasing_period_df, start_date, end_date):
     st.subheader("Clearance Rates")
-
     prelease_df = leasing_period_df[leasing_period_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
     rent_ready_df = leasing_period_df[leasing_period_df['last_status'].isin(['Vacant Unrented Ready'])]
 
@@ -73,7 +72,6 @@ def clearance_rates(leasing_period_df, start_date, end_date):
 
 def rent_changes(leasing_period_df, color_scale):
     st.subheader("Leased Homes Stats")
-
     homes_rented_df = leasing_period_df[leasing_period_df['last_lease_signed'].notna()]
 
     # Rent Change Chart
@@ -99,7 +97,6 @@ def rent_changes(leasing_period_df, color_scale):
     ).encode(x='x:Q')
     st.altair_chart((rent_change_chart + zero_line), use_container_width=True)
 
-
     # Days on Market Chart
     dom_chart = alt.Chart(homes_rented_df).mark_point().encode(
         x=alt.X('home_rented_days_on_market:Q', title='# Days'),
@@ -116,8 +113,7 @@ def rent_changes(leasing_period_df, color_scale):
     )
     st.altair_chart(dom_chart + zero_line, use_container_width=True)
 
-
-    # Leased HomesSummary Statistics
+    # Leased Homes Summary Statistics
     st.markdown("<h6><b>Leased Homes Summary Statistics</b></h6>", unsafe_allow_html=True)
     stats_df = homes_rented_df.groupby('market_name').agg({
         'rent_change': [
@@ -142,7 +138,6 @@ def rent_changes(leasing_period_df, color_scale):
 
 def turn_times(leasing_period_df, color_scale):
     st.subheader("Turn Times")
-
     turn_times_df = leasing_period_df[leasing_period_df['actual_turn_time'].notna()]
 
     # Chart
