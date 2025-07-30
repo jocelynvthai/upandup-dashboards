@@ -115,9 +115,11 @@ def late_collections_drilldown(bad_debt_inputs_data, selected_fund):
 
     st.dataframe(
         display_df[[
-            'address', 
             'fund', 
+            'address', 
             'in_evictions_this_month', 
+            'move_out_date', 
+            'occupancy_date', 
             'bom_rent_balance', 
             'late_rent_collections_succeeded', 
             'late_rent_collections_processing', 
@@ -125,9 +127,11 @@ def late_collections_drilldown(bad_debt_inputs_data, selected_fund):
             'hudson_link', 
             'buildium_link'
         ]].rename(columns={
-            'address': 'Address',
             'fund': 'Fund',
+            'address': 'Address',
             'in_evictions_this_month': 'In Evictions',
+            'move_out_date': 'Move Out Date',
+            'occupancy_date': 'Occupancy Date',
             'bom_rent_balance': 'BOM AR',
             'late_rent_collections_succeeded': 'Late Collections (Succeeded)',
             'late_rent_collections_processing': 'Late Collections (Processing)',

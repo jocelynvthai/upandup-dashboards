@@ -118,9 +118,11 @@ def ontime_collections_drilldown(bad_debt_inputs_data, selected_fund):
     
     st.dataframe(
         display_df[[
-            'address', 
             'fund', 
+            'address', 
             'in_evictions_this_month', 
+            'move_out_date', 
+            'occupancy_date', 
             'rent_charged', 
             'ontime_rent_collections_succeeded', 
             'ontime_rent_collections_processing', 
@@ -128,9 +130,11 @@ def ontime_collections_drilldown(bad_debt_inputs_data, selected_fund):
             'hudson_link', 
             'buildium_link'
         ]].rename(columns={
-            'address': 'Address',
             'fund': 'Fund',
+            'address': 'Address',
             'in_evictions_this_month': 'In Evictions',
+            'move_out_date': 'Move Out Date',
+            'occupancy_date': 'Occupancy Date',
             'rent_charged': 'Rent Charged',
             'ontime_rent_collections_succeeded': 'On-Time Collections (Succeeded)',
             'ontime_rent_collections_processing': 'On-Time Collections (Processing)',
