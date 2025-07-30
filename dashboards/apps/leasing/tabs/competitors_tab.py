@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 
+
 def competitors_filters(leasing_df):
     col_date_range, col_market, col_competitor = st.columns(3)
 
@@ -22,16 +23,34 @@ def competitors_filters(leasing_df):
     with col_market:
         selected_market = st.selectbox("Select a market", 
                                 options=['All'] + list(leasing_df['market_name'].unique()), index=0)
+        color_scale = alt.Scale(scheme='tealblues')  
         if selected_market != 'All':
             leasing_period_df = leasing_period_df[leasing_period_df['market_name'] == selected_market]
+            color_scale = alt.Scale(range=['#15b8a6']) 
     
     with col_competitor:
         selected_competitor = st.selectbox("Select a competitor", 
                                 options=['All'] + list(leasing_df['source'].unique()), index=0)
         if selected_competitor != 'All':
             leasing_period_df = leasing_period_df[leasing_period_df['source'] == selected_competitor]
+
     
-    return leasing_period_df, start_date, end_date
+    
+    return leasing_period_df, start_date, end_date, color_scale
+
+
+def metrics():
+    st.subheader("Metrics")
+    st.markdown('''
+        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px;">
+        <strong>actual_vacated</strong>: when status changes from 'Notice Unrented' to 'Vacant Unrented Not Ready'<br>
+        <strong>actual_available</strong>: when status changes from 'Vacant Unrented Not Ready' to 'Vacant Unrented Ready'<br>
+        <strong>latest_lease_signed</strong>: day after the last pull date, if there is 1+ days since home has appeared in pull<br>
+        <strong>total_leases_signed</strong> = 1 (if latest_lease_signed exists) + # leases signed that didn't go through (number of gaps ranging 4-14 days)<br>
+        <strong>actual_turn_time</strong> = days between actual_vacated and actual_available<br>
+        <strong>home_rented_days_on_market</strong> = days between lease_signed and actual_available (estimated available_on if actual_available does not exist)
+        </div>
+    ''', unsafe_allow_html=True)
 
 
 
@@ -52,84 +71,110 @@ def clearance_rates(leasing_period_df, start_date, end_date):
         st.metric("Rent Ready Clearance Rate", f"{clearance_rates[1]:.2f}%", help="% of pre-lease homes (Vacant Unrented Ready) rented in period range")
 
 
-def homes_rented_stats(leasing_period_df, start_date, end_date):
-    st.subheader("Homes Rented Stats")
+def rent_changes(leasing_period_df, color_scale):
+    st.subheader("Leased Homes Stats")
 
     homes_rented_df = leasing_period_df[leasing_period_df['last_lease_signed'].notna()]
 
-    homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
     # Rent Change Chart
-    if len(homes_rented_df['market_name'].unique()) == 1:
-        color_scale = alt.Scale(range=['#15b8a6']) 
-    else:
-        color_scale = alt.Scale(scheme='tealblues')  
+    homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
     rent_change_chart = alt.Chart(homes_rented_df).mark_point().encode(
-        x=alt.X('rent_change:Q', title='Rent Change ($)'),
+        x=alt.X('rent_change:Q', title='Rent Δ ($)'),
         y=alt.Y('market_name:N', title=None),
         color=alt.Color('market_name:N', scale=color_scale, title='Market'),
-        tooltip=['market_name', 'first_rent', 'last_rent', 'rent_change', 'address']
+        tooltip=[
+            alt.Tooltip('address', title='Address'),
+            alt.Tooltip('market_name', title='Market'),
+            alt.Tooltip('first_rent', title='Initial Rent ($)'),
+            alt.Tooltip('last_rent', title='Current Rent ($)'),
+            alt.Tooltip('rent_change', title='Rent Δ ($)'),
+            alt.Tooltip('home_rented_days_on_market', title='Days on Market'), 
+            alt.Tooltip('last_lease_signed', title='Lease Signed')
+        ]
     ).properties(
-        title='Rent Changes by Market'
+        title='Rent Δ'
     )
     zero_line = alt.Chart(pd.DataFrame({'x': [0]})).mark_rule(
-        color='gray',
-        strokeDash=[4, 4]
+        color='gray'
     ).encode(x='x:Q')
     st.altair_chart((rent_change_chart + zero_line), use_container_width=True)
 
-    # Rent Change Summary Statistics
-    st.markdown("<h6><b>Rent Change Summary Statistics</b></h6>", unsafe_allow_html=True)
-    stats_df = homes_rented_df.groupby('market_name')['rent_change'].agg([
-        ('Mean', 'mean'),
-        ('Median', 'median'),
-        ('Min', 'min'),
-        ('Max', 'max'),
-        ('Count', 'count'),
-        ('Std Dev', 'std')
-    ]).round(2)
-    st.dataframe(stats_df, use_container_width=True)
 
-    # Days on Market strip plot
-    dom_strip = alt.Chart(homes_rented_df).mark_point().encode(
-        x=alt.X('days_on_market:Q', title='# Days'),
+    # Days on Market Chart
+    dom_chart = alt.Chart(homes_rented_df).mark_point().encode(
+        x=alt.X('home_rented_days_on_market:Q', title='# Days'),
         y=alt.Y('market_name:N', title=None),
         color=alt.Color('market_name:N', scale=color_scale, title='Market', legend=None),
-        tooltip=['market_name', 'days_on_market', 'address']
+        tooltip=[
+            alt.Tooltip('address', title='Address'),
+            alt.Tooltip('market_name', title='Market'),
+            alt.Tooltip('home_rented_days_on_market', title='Days on Market'), 
+            alt.Tooltip('last_lease_signed', title='Lease Signed')
+        ]
     ).properties(
         title='Days on Market'
     )
+    st.altair_chart(dom_chart + zero_line, use_container_width=True)
 
-    st.altair_chart(dom_strip, use_container_width=True)
 
-    
-    # # Rent scatter plot
-    # if len(homes_rented_df['market_name'].unique()) == 1:
-    #     color_scale = alt.Scale(range=['#15b8a6']) 
-    # else:
-    #     color_scale = alt.Scale(scheme='tealblues')  
-    # scatter_chart = alt.Chart(homes_rented_df).mark_point().encode(
-    #     x=alt.X('first_rent:Q', title='first Rent'),
-    #     y=alt.Y('last_rent:Q', title='last Rent'),
-    #     color=alt.Color('market_name:N', scale=color_scale, title='Market'),
-    #     tooltip=['market_name', 'first_rent', 'last_rent']
-    # )
-    # diagonal_line = alt.Chart(pd.DataFrame({
-    #     'x': [0, homes_rented_df['first_rent'].max()],
-    #     'y': [0, homes_rented_df['first_rent'].max()]
-    # })).mark_line(color='#00000010').encode(x='x:Q', y='y:Q')
-    # st.altair_chart((diagonal_line + scatter_chart).properties(title='Market Cycle Rent Comparison'), use_container_width=True)
+    # Leased HomesSummary Statistics
+    st.markdown("<h6><b>Leased Homes Summary Statistics</b></h6>", unsafe_allow_html=True)
+    stats_df = homes_rented_df.groupby('market_name').agg({
+        'rent_change': [
+            ('Count', 'count'),
+            ('Average', 'mean'),
+            ('Median', 'median')
+        ],
+        'home_rented_days_on_market': [
+            ('Average', 'mean'),
+            ('Median', 'median')
+        ]
+    }).round(2)
+    stats_df.columns = pd.MultiIndex.from_tuples([
+        ('', '# Homes Leased'),
+        ('Rent Δ ($)', 'Average'),
+        ('Rent Δ ($)', 'Median'),
+        ('Days on Market', 'Average'),
+        ('Days on Market', 'Median')
+    ])
+    st.dataframe(stats_df, use_container_width=True)
 
-    # # Days on Market strip plot
-    # dom_strip = alt.Chart(homes_rented_df).mark_point().encode(
-    #     x=alt.X('days_on_market:Q', title='# Days'),
-    #     y=alt.Y('market_name:N', title=None),
-    #     color=alt.Color('market_name:N', scale=color_scale, title='Market', legend=None),
-    #     tooltip=['market_name', 'days_on_market', 'address']
-    # ).properties(
-    #     title='Days on Market'
-    # )
 
-    # st.altair_chart(dom_strip, use_container_width=True)
+def turn_times(leasing_period_df, color_scale):
+    st.subheader("Turn Times")
+
+    turn_times_df = leasing_period_df[leasing_period_df['actual_turn_time'].notna()]
+
+    # Chart
+    turn_times_chart = alt.Chart(turn_times_df).mark_point().encode(
+        x=alt.X('actual_turn_time:Q', title='Turn Time (days)', axis=alt.Axis(format='d')),
+        y=alt.Y('market_name:N', title=None),
+        color=alt.Color('market_name:N', scale=color_scale, title='Market'),
+        tooltip=[
+            alt.Tooltip('address', title='Address'),
+            alt.Tooltip('market_name', title='Market'),
+            alt.Tooltip('actual_vacated', title='Vacated On'),
+            alt.Tooltip('actual_available', title='Available On'),
+            alt.Tooltip('actual_turn_time', title='Turn Time (days)')
+        ]
+    )
+    st.altair_chart(turn_times_chart,  use_container_width=True)
+
+    # Summary Statistics
+    st.markdown("<h6><b>Turn Times Summary Statistics</b></h6>", unsafe_allow_html=True)
+    stats_df = turn_times_df.groupby('market_name').agg(
+        **{
+            '# Homes Turned': ('actual_turn_time', 'count'),
+            'Average Turn Time (days)': ('actual_turn_time', 'mean'),
+            'Median Turn Time (days)': ('actual_turn_time', 'median')
+        }
+    ).round(2)
+    st.dataframe(stats_df, use_container_width=True)
+
+
+
+
+
     
 
 

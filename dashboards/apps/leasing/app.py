@@ -3,7 +3,7 @@ import pandas as pd
 from google.oauth2 import service_account
 
 from data import get_service_account_info, leasing_scraper_data, conversion_rates_data
-from tabs.competitors_tab import competitors_filters, clearance_rates, homes_rented_stats
+from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, rent_changes, turn_times
 from tabs.conversion_rates_tab import conversion_rates
 
 # Configure page layout
@@ -25,9 +25,11 @@ st.title("Leasing Dashboard")
 
 competitors_tab, conversion_rates_tab = st.tabs(["Competitors", 'Conversion Rates'])
 with competitors_tab:
-    leasing_period_df, start_date, end_date = competitors_filters(leasing_df)
+    leasing_period_df, start_date, end_date, color_scale = competitors_filters(leasing_df)
+    metrics()
     clearance_rates(leasing_period_df, start_date, end_date)
-    homes_rented_stats(leasing_period_df, start_date, end_date)
+    rent_changes(leasing_period_df, color_scale)
+    turn_times(leasing_period_df, color_scale)
 with conversion_rates_tab:
     # KEVIN TO DO
     conversion_rates(conversion_rates_df)
