@@ -7,7 +7,7 @@ from datetime import datetime
 from tabs.utils import fund_filter
 
 def bad_debt_over_time_filters(bad_debt_inputs):
-    selected_fund = fund_filter(key='bad_debt_over_time_select_fund', data=bad_debt_inputs, include_all=True)
+    selected_fund = fund_filter(key='bad_debt_over_time_select_fund', data=bad_debt_inputs)
     return selected_fund
 
 def bad_debt_over_time(bad_debt_inputs, selected_fund):
