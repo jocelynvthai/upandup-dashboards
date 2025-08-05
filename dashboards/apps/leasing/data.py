@@ -21,7 +21,7 @@ def leasing_scraper_data(_credentials):
 
 
 @st.cache_data
-def conversion_rates_data(_credentials):
+def leasing_funnel_data(_credentials):
     query = """
         SELECT *
         FROM `homevest-data.dbt_prod.agg_cohortized_leasing_funnel`

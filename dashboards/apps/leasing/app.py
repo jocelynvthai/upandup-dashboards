@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from google.oauth2 import service_account
 
-from data import get_service_account_info, leasing_scraper_data, conversion_rates_data
+from data import get_service_account_info, leasing_scraper_data, leasing_funnel_data
 from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, rent_changes, turn_times
-from tabs.conversion_rates_tab import conversion_rates_filters, conversion_rates, leasing_funnel_defs
+from tabs.leasing_funnel_tab import leasing_funnel_filters, leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
 
 # Configure page layout
 st.set_page_config(
@@ -15,26 +15,26 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
-conversion_rates_df = conversion_rates_data(credentials)
+leasing_funnel_df = leasing_funnel_data(credentials)
 
 
 # Application
 st.title("Leasing Dashboard")
 
-competitors_tab, conversion_rates_tab = st.tabs(["Competitors", 'Conversion Rates (WIP)'])
+competitors_tab, leasing_funnel_tab = st.tabs(["Competitors", 'Leasing Funnel'])
 with competitors_tab:
     leasing_period_df, start_date, end_date, color_scale = competitors_filters(leasing_df)
     metrics()
     clearance_rates(leasing_period_df, start_date, end_date)
     rent_changes(leasing_period_df, color_scale)
     turn_times(leasing_period_df, color_scale)
-with conversion_rates_tab:
-    # KEVIN TO DO
-    filtered_conversion_rates_df = conversion_rates_filters(conversion_rates_df)
-    leasing_funnel_defs()
-    conversion_rates(filtered_conversion_rates_df)
+with leasing_funnel_tab:
+    filtered_leasing_funnel_df, selected_time_granularity = leasing_funnel_filters(leasing_funnel_df)
+    grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
+    leasing_funnel_summary_metrics(grouped_leasing_funnel_df, selected_time_granularity)
+    leasing_funnel_chart(grouped_leasing_funnel_df)
 
 
 
