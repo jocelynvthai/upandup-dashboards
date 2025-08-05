@@ -23,7 +23,9 @@ def competitors_filters(leasing_df):
                                                         (filtered_leasing_period_df['last_pull_date'] >= (start_date - timedelta(days=1)))]
     with col_market:
         selected_market = st.selectbox("Select a market", 
-                                options=['All'] + list(leasing_df['market_name'].unique()), index=0)
+                                options=['All'] + list(leasing_df['market_name'].unique()), 
+                                index=0,
+                                key='competitors_market')
         color_scale = alt.Scale(scheme='tealblues')  
         if selected_market != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['market_name'] == selected_market]
@@ -31,7 +33,9 @@ def competitors_filters(leasing_df):
     
     with col_competitor:
         selected_competitor = st.selectbox("Select a competitor", 
-                                options=['All'] + list(leasing_df['source'].unique()), index=0)
+                                options=['All'] + list(leasing_df['source'].unique()), 
+                                index=0,
+                                key='competitors_competitor')
         if selected_competitor != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['source'] == selected_competitor]
 

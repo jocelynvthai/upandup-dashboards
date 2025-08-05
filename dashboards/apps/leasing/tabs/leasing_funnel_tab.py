@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
-import numpy as np
 
 def leasing_funnel_filters(leasing_funnel_df):
     col_date_range, col_time_granularity, col_fund, col_market = st.columns(4)
@@ -12,7 +11,7 @@ def leasing_funnel_filters(leasing_funnel_df):
         date_range = st.date_input("Pick a period range",
                                    value=(datetime.now() - timedelta(days=1),  datetime.now()),
                                    format='MM/DD/YYYY',
-                                   key='conversion_rates_date_range')
+                                   key='leasing_funnel_date_range')
         if len(date_range) != 2:
             st.stop()
         else:
@@ -24,18 +23,23 @@ def leasing_funnel_filters(leasing_funnel_df):
         available_granularities = filtered_leasing_funnel_df['time_granularity'].unique()
         selected_time_granularity = st.selectbox("Select a time granularity",
                                       options=[g for g in ['day', 'week', 'month', 'quarter', 'year'] if g in available_granularities], 
-                                      index=0)
+                                      index=0, 
+                                      key='leasing_funnel_time_granularity')
         filtered_leasing_funnel_df = filtered_leasing_funnel_df[filtered_leasing_funnel_df['time_granularity'] == selected_time_granularity]
 
     with col_fund:
         selected_fund = st.selectbox("Select a fund",
-                                     options=['All'] + list(filtered_leasing_funnel_df['fund'].unique()), index=0)
+                                     options=['All'] + list(filtered_leasing_funnel_df['fund'].unique()), 
+                                     index=0,
+                                     key='leasing_funnel_fund')
         if selected_fund != 'All':
             filtered_leasing_funnel_df = filtered_leasing_funnel_df[filtered_leasing_funnel_df['fund'] == selected_fund]
 
     with col_market:
         selected_market = st.selectbox("Select a market",
-                                       options=['All'] + list(filtered_leasing_funnel_df['market'].unique()), index=0)
+                                       options=['All'] + list(filtered_leasing_funnel_df['market'].unique()), 
+                                       index=0,
+                                       key='leasing_funnel_market')
         if selected_market != 'All':
             filtered_leasing_funnel_df = filtered_leasing_funnel_df[filtered_leasing_funnel_df['market'] == selected_market]
 
@@ -167,7 +171,7 @@ def leasing_funnel_chart(grouped_leasing_funnel_df):
     }
 
     # Add stage selector
-    selected_stage = st.selectbox("Select Funnel Stage", options=list(funnel_stages.keys()))
+    selected_stage = st.selectbox("Select Funnel Stage", options=list(funnel_stages.keys()), key='leasing_funnel_stage')
     stage_config = funnel_stages[selected_stage]
     
     # First bar chart
