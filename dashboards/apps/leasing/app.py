@@ -4,7 +4,7 @@ from google.oauth2 import service_account
 from data import get_service_account_info, leasing_scraper_data, leasing_funnel_data
 from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, rent_changes, turn_times
 from tabs.leasing_funnel_tab import leasing_funnel_filters, leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
-from tabs.application_funnel_tab import application_funnel_filters, application_funnel_chart
+from tabs.application_funnel_tab import application_funnel_filters, application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
 
 # Configure page layout
 st.set_page_config(
@@ -37,7 +37,9 @@ with leasing_funnel_tab:
     leasing_funnel_chart(grouped_leasing_funnel_df)
 with application_funnel_tab:
     filtered_application_funnel_df, selected_time_granularity = application_funnel_filters(leasing_funnel_df)
-    application_funnel_chart(filtered_application_funnel_df)
+    grouped_application_funnel_df = application_funnel_grouped(filtered_application_funnel_df)
+    application_funnel_summary_metrics(grouped_application_funnel_df, selected_time_granularity)
+    application_funnel_chart(grouped_application_funnel_df)
     
 
 
