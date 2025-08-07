@@ -1,5 +1,56 @@
 import altair as alt
 import streamlit as st
+from datetime import datetime, timedelta
+
+
+LIGHT_GRAY = "#d3d3d3"
+GRAY = "#808080"  # gray
+TEAL = "#15b8a6"  # teal
+PURPLE = "#9575cd"  # purple
+
+
+def filters(df, tab_name):
+    col_date_range, col_time_granularity, col_fund, col_market = st.columns(4)
+    filtered_df = df.copy()
+
+    with col_date_range:
+        date_range = st.date_input("Pick a period range",
+                                   value=(datetime.now() - timedelta(days=30),  datetime.now()),
+                                   format='MM/DD/YYYY',
+                                   key=f'{tab_name}_date_range')
+        if len(date_range) != 2:
+            st.stop()
+        else:
+            start_date, end_date = date_range[0], date_range[1]
+            filtered_df = filtered_df[(filtered_df['date'] <= end_date) &
+                                                                        (filtered_df['date'] >= start_date)]
+
+    with col_time_granularity:
+        available_granularities = filtered_df['time_granularity'].unique()
+        selected_time_granularity = st.selectbox("Select a time granularity",
+                                      options=[g for g in ['day', 'week', 'month', 'quarter', 'year'] if g in available_granularities], 
+                                      index=0, 
+                                      key=f'{tab_name}_time_granularity')
+        filtered_df = filtered_df[filtered_df['time_granularity'] == selected_time_granularity]
+
+    with col_fund:
+        selected_fund = st.selectbox("Select a fund", 
+                                     options=['All'] + list(filtered_df['fund'].unique()), 
+                                     index=0, 
+                                     key=f'{tab_name}_fund')
+        if selected_fund != 'All':
+            filtered_df = filtered_df[filtered_df['fund'] == selected_fund]
+
+    with col_market:
+        selected_market = st.selectbox("Select a market",
+                                       options=['All'] + list(filtered_df['market'].unique()), 
+                                       index=0,
+                                       key=f'{tab_name}_market')
+        if selected_market != 'All':
+            filtered_df = filtered_df[filtered_df['market'] == selected_market]
+
+    return filtered_df, selected_time_granularity
+
 
 def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     """
@@ -9,10 +60,6 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         funnel_stages: Dictionary defining the funnel stage configurations
         chart_type: String identifier for the chart (used for unique streamlit keys)
     """
-
-    FIRST_BAR_COLOR = "#808080"  # gray
-    SECOND_BAR_COLOR = "#15b8a6"  # teal
-    LINE_COLOR = "#9575cd"  # purple
     
     # Add stage selector
     selected_stage = st.selectbox("Select Funnel Stage", 
@@ -25,8 +72,8 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         x=alt.X('date:T', title='Date'),
         y=alt.Y(f"{stage_config['first_metric']}:Q", 
                 title='Count',
-                axis=alt.Axis(titleColor=FIRST_BAR_COLOR)),
-        color=alt.value(FIRST_BAR_COLOR),
+                axis=alt.Axis(titleColor=GRAY)),
+        color=alt.value(GRAY),
         tooltip=[
             alt.Tooltip('date:T'),
             alt.Tooltip(f"{stage_config['first_metric']}:Q", 
@@ -42,7 +89,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     second_bars = alt.Chart(grouped_df).mark_bar().encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{stage_config['second_metric']}:Q"),
-        color=alt.value(SECOND_BAR_COLOR),
+        color=alt.value(TEAL),
         tooltip=[
             alt.Tooltip('date:T'),
             alt.Tooltip(f"{stage_config['second_metric']}:Q", 
@@ -75,13 +122,13 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     time_title = 'Average Hours' if 'avg_hours' in stage_config else 'Average Days'
     
     line = alt.Chart(grouped_df).mark_line(
-        color=LINE_COLOR,
+        color=PURPLE,
         strokeWidth=2
     ).encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{stage_config[time_metric]}:Q",
                 title=time_title,
-                axis=alt.Axis(titleColor=LINE_COLOR)),
+                axis=alt.Axis(titleColor=PURPLE)),
         tooltip=[
             alt.Tooltip('date:T'),
             alt.Tooltip(f"{stage_config[time_metric]}:Q", 

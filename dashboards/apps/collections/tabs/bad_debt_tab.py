@@ -38,7 +38,7 @@ def bad_debt_over_time(bad_debt_inputs, selected_fund):
 
     # Create a list of months for the domain (15th of each month)
     all_months = pd.date_range(
-        start=(bad_debt_fund['month'].min() - pd.DateOffset(months=1)).replace(day=15),
+        start=(bad_debt_fund['month'].min() - pd.DateOffset(days=30)).replace(day=15),
         end=bad_debt_fund['month'].max(),
         freq='MS'
     ) + pd.Timedelta(days=1)

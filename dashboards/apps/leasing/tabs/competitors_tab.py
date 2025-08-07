@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
-import numpy as np
-
 
 
 def competitors_filters(leasing_df):
@@ -12,7 +10,7 @@ def competitors_filters(leasing_df):
 
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
-                                value=(datetime.now() - timedelta(days=1),  datetime.now()), 
+                                value=(datetime.now() - timedelta(days=30),  datetime.now()), 
                                 format='MM/DD/YYYY',
                                 key='competitors_date_range')
         if len(date_range) != 2:

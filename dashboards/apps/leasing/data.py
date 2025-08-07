@@ -23,8 +23,53 @@ def leasing_scraper_data(_credentials):
 @st.cache_data
 def leasing_funnel_data(_credentials):
     query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod.agg_cohortized_leasing_funnel`
+        SELECT * FROM `homevest-data.dbt_prod.agg_cohortized_leasing_funnel`
+        ORDER BY
+            CASE time_granularity
+                WHEN 'day' THEN 1
+                WHEN 'week' THEN 2
+                WHEN 'month' THEN 3
+                WHEN 'quarter' THEN 4
+                WHEN 'year' THEN 5
+            END,
+            date,
+            fund,
+            market
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def inquiries_data(_credentials):
+    query = """
+        SELECT * FROM `homevest-data.dbt_prod.agg_rental_site_inquiries`
+        ORDER BY
+            CASE time_granularity
+                WHEN 'week' THEN 1
+                WHEN 'month' THEN 2
+                WHEN 'quarter' THEN 3
+                WHEN 'year' THEN 4
+            END,
+            address,
+            date
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def tours_data(_credentials):
+    query = """
+        SELECT * FROM `homevest-data.dbt_prod.agg_tours`
+        WHERE fund IS NOT NULL
+        ORDER BY
+            CASE time_granularity
+                WHEN 'week' THEN 1
+                WHEN 'month' THEN 2
+                WHEN 'quarter' THEN 3
+                WHEN 'year' THEN 4
+            END,
+            address,
+            date
     """
     return pd.read_gbq(query, credentials=_credentials)
 
@@ -188,22 +233,22 @@ def leasing_funnel_data(_credentials):
 
 
 # def get_date_available(ih_property_df, row_id_group):
-    """ Date status turned from 'Notice Unrented' to 'Vacant Unrented Not Ready' """
-    date_available_df = ih_property_df.copy()
+#     """ Date status turned from 'Notice Unrented' to 'Vacant Unrented Not Ready' """
+#     date_available_df = ih_property_df.copy()
 
-    # Find rows where status changed from 'Notice Unrented' to 'Vacant Unrented Not Ready'
-    date_available_df['prev_status'] = date_available_df.groupby(row_id_group)['status'].shift()
-    date_available_df['date_available_bool'] = (date_available_df['status'] == 'Vacant Unrented Ready') & (date_available_df['prev_status'] == 'Vacant Unrented Not Ready')
+#     # Find rows where status changed from 'Notice Unrented' to 'Vacant Unrented Not Ready'
+#     date_available_df['prev_status'] = date_available_df.groupby(row_id_group)['status'].shift()
+#     date_available_df['date_available_bool'] = (date_available_df['status'] == 'Vacant Unrented Ready') & (date_available_df['prev_status'] == 'Vacant Unrented Not Ready')
 
-    # Get date available
-    available_dates = (
-        date_available_df[date_available_df['date_available_bool']]
-        .groupby(row_id_group)['pull_date']
-        .last()
-        .rename('date_available')
-    )
-    date_available_df = date_available_df.merge(available_dates, on=row_id_group, how='left')
-    return date_available_df[list(ih_property_df.columns) + ['date_available']]
+#     # Get date available
+#     available_dates = (
+#         date_available_df[date_available_df['date_available_bool']]
+#         .groupby(row_id_group)['pull_date']
+#         .last()
+#         .rename('date_available')
+#     )
+#     date_available_df = date_available_df.merge(available_dates, on=row_id_group, how='left')
+#     return date_available_df[list(ih_property_df.columns) + ['date_available']]
 
 
 
