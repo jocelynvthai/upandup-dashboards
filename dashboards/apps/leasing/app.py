@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 leasing_df = leasing_scraper_data(credentials)
 leasing_funnel_df = leasing_funnel_data(credentials)
 inquiries_df = inquiries_data(credentials)
