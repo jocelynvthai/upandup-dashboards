@@ -1,8 +1,16 @@
 x
 By using this site, you agree to the Terms of Service and Privacy Policy.
+Homes For Rent
+Future Residents
+Current Residents
+About Us
 My Account
 Location *
-Filters
+Monthly Price
+Bedrooms
+Bathrooms
+Square Footage
+More Filters
 Use current location
   500
 Unexpected Error

@@ -33,7 +33,7 @@ class Config:
 def setup_selenium():
     """Initialize and configure Selenium WebDriver"""
     options = Options()
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
     driver = webdriver.Chrome(options=options)

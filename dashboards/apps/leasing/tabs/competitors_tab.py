@@ -2,41 +2,44 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
-import numpy as np
-
 
 
 def competitors_filters(leasing_df):
     col_date_range, col_market, col_competitor = st.columns(3)
+    filtered_leasing_period_df = leasing_df.copy()
 
-    leasing_period_df = leasing_df.copy()
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
-                                value=(datetime.now() - timedelta(days=1),  datetime.now()), 
-                                format='MM/DD/YYYY')
+                                value=(datetime.now() - timedelta(days=30),  datetime.now()), 
+                                format='MM/DD/YYYY',
+                                key='competitors_date_range')
         if len(date_range) != 2:
             st.stop()
         else: 
             start_date, end_date = date_range[0], date_range[1]
-            leasing_period_df = leasing_period_df[(leasing_period_df['first_pull_date'] <= end_date) & 
-                                                        (leasing_period_df['last_pull_date'] >= (start_date - timedelta(days=1)))]
+            filtered_leasing_period_df = filtered_leasing_period_df[(filtered_leasing_period_df['first_pull_date'] <= end_date) & 
+                                                        (filtered_leasing_period_df['last_pull_date'] >= (start_date - timedelta(days=1)))]
     with col_market:
         selected_market = st.selectbox("Select a market", 
-                                options=['All'] + list(leasing_df['market_name'].unique()), index=0)
+                                options=['All'] + list(leasing_df['market_name'].unique()), 
+                                index=0,
+                                key='competitors_market')
         color_scale = alt.Scale(scheme='tealblues')  
         if selected_market != 'All':
-            leasing_period_df = leasing_period_df[leasing_period_df['market_name'] == selected_market]
+            filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['market_name'] == selected_market]
             color_scale = alt.Scale(range=['#15b8a6']) 
     
     with col_competitor:
         selected_competitor = st.selectbox("Select a competitor", 
-                                options=['All'] + list(leasing_df['source'].unique()), index=0)
+                                options=['All'] + list(leasing_df['source'].unique()), 
+                                index=0,
+                                key='competitors_competitor')
         if selected_competitor != 'All':
-            leasing_period_df = leasing_period_df[leasing_period_df['source'] == selected_competitor]
+            filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['source'] == selected_competitor]
 
     
     
-    return leasing_period_df, start_date, end_date, color_scale
+    return filtered_leasing_period_df, start_date, end_date, color_scale
 
 
 def metrics():
@@ -54,10 +57,10 @@ def metrics():
 
 
 
-def clearance_rates(leasing_period_df, start_date, end_date):
+def clearance_rates(filtered_leasing_period_df, start_date, end_date):
     st.subheader("Clearance Rates")
-    prelease_df = leasing_period_df[leasing_period_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
-    rent_ready_df = leasing_period_df[leasing_period_df['last_status'].isin(['Vacant Unrented Ready'])]
+    prelease_df = filtered_leasing_period_df[filtered_leasing_period_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
+    rent_ready_df = filtered_leasing_period_df[filtered_leasing_period_df['last_status'].isin(['Vacant Unrented Ready'])]
 
     clearance_rates = [
         len(prelease_df[(prelease_df['last_lease_signed']>=start_date) & (prelease_df['last_lease_signed']<=end_date)])*100 / len(prelease_df), 
@@ -70,9 +73,9 @@ def clearance_rates(leasing_period_df, start_date, end_date):
         st.metric("Rent Ready Clearance Rate", f"{clearance_rates[1]:.2f}%", help="% of pre-lease homes (Vacant Unrented Ready) rented in period range")
 
 
-def rent_changes(leasing_period_df, color_scale):
+def rent_changes(filtered_leasing_period_df, color_scale):
     st.subheader("Leased Homes Stats")
-    homes_rented_df = leasing_period_df[leasing_period_df['last_lease_signed'].notna()]
+    homes_rented_df = filtered_leasing_period_df[filtered_leasing_period_df['last_lease_signed'].notna()]
 
     # Rent Change Chart
     homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
@@ -136,9 +139,9 @@ def rent_changes(leasing_period_df, color_scale):
     st.dataframe(stats_df, use_container_width=True)
 
 
-def turn_times(leasing_period_df, color_scale):
+def turn_times(filtered_leasing_period_df, color_scale):
     st.subheader("Turn Times")
-    turn_times_df = leasing_period_df[leasing_period_df['actual_turn_time'].notna()]
+    turn_times_df = filtered_leasing_period_df[filtered_leasing_period_df['actual_turn_time'].notna()]
 
     # Chart
     turn_times_chart = alt.Chart(turn_times_df).mark_point().encode(
