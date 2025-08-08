@@ -7,7 +7,7 @@ from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, 
 from tabs.leasing_funnel_tab import leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
 from tabs.inquiries_tab import inquiries_grouped, num_inquiries, inquiries_filled_out_prequalification_form, inquiries_prequalified, homes_with_zero_inquiries
-from tabs.tours_tab import tours_grouped, tour_metrics
+from tabs.tours_tab import tours_grouped, tour_metrics, num_tours_by_source, num_tours_by_farthest_funnel_stage, homes_with_zero_tours
 
 # Configure page layout
 st.set_page_config(
@@ -55,6 +55,9 @@ with tours_tab:
     filtered_tours_df, filtered_selected_time_granularity = filters(tours_df, 'tours')
     grouped_tours_df = tours_grouped(filtered_tours_df)
     tour_metrics(grouped_tours_df)
+    num_tours_by_source(grouped_tours_df)
+    num_tours_by_farthest_funnel_stage(grouped_tours_df)
+    homes_with_zero_tours(grouped_tours_df)
 
 
     

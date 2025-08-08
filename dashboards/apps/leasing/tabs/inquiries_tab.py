@@ -228,6 +228,7 @@ def inquiries_prequalified(grouped_inquiries_df):
 
 def homes_with_zero_inquiries(grouped_inquiries_df):
     st.subheader("% of Homes with Zero Inquiries")
+    st.dataframe(grouped_inquiries_df)
 
     # Metrics
     st.metric("% of Homes with Zero Inquiries", f"{grouped_inquiries_df['perc_homes_with_zero_inquiries'].mean() * 100:.2f}%")

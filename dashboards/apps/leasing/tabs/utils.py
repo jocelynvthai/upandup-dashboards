@@ -4,9 +4,17 @@ from datetime import datetime, timedelta
 
 
 LIGHT_GRAY = "#d3d3d3"
-GRAY = "#808080"  # gray
-TEAL = "#15b8a6"  # teal
-PURPLE = "#9575cd"  # purple
+GRAY = "#808080" 
+LIGHT_TEAL = "#5cc9b8" 
+TEAL = "#15b8a6" 
+LIGHT_PURPLE = "#d1c4e9" 
+PURPLE = "#9575cd" 
+DARK_PURPLE = "#512da8" 
+#5cc9b8 - A medium-light teal (good balance)
+#7dd3c0 - Lighter teal
+#a3e0d1 - Very light teal
+#c7ebe3 - Extra light teal (subtle)
+
 
 
 def filters(df, tab_name):
