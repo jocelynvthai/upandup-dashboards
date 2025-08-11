@@ -1,6 +1,7 @@
 import altair as alt
 import streamlit as st
 from datetime import datetime, timedelta
+import pandas as pd
 
 
 LIGHT_GRAY = "#d3d3d3"
@@ -68,6 +69,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         funnel_stages: Dictionary defining the funnel stage configurations
         chart_type: String identifier for the chart (used for unique streamlit keys)
     """
+    st.dataframe(grouped_df)
     
     # Add stage selector
     selected_stage = st.selectbox("Select Funnel Stage", 
@@ -81,7 +83,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         y=alt.Y(f"{stage_config['first_metric']}:Q", 
                 title='Count',
                 axis=alt.Axis(titleColor=GRAY)),
-        color=alt.value(GRAY),
+        color=alt.value(LIGHT_GRAY),
         tooltip=[
             alt.Tooltip('date:T'),
             alt.Tooltip(f"{stage_config['first_metric']}:Q", 
@@ -127,7 +129,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
 
     # Time metric line (handles both hours and days)
     time_metric = 'avg_hours' if 'avg_hours' in stage_config else 'avg_days'
-    time_title = 'Average Hours' if 'avg_hours' in stage_config else 'Average Days'
+    time_title = 'Average Time Spent (Hours)' if 'avg_hours' in stage_config else 'Average Time Spent (Days)'
     
     line = alt.Chart(grouped_df).mark_line(
         color=PURPLE,
@@ -135,8 +137,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     ).encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{stage_config[time_metric]}:Q",
-                title=time_title,
-                axis=alt.Axis(titleColor=PURPLE)),
+                title=time_title),
         tooltip=[
             alt.Tooltip('date:T'),
             alt.Tooltip(f"{stage_config[time_metric]}:Q", 
@@ -145,11 +146,45 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         ]
     )
 
+    # Create manual legend
+    legend_data = pd.DataFrame({
+        'label': [stage_config['first_label'], stage_config['second_label'], time_title],
+        'color': [LIGHT_GRAY, TEAL, PURPLE], 
+        'x': [1, 1, 1],
+        'y': [1, 2, 3]
+    })
+    legend_rect = alt.Chart(legend_data.iloc[:2]).mark_rect(
+        width=15, height=15
+    ).encode(
+        x=alt.X('x:O', axis=None, scale=alt.Scale(domain=[1])),
+        y=alt.Y('y:O', axis=None),
+        color=alt.Color('color:N', scale=None, legend=None)
+    )
+    legend_line = alt.Chart(legend_data.iloc[2:]).mark_line(
+        strokeWidth=3, point=True
+    ).encode(
+        x=alt.X('x:O', axis=None, scale=alt.Scale(domain=[1])),
+        y=alt.Y('y:O', axis=None),
+        color=alt.Color('color:N', scale=None, legend=None)
+    )
+    legend_text = alt.Chart(legend_data).mark_text(
+        align='left', dx=25, fontSize=11
+    ).encode(
+        x=alt.X('x:O', axis=None, scale=alt.Scale(domain=[1])),
+        y=alt.Y('y:O', axis=None),
+        text='label:N'
+    )
+    legend = alt.layer(legend_rect, legend_line, legend_text).properties(
+        width=50,  
+        height=80
+    )
+
     # Layer and plot the charts
     bars_layer = alt.layer(first_bars, second_bars, text).properties(
-        width=800,
-        height=400,
-        title=selected_stage
+        width=1000 
     )
-    chart = alt.layer(bars_layer, line).resolve_scale(y='independent')
+    main_chart = alt.layer(bars_layer, line).resolve_scale(y='independent')
+    
+    # Combine main chart with legend - main chart will expand, legend stays fixed
+    chart = alt.hconcat(main_chart, legend, spacing=10)
     st.altair_chart(chart, use_container_width=True) 

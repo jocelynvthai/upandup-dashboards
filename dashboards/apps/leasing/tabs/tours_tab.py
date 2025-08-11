@@ -1,7 +1,5 @@
 import streamlit as st
-import pandas as pd
 import altair as alt
-from datetime import datetime, timedelta
 from tabs.utils import LIGHT_GRAY, GRAY, LIGHT_TEAL, TEAL, LIGHT_PURPLE, PURPLE, DARK_PURPLE
 
 
