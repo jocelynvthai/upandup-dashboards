@@ -1,8 +1,9 @@
 import streamlit as st
 
 
-def turns(turns_df):
-    turns_df_display = turns_df[[
+def economic_turn_costs(turns_df):
+    st.subheader("Economic Turn Costs")
+    economic_turn_costs_df = turns_df[[
         'address', 
         'state', 
         'fund', 
@@ -34,6 +35,6 @@ def turns(turns_df):
         'total_invoiced_cost_during_vacancy', 
         'total_invoiced_cost_after_move_in'
     ]].copy()
-    turns_df_display.columns = [col.replace('_', ' ').title() for col in turns_df_display.columns]
-    st.dataframe(turns_df_display)
+    economic_turn_costs_df.columns = [col.replace('_', ' ').title() for col in economic_turn_costs_df.columns]
+    st.dataframe(economic_turn_costs_df)
 

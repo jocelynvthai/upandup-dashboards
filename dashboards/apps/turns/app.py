@@ -2,7 +2,7 @@ import streamlit as st
 from google.oauth2 import service_account
 
 from data import get_service_account_info, turns_data
-from tabs.turns_tab import turns
+from tabs.economic_turn_costs_tab import economic_turn_costs
 
 # Configure page layout
 st.set_page_config(
@@ -13,13 +13,13 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 turns_df = turns_data(credentials)
 
 # Application
 st.title("Turns Dashboard")
 
-turns_tab, = st.tabs(["Turns"])
-with turns_tab:
-    turns(turns_df)
+economic_turn_costs_tab, = st.tabs(["Economic Turn Costs"])
+with economic_turn_costs_tab:
+    economic_turn_costs(turns_df)
 
