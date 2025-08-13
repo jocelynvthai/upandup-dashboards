@@ -2,6 +2,7 @@ import streamlit as st
 
 
 def economic_turn_costs(turns_df):
+    st.dataframe(turns_df)
     st.subheader("Economic Turn Costs")
     economic_turn_costs_df = turns_df[[
         'address', 
@@ -17,6 +18,7 @@ def economic_turn_costs(turns_df):
         'project_scope_approved_at', 
         'project_finished_qc_at',
         'project_estimated_cost',
+        'project_ticket_approved_budgets', 
         'project_invoiced_cost',
         'chargeback_amount',
         'clawback_amount',

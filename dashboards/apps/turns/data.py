@@ -16,7 +16,7 @@ def get_service_account_info(local=False):
 def turns_data(_credentials):
     query = """
         SELECT * 
-        FROM `homevest-data.dbt_jocelynvthai.fct_turns`
+        FROM `homevest-data.dbt_prod.fct_turns`
     """
     data = pd.read_gbq(query, credentials=_credentials)
     return data
