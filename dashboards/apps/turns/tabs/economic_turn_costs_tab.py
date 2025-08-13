@@ -15,7 +15,7 @@ def economic_turn_costs(turns_df):
         'project_end_date', 
         'project_scoped_at', 
         'project_scope_approved_at', 
-        'project_finished_qc_at'
+        'project_finished_qc_at',
         'project_estimated_cost',
         'project_invoiced_cost',
         'chargeback_amount',
