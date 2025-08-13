@@ -76,7 +76,7 @@ def tours_data(_credentials):
 @st.cache_data
 def vacancy_data(_credentials):
     query = """
-        SELECT * FROM `homevest-data.dbt_prod.vacancy_curve`
+        SELECT * FROM `homevest-data.dbt_prod_tin.vacancy_curve`
     """
     return pd.read_gbq(query, credentials=_credentials)
 
@@ -90,7 +90,7 @@ def distinct_vacancy_data(_credentials):
             vacancy_start_date,
             vacancy_end_date,
             vacancy_rank_asc
-        FROM `homevest-data.dbt_prod.vacancy_curve`
+        FROM `homevest-data.dbt_prod_tin.vacancy_curve`
         ORDER By vacancy_start_date DESC, address
     """
     return pd.read_gbq(query, credentials=_credentials)
