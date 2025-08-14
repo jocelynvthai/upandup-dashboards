@@ -7,14 +7,14 @@ from tabs.economic_turn_costs_tab import economic_turn_costs
 
 # Configure page layout
 st.set_page_config(
-    page_title="Dashboard Name",
+    page_title="Turns Dashboard",
     page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 turns_df = turns_data(credentials)
 line_items_df = line_items_data(credentials)
 
