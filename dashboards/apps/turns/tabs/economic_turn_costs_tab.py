@@ -40,5 +40,5 @@ def economic_turn_costs(turns_df):
         'total_invoiced_cost_after_move_in'
     ]].copy()
     economic_turn_costs_df.columns = [col.replace('_', ' ').title() for col in economic_turn_costs_df.columns]
-    st.dataframe(economic_turn_costs_df)
+    st.dataframe(economic_turn_costs_df, hide_index=True)
 
