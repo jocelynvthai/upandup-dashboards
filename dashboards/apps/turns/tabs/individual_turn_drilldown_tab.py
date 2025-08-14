@@ -3,42 +3,29 @@ import streamlit as st
 
 DELIMITER = ' -- moved out '
 NULL_VALUE = "N/A"
+  
 
 def drilldown_filters(turns_df, line_items_df):
-    # Get parameters from URL
-    params = st.query_params
-    st.write("Query Parameters:", params)  # Debugging output
+    params = st.query_params 
 
-    # Access the full parameter values
-    address = params.get('address', [None])
-    move_out_date = params.get('move_out_date', [None])
-    st.write("Address:", address)  # Debugging output
-    st.write("Move Out Date:", move_out_date)  # Debugging output
-
-    if address and move_out_date:
-        # Use the parameters to filter the data
-        selected_turn = [address, move_out_date]
+    distinct_turns = turns_df['address'] + DELIMITER + turns_df['move_out_date'].astype(str)
+    sorted_turns = sorted(distinct_turns, key=lambda x: x.split(DELIMITER)[1], reverse=True)
+    if params:
+        default_index = sorted_turns.index(params.get('address', [None]) + DELIMITER + params.get('move_out_date', [None]))
     else:
-        # Fallback to default selection if parameters are not present
-        distinct_turns = turns_df['address'] + DELIMITER + turns_df['move_out_date'].astype(str)
-        sorted_turns = sorted(distinct_turns, key=lambda x: x.split(DELIMITER)[1], reverse=True)
-        selected_turn = st.selectbox("Select Turnover Period", sorted_turns).split(DELIMITER)
+        default_index = 0
+    selected_turn = st.selectbox("Select Turnover Period", sorted_turns, index=default_index).split(DELIMITER)
 
-    # Ensure that the rental_id is found before accessing it
-    rental_id_series = turns_df[
+    rental_id = turns_df[
         (turns_df['address'] == selected_turn[0]) & 
         (turns_df['move_out_date'].astype(str) == selected_turn[1])
-    ]['rental_id']
-
-    if rental_id_series.empty:
-        st.error("No matching rental ID found for the selected turnover period.")
-        return pd.DataFrame(), pd.DataFrame()
-
-    rental_id = rental_id_series.values[0]
+    ]['rental_id'].values[0]
 
     filtered_line_items_df = line_items_df[(line_items_df['rental_id'] == rental_id)]
+    # filtered_turns_df will only be one row
     filtered_turns_df = turns_df[(turns_df['rental_id'] == rental_id)]
     return filtered_line_items_df, filtered_turns_df
+
 
 
 def individual_turn_summary(filtered_line_items_df, filtered_turns_df):
