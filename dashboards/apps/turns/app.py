@@ -22,8 +22,8 @@ line_items_df = line_items_data(credentials)
 st.title("Turns Dashboard")
 individual_turn_drilldown_tab, economic_turn_costs_tab = st.tabs(["Individual Turn Drilldown", "Economic Turn Costs",])
 with individual_turn_drilldown_tab:
-    filtered_line_items_df, filtered_turns_df = drilldown_filters(turns_df, line_items_df)
-    individual_turn_summary(filtered_line_items_df, filtered_turns_df)
+    filtered_line_items_df, selected_turn = drilldown_filters(turns_df, line_items_df)
+    individual_turn_summary(filtered_line_items_df, selected_turn)
     individual_turn_drilldown(filtered_line_items_df)
 with economic_turn_costs_tab:
     filtered_turns_df = economic_turn_costs_filters(turns_df)
