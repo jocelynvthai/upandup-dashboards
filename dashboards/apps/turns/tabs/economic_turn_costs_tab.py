@@ -3,6 +3,14 @@ import streamlit as st
 
 def economic_turn_costs(turns_df):
     st.subheader("Economic Turn Costs")
+
+    
+    turns_df['project_budget'] = turns_df.apply(
+        lambda row: row['project_estimated_cost'] if row['fund'] == 'Homevest Real Estate Partners IV - Limestone, L.P.' 
+        else row['project_estimated_cost'] + row['project_ticket_approved_budgets'], 
+        axis=1
+    )
+    
     economic_turn_costs_df = turns_df[[
         'address', 
         'state', 
@@ -16,8 +24,9 @@ def economic_turn_costs(turns_df):
         'project_scoped_at', 
         'project_scope_approved_at', 
         'project_finished_qc_at',
-        'project_estimated_cost',
-        'project_ticket_approved_budgets', 
+        # 'project_estimated_cost',
+        # 'project_ticket_approved_budgets', 
+        'project_budget', 
         'project_invoiced_cost',
         'chargeback_amount',
         'clawback_amount',
@@ -39,6 +48,10 @@ def economic_turn_costs(turns_df):
         'total_invoiced_cost_during_vacancy', 
         'total_invoiced_cost_after_move_in'
     ]].copy()
-    economic_turn_costs_df.columns = [col.replace('_', ' ').title() for col in economic_turn_costs_df.columns]
+    economic_turn_costs_df.columns = [
+        col.replace('project_', '').replace('_', ' ').title() if col.startswith('project_') 
+        else col.replace('_', ' ').title() 
+        for col in economic_turn_costs_df.columns
+    ]
     st.dataframe(economic_turn_costs_df)
 
