@@ -21,3 +21,13 @@ def turns_data(_credentials):
     data = pd.read_gbq(query, credentials=_credentials)
     return data
 
+
+@st.cache_data
+def line_items_data(_credentials):
+    query = """
+        SELECT * 
+        FROM `homevest-data.dbt_prod.stg_bdm_turn_line_items`
+    """
+    data = pd.read_gbq(query, credentials=_credentials)
+    return data
+
