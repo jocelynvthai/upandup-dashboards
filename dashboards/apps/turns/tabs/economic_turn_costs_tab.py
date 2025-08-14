@@ -4,7 +4,6 @@ import streamlit as st
 def economic_turn_costs(turns_df):
     st.subheader("Economic Turn Costs")
 
-    
     turns_df['project_budget'] = turns_df.apply(
         lambda row: row['project_estimated_cost'] if row['fund'] == 'Homevest Real Estate Partners IV - Limestone, L.P.' 
         else row['project_estimated_cost'] + row['project_ticket_approved_budgets'], 

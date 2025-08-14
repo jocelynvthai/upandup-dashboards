@@ -6,7 +6,7 @@ from tabs.economic_turn_costs_tab import economic_turn_costs
 
 # Configure page layout
 st.set_page_config(
-    page_title="Dashboard Name",
+    page_title="Turns Dashboard",
     page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"
