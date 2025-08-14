@@ -47,6 +47,8 @@ def economic_turn_costs(turns_df):
         # 'project_ticket_approved_budgets', 
         'project_budget', 
         'project_invoiced_cost',
+        'last_invoice_date',
+        'last_change_order_date', 
         'chargeback_amount',
         'clawback_amount',
         'cashout_status',
