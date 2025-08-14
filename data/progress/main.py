@@ -10,6 +10,7 @@ from slack_sdk.errors import SlackApiError
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium_stealth import stealth
 
 # Configuration
 class Config:
@@ -34,6 +35,16 @@ def setup_selenium():
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
     driver = webdriver.Chrome(options=options)
+    stealth(
+        driver,
+        languages=["en-US", "en"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True,
+    )
+
     try:
         driver.get(Config.MAIN_URL)
         print("Visited main page to set cookies.")
