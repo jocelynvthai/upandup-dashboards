@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 
 
-def get_service_account_info(local=True):
+def get_service_account_info(local=False):
     if local:
         service_account_info = st.secrets["gcp_service_account"]
     else: 
