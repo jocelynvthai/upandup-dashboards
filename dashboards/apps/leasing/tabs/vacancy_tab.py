@@ -14,7 +14,6 @@ def vacancy_filters(distinct_vacancy_df, vacancy_df):
     return filtered_vacancy_df, selected_vacancy
 
 
-
 def vacancy_curve(filtered_vacancy_df):
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
@@ -91,5 +90,3 @@ def vacancy_curve(filtered_vacancy_df):
     st.subheader("Cumulative Metrics Over Vacancy")
     st.altair_chart(background + chart, use_container_width=True)
 
-    
-    

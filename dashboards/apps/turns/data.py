@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 
 
-def get_service_account_info(local=False):
+def get_service_account_info(local=True):
     if local:
         service_account_info = st.secrets["gcp_service_account"]
     else: 
@@ -17,6 +17,16 @@ def turns_data(_credentials):
     query = """
         SELECT * 
         FROM `homevest-data.dbt_prod.fct_turns`
+    """
+    data = pd.read_gbq(query, credentials=_credentials)
+    return data
+
+
+@st.cache_data
+def line_items_data(_credentials):
+    query = """
+        SELECT * 
+        FROM `homevest-data.dbt_prod.stg_bdm_turn_line_items`
     """
     data = pd.read_gbq(query, credentials=_credentials)
     return data
