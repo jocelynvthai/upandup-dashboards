@@ -3,11 +3,18 @@ import streamlit as st
 
 DELIMITER = ' -- moved out '
 NULL_VALUE = "N/A"
+  
 
 def drilldown_filters(turns_df, line_items_df):
+    params = st.query_params 
+
     distinct_turns = turns_df['address'] + DELIMITER + turns_df['move_out_date'].astype(str)
     sorted_turns = sorted(distinct_turns, key=lambda x: x.split(DELIMITER)[1], reverse=True)
-    selected_turn = st.selectbox("Select Turnover Period", sorted_turns).split(DELIMITER)
+    if params:
+        default_index = sorted_turns.index(params.get('address', [None]) + DELIMITER + params.get('move_out_date', [None]))
+    else:
+        default_index = 0
+    selected_turn = st.selectbox("Select Turnover Period", sorted_turns, index=default_index).split(DELIMITER)
 
     rental_id = turns_df[
         (turns_df['address'] == selected_turn[0]) & 
@@ -18,6 +25,7 @@ def drilldown_filters(turns_df, line_items_df):
     # filtered_turns_df will only be one row
     filtered_turns_df = turns_df[(turns_df['rental_id'] == rental_id)]
     return filtered_line_items_df, filtered_turns_df
+
 
 
 def individual_turn_summary(filtered_line_items_df, filtered_turns_df):
