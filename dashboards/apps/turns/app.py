@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 turns_df = turns_data(credentials)
 line_items_df = line_items_data(credentials)
 
