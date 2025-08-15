@@ -45,9 +45,9 @@ def economic_turn_costs(turns_df):
         'project_scoped_date', 
         'project_scope_approved_date', 
         'project_finished_qc_date',
-        # 'project_estimated_cost',
-        # 'project_ticket_approved_budgets', 
         'project_total_estimated_cost', 
+        'project_estimated_cost',
+        'project_ticket_approved_budgets', 
         'project_invoiced_cost',
         'last_invoice_date',
         'last_change_order_date', 
@@ -60,13 +60,15 @@ def economic_turn_costs(turns_df):
         'occupancy_inspection_start_date', 
         'occupancy_inspection_end_date', 
         'occupancy_inspection_estimated_cost', 
+        'occupancy_inspection_ticket_approved_budgets', 
         'occupancy_inspection_count', 
+        'occupancy_inspection_at', 
         'occupancy_inspection_status', 
         'occupancy_inspection_result', 
-        'occupancy_inspection_at', 
         'buyers_inspection_start_date', 
         'buyers_inspection_end_date', 
         'buyers_inspection_estimated_cost', 
+        'buyers_inspection_ticket_approved_budgets', 
         'total_invoiced_cost_before_move_out', 
         'total_invoiced_cost_during_vacancy', 
         'total_invoiced_cost_after_move_in'
@@ -92,7 +94,7 @@ def economic_turn_costs(turns_df):
             ),
             "Drilldown": st.column_config.LinkColumn(
                 display_text='↪',
-                pinned=True,
+                pinned=True
             )
         },
         # hide_index=True,

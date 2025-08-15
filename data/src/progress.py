@@ -37,7 +37,7 @@ def setup_selenium():
     # Added options here just following this StackOverflow post:
     # https://stackoverflow.com/questions/68289474/selenium-headless-how-to-bypass-cloudflare-detection-using-selenium
     # Comment out the below line if running locally and you need to manually click the CAPTCHA
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])

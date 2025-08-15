@@ -45,7 +45,7 @@ def competitors_filters(leasing_df):
 def metrics():
     st.subheader("Metrics")
     st.markdown('''
-        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px;">
+        <div style="background-color: #262730; padding: 10px; border-radius: 5px; color: #fff;">
         <strong>actual_vacated</strong>: when status changes from 'Notice Unrented' to 'Vacant Unrented Not Ready'<br>
         <strong>actual_available</strong>: when status changes from 'Vacant Unrented Not Ready' to 'Vacant Unrented Ready'<br>
         <strong>latest_lease_signed</strong>: day after the last pull date, if there is 1+ days since home has appeared in pull<br>
