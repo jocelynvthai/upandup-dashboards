@@ -1561,6 +1561,21 @@ snowflake = ["snowflake-connector-python (>=3.3.0) ; python_version < \"3.12\"",
 sql = ["SQLAlchemy (>=2.0.0)"]
 
 [[package]]
+name = "streamlit-vis-timeline"
+version = "0.3.0"
+description = "Streamlit component for rendering vis.js timeline"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "streamlit-vis-timeline-0.3.0.tar.gz", hash = "sha256:76d788eaf31512560e5a521944009f3bdd996eca4f2e941019f260e81be92f12"},
+    {file = "streamlit_vis_timeline-0.3.0-py3-none-any.whl", hash = "sha256:c1f1e3b2cc936e169de3cef26e95da46d2ff7e2d66e6cfb997a1942b58e28f7e"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "tenacity"
 version = "9.1.2"
 description = "Retry code until it succeeds"
@@ -1699,4 +1714,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "b6cbcaaf7f8e740537ee9a049b4b7ccd19825dc0b882b9eff79fdce219d68a19"
+content-hash = "fb7b67a79c59a4cb3679c326574dca465d122566d1726c19461cff3b9a7291bf"

@@ -1,6 +1,7 @@
 import json
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 
 def get_service_account_info(local=False):
@@ -19,6 +20,14 @@ def turns_data(_credentials):
         FROM `homevest-data.dbt_prod.fct_turns`
     """
     data = pd.read_gbq(query, credentials=_credentials)
+    data['project_total_estimated_cost'] = data.apply(
+        lambda row: (
+            np.nan_to_num(row['project_estimated_cost']) + 
+            np.nan_to_num(row['occupancy_inspection_estimated_cost']) + 
+            (np.nan_to_num(row['project_ticket_approved_budgets']) if row['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.' else 0)
+        ),
+        axis=1
+    )
     return data
 
 

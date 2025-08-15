@@ -1,5 +1,7 @@
 import streamlit as st
 
+from tabs.utils import TEAL
+
 def economic_turn_costs_filters(turns_df):
     col_address, col_fund, col_types = st.columns(3)
 
@@ -45,7 +47,7 @@ def economic_turn_costs(turns_df):
         'project_finished_qc_date',
         # 'project_estimated_cost',
         # 'project_ticket_approved_budgets', 
-        'project_budget', 
+        'project_total_estimated_cost', 
         'project_invoiced_cost',
         'last_invoice_date',
         'last_change_order_date', 
@@ -95,6 +97,8 @@ def economic_turn_costs(turns_df):
         },
         # hide_index=True,
     )
+
+
 
 
 

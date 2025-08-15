@@ -1,9 +1,12 @@
 import pandas as pd
 import streamlit as st
+from streamlit_timeline import st_timeline
+
+from tabs.utils import TEAL
+
 
 DELIMITER = ' -- moved out '
 NULL_VALUE = "N/A"
-LIMESTONE_FUND = 'Homevest Real Estate Partners IV - Limestone, L.P.'
 
 
 def drilldown_filters(turns_df, line_items_df):
@@ -15,130 +18,76 @@ def drilldown_filters(turns_df, line_items_df):
     else:
         default_index = 0
 
-    with st.container():
-        turn_dropdown = st.selectbox("Select a Rental", sorted_turns, width=600, index=default_index)
-        selected_value = turn_dropdown.split(DELIMITER)
-        rental_id = turns_df[
-            (turns_df['address'] == selected_value[0]) & 
-            (turns_df['move_out_date'].astype(str) == selected_value[1])
-        ]['rental_id'].values[0]
-        filtered_line_items_df = line_items_df[(line_items_df['rental_id'] == rental_id)]
+    selected_turn, selected_turn_metrics = st.columns([3, 1])
+    with selected_turn: 
+        selected_turn = st.selectbox("Select a Turn", sorted_turns, index=default_index).split(DELIMITER)
+        
+    rental_id = turns_df[(turns_df['address'] == selected_turn[0]) & (turns_df['move_out_date'].astype(str) == selected_turn[1])]['rental_id'].values[0]
+    filtered_line_items_df = line_items_df[(line_items_df['rental_id'] == rental_id)]
+    selected_turn_arr = turns_df[(turns_df['rental_id'] == rental_id)].iloc[0]
 
-        # note that filtered_turns_df will only ever be one row
-        filtered_turns_df = turns_df[(turns_df['rental_id'] == rental_id)]
-        selected_turn = filtered_turns_df.iloc[0]
-        st.markdown(f'**Project Type(s)**: {selected_turn["project_types"]}')
-        return filtered_line_items_df, selected_turn
-
-
-def cost_container(
-    total_estimated_cost,
-    total_invoiced_cost,
-    project_estimated_cost,
-    oi_estimated_cost,
-    ticket_approved_budgets,
-    fund,
-    project_types
-):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Total Budget", f"${total_estimated_cost:,.2f}")
-    with col2:
-        st.metric("Billed Cost", f"${total_invoiced_cost:,.2f}")
-    with st.container(width=600):
-        st.markdown("##### Budget Breakdown")
-        budget_data = pd.DataFrame({ "Source": ["Main Project(s)"], "Budgeted Amount": [project_estimated_cost] })
-        if "_oi" in project_types.lower():
-            budget_data = pd.concat([
-                budget_data,
-                pd.DataFrame([["Occupancy Inspection", oi_estimated_cost]], columns=budget_data.columns)
-            ])
-        if ticket_approved_budgets > 0 and fund != LIMESTONE_FUND:
-            budget_data = pd.concat([
-                budget_data,
-                pd.DataFrame([["Approved Latchel Tickets", ticket_approved_budgets]], columns=budget_data.columns)
-            ])
-        st.dataframe(budget_data, hide_index=True, column_config={
-            "Budgeted Amount": st.column_config.NumberColumn(format="accounting")
-        })
+    with selected_turn_metrics:
+        st.markdown(
+            f"""
+            <div style='text-align: right; padding: 10px'>
+                <h6>Project Type(s)</h6>
+                <h6 style='color: {TEAL};'>{selected_turn_arr["project_types"].replace('_', ' ').title()}</h6>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    return filtered_line_items_df, selected_turn_arr
 
 
-def timeline_container(selected_turn):
-    st.markdown("##### Timeline")
-    col3, col4, col5, col6 = st.columns(4)
-    with col3:
-        st.metric("Move-Out Date", f"{selected_turn['move_out_date']:%m/%d/%y}")
-    with col4:
-        col4_title = "Scoped Date"
-        project_scoped_date = selected_turn['project_scoped_date']
-        if not pd.isnull(project_scoped_date):
-            st.metric(col4_title, f"{project_scoped_date:%m/%d/%y}")
+
+def individual_turn_budget_breakdown(filtered_line_items_df, selected_turn_arr):
+    st.subheader("Budget Breakdown")
+
+    project_total_estimated_cost = selected_turn_arr['project_total_estimated_cost'] if not pd.isnull(selected_turn_arr['project_total_estimated_cost']) else 0
+    project_estimated_cost = selected_turn_arr['project_estimated_cost'] if not pd.isnull(selected_turn_arr['project_estimated_cost']) else 0
+    occupancy_inspection_estimated_cost = selected_turn_arr['occupancy_inspection_estimated_cost'] if not pd.isnull(selected_turn_arr['occupancy_inspection_estimated_cost']) else 0
+    ticket_approved_budgets = selected_turn_arr['project_ticket_approved_budgets'] if not pd.isnull(selected_turn_arr['project_ticket_approved_budgets']) else 0
+
+    # Metrics
+    with st.container(horizontal=True, width=300):
+        st.metric("Total Budget", f"${project_total_estimated_cost:,.2f}")
+        st.metric("Invoiced Cost", f"${filtered_line_items_df['amount'].sum():,.2f}")
+
+    # Budget Breakdown
+    budget_data = pd.DataFrame({ "Source": ["Main Project(s)"], "Budgeted Amount": [project_estimated_cost] })
+    if "_oi" in selected_turn_arr['project_types'].lower():
+        budget_data = pd.concat([budget_data, pd.DataFrame([["Occupancy Inspection", occupancy_inspection_estimated_cost]], columns=budget_data.columns)])
+    if (selected_turn_arr['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.'):
+        budget_data = pd.concat([budget_data, pd.DataFrame([["Approved Latchel Tickets", ticket_approved_budgets]], columns=budget_data.columns)])
+    with st.container(horizontal=True, width=600):
+        st.dataframe(budget_data, hide_index=True, column_config={"Budgeted Amount": st.column_config.NumberColumn(format="accounting")})
+
+
+
+def individual_turn_timeline(selected_turn_arr):
+    st.subheader("Timeline")
+
+    nat_dates = []  # NaT dates
+    items = [] # display only non-NaT dates
+    date_fields = [
+        ("Move-Out Date", 'move_out_date'),
+        ("Scoped Date", 'project_scoped_date'),
+        ("Scope Approved Date", 'project_scope_approved_date'),
+        ("Finished QC Date", 'project_finished_qc_date'),
+        ("Tour Ready Date", 'tour_ready_date'),
+        ("Rent Ready Date", 'rent_ready_date'),
+        ("Next Occupancy Date", 'next_occupancy_date'),
+    ]
+    for idx, (content, field) in enumerate(date_fields, start=1):
+        date_value = selected_turn_arr[field]
+        if pd.isna(date_value):
+            nat_dates.append(content)
         else:
-            st.metric(col4_title, NULL_VALUE)
-    with col5:
-        col5_title = "Scope Approved Date"
-        project_scope_approved_date = selected_turn['project_scope_approved_date']
-        if not pd.isnull(project_scoped_date):
-            st.metric(col5_title, f"{project_scope_approved_date:%m/%d/%y}")
-        else:
-            st.metric(col5_title, NULL_VALUE)
+            items.append({"id": idx, "content": content, "start": f"{date_value:%m/%d/%y}"})
 
-    col7, col8, col9 = st.columns(spec=3, width=1090)
-    with col6:
-        col6_title = "Finished QC Date"
-        project_finished_qc_date = selected_turn['project_finished_qc_date']
-        if not pd.isnull(project_finished_qc_date):
-            st.metric(col6_title, f"{project_finished_qc_date:%m/%d/%y}")
-        else:
-            st.metric(col6_title, NULL_VALUE)
-    with col7:
-        col7_title = "Tour Ready Date"
-        tour_ready_date = selected_turn['tour_ready_date']
-        if not pd.isnull(tour_ready_date):
-            st.metric(col7_title, f"{tour_ready_date:%m/%d/%y}")
-        else:
-            st.metric(col7_title, NULL_VALUE)
-    with col8:
-        col8_title = "Rent Ready Date"
-        rent_ready_date = selected_turn['rent_ready_date']
-        if not pd.isnull(rent_ready_date):
-            st.metric(col8_title, f"{rent_ready_date:%m/%d/%y}")
-        else:
-            st.metric(col8_title, NULL_VALUE)
-    with col9:
-        col9_title = "Move-In Date"
-        move_in_date = selected_turn['next_occupancy_date']
-        if not pd.isnull(move_in_date):
-            st.metric(col9_title, f"{move_in_date:%m/%d/%y}")
-        else:
-            st.metric(col9_title, NULL_VALUE)
-
-
-def individual_turn_summary(filtered_line_items_df, selected_turn):
-    # Extract & format some values from the selected turn
-    fund = selected_turn['fund']
-    project_types = selected_turn['project_types']
-    project_estimated_cost = selected_turn['project_estimated_cost'] if not pd.isnull(selected_turn['project_estimated_cost']) else 0
-    oi_estimated_cost = selected_turn['occupancy_inspection_estimated_cost'] if not pd.isnull(selected_turn['occupancy_inspection_estimated_cost']) else 0
-    ticket_approved_budgets = selected_turn['project_ticket_approved_budgets'] if not pd.isnull(selected_turn['project_ticket_approved_budgets']) else 0
-    total_estimated_cost = project_estimated_cost + oi_estimated_cost
-    if fund != LIMESTONE_FUND:
-        total_estimated_cost += ticket_approved_budgets
-    total_invoiced_cost = filtered_line_items_df['amount'].sum()
-
-    with st.container(horizontal=True):
-        with st.container(border=True, width=600):
-            cost_container(
-                total_estimated_cost,
-                total_invoiced_cost,
-                project_estimated_cost,
-                oi_estimated_cost,
-                ticket_approved_budgets,
-                fund,
-                project_types
-            )
-        with st.container(border=True):
-            timeline_container(selected_turn)
+    st_timeline(items, groups=[], options={}, height="300px")
+    if nat_dates:
+        st.markdown(f"**Unconfirmed:** {', '.join(nat_dates)}")
 
 
 def individual_turn_drilldown(filtered_line_items_df):
