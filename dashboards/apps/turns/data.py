@@ -27,8 +27,8 @@ def turns_data(_credentials):
             np.nan_to_num(row['buyers_inspection_estimated_cost']) + 
             (np.nan_to_num(row['project_ticket_approved_budgets']) +
              np.nan_to_num(row['occupancy_inspection_ticket_approved_budgets']) +
-             np.nan_to_num(row['buyers_inspection_ticket_approved_budgets'])) 
-            if row['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.' else 0
+             np.nan_to_num(row['buyers_inspection_ticket_approved_budgets']) 
+            if row['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.' else 0)
         ),
         axis=1
     )

@@ -24,7 +24,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 turns_df = turns_data(credentials)
 construction_scopes_df = construction_scopes_data(credentials)
 tickets_df = tickets_data(credentials)
