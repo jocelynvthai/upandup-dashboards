@@ -17,9 +17,13 @@ def summary_filters(rental_applications_df):
         return date_range[0], date_range[1]
 
 
-def summary_metrics(rental_applications_df, start_date, end_date):
+def summary_metrics(rental_applications_df, start_date, end_date, raw_inquiries_df):
     st.subheader("Summary Metrics")
 
+    num_inquiries = raw_inquiries_df[
+        (raw_inquiries_df['date'] >= pd.to_datetime(start_date).tz_localize('UTC')) & 
+        (raw_inquiries_df['date'] <= pd.to_datetime(end_date).tz_localize('UTC'))
+    ]['rental_site_listing_id'].count()
     num_apps = len(rental_applications_df[
         (rental_applications_df['created_at'] >= pd.to_datetime(start_date).tz_localize('UTC')) & 
         (rental_applications_df['created_at'] <= pd.to_datetime(end_date).tz_localize('UTC'))
@@ -39,7 +43,9 @@ def summary_metrics(rental_applications_df, start_date, end_date):
         (rental_applications_df['completed_at'] <= pd.to_datetime(end_date).tz_localize('UTC'))
     ])
 
-    num_apps_col, num_approved_col, num_cancelled_col, num_completed_col = st.columns(4)
+    num_inquiries_col, num_apps_col, num_approved_col, num_cancelled_col, num_completed_col = st.columns(5)
+    with num_inquiries_col:
+        st.metric("&#35; Inquiries", num_inquiries)
     with num_apps_col:
         st.metric("&#35; Apps", num_apps)
     with num_approved_col:
@@ -101,7 +107,7 @@ def summary_metrics(rental_applications_df, start_date, end_date):
                                     <td style="color: {status_color};">{row["status"]}</td>
                                 </tr>''')
     # Convert the rows to a complete HTML table
-    html_table = f'''<table class="dataframe">
+    html_table = f'''<table class="dataframe" style="width: 100%;">
                         <thead>
                             <tr>
                                 <th>Cancelation Reason</th>

@@ -11,6 +11,7 @@ def get_service_account_info(local=False):
             service_account_info = json.load(f)
     return service_account_info
 
+
 @st.cache_data
 def leasing_scraper_data(_credentials):
     query = """
@@ -19,11 +20,34 @@ def leasing_scraper_data(_credentials):
     """
     return pd.read_gbq(query, credentials=_credentials)
 
+
 @st.cache_data
 def rental_applications_data(_credentials):
     query = """
         SELECT * 
         FROM `homevest-data.dbt_prod.fct_rental_applications`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def raw_inquiries_data(_credentials):
+    query = """
+        WITH listed_dates AS (
+            SELECT
+                mls_listing_id,
+                date_synced AS date
+            FROM `homevest-data.snapshots.internally_listed_mls_listings`
+        )
+        SELECT
+            ld.date,
+            ld.mls_listing_id,
+            rsi.rental_site_listing_id
+        FROM listed_dates AS ld
+        LEFT JOIN `homevest-data.dbt_jocelynvthai.fct_rental_site_inquiries` AS rsi
+            ON ld.mls_listing_id = rsi.mls_listing_id
+            AND ld.date = DATE(rsi.inquiry_created_at)
+
     """
     return pd.read_gbq(query, credentials=_credentials)
 

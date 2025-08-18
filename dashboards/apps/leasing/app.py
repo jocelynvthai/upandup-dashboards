@@ -1,7 +1,7 @@
 import streamlit as st
 from google.oauth2 import service_account
 
-from data import get_service_account_info, leasing_scraper_data, rental_applications_data, leasing_funnel_data, inquiries_data, tours_data, vacancy_data, distinct_vacancy_data
+from data import get_service_account_info, leasing_scraper_data, rental_applications_data, raw_inquiries_data, leasing_funnel_data, inquiries_data, tours_data, vacancy_data, distinct_vacancy_data
 from tabs.utils import filters
 from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, rent_changes, turn_times
 from tabs.summary_tab import summary_filters, summary_metrics
@@ -20,9 +20,10 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
+raw_inquiries_df = raw_inquiries_data(credentials)
 leasing_funnel_df = leasing_funnel_data(credentials)
 inquiries_df = inquiries_data(credentials)
 tours_df = tours_data(credentials)
@@ -41,7 +42,7 @@ with competitors_tab:
     turn_times(leasing_period_df, color_scale)
 with summary_tab:
     summary_start_date, summary_end_date = summary_filters(rental_applications_df)
-    summary_metrics(rental_applications_df, summary_start_date, summary_end_date)
+    summary_metrics(rental_applications_df, summary_start_date, summary_end_date, raw_inquiries_df)
 with leasing_funnel_tab:
     filtered_leasing_funnel_df, filtered_selected_time_granularity = filters(leasing_funnel_df, 'leasing_funnel')
     grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
