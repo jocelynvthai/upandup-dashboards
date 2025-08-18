@@ -11,6 +11,8 @@ TEAL = "#15b8a6"
 LIGHT_PURPLE = "#d1c4e9" 
 PURPLE = "#9575cd" 
 DARK_PURPLE = "#512da8" 
+LIGHT_RED = "#ffcdd2"
+RED = "#f44336"
 #5cc9b8 - A medium-light teal (good balance)
 #7dd3c0 - Lighter teal
 #a3e0d1 - Very light teal

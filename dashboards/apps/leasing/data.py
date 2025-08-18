@@ -19,6 +19,14 @@ def leasing_scraper_data(_credentials):
     """
     return pd.read_gbq(query, credentials=_credentials)
 
+@st.cache_data
+def rental_applications_data(_credentials):
+    query = """
+        SELECT * 
+        FROM `homevest-data.dbt_prod.fct_rental_applications`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
 
 @st.cache_data
 def leasing_funnel_data(_credentials):
