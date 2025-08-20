@@ -16,7 +16,7 @@ def get_service_account_info(local=False):
 def leasing_scraper_data(_credentials):
     query = """
         SELECT *
-        FROM `homevest-data.dbt_jocelynvthai_tin.leasing_scraper_data`
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
     """
     return pd.read_gbq(query, credentials=_credentials)
 
