@@ -2,7 +2,7 @@ import altair as alt
 import streamlit as st
 from datetime import datetime, timedelta
 import pandas as pd
-
+import numpy as np
 
 LIGHT_GRAY = "#d3d3d3"
 GRAY = "#808080" 
@@ -40,7 +40,7 @@ def filters(df, tab_name):
         available_granularities = filtered_df['time_granularity'].unique()
         selected_time_granularity = st.selectbox("Select a time granularity",
                                       options=[g for g in ['day', 'week', 'month', 'quarter', 'year'] if g in available_granularities], 
-                                      index=1 if 'week' in available_granularities else 0, 
+                                      index=int(np.where(available_granularities == "week")[0][0]) if 'week' in available_granularities else 0,  
                                       key=f'{tab_name}_time_granularity')
         filtered_df = filtered_df[filtered_df['time_granularity'] == selected_time_granularity]
 
