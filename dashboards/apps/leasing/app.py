@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
 raw_inquiries_df = raw_inquiries_data(credentials)
@@ -38,7 +38,7 @@ with competitors_tab:
     leasing_period_df, start_date, end_date, color_scale = competitors_filters(leasing_df)
     metrics()
     clearance_rates(leasing_period_df, start_date, end_date)
-    rent_changes(leasing_period_df, color_scale)
+    rent_changes(leasing_period_df, start_date, end_date, color_scale)
     turn_times(leasing_period_df, color_scale)
 with summary_tab:
     summary_start_date, summary_end_date = summary_filters(rental_applications_df)

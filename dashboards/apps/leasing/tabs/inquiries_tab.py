@@ -90,7 +90,7 @@ def num_inquiries(grouped_inquiries_df, selected_time_granularity):
         x=alt.X('yearmonthdate(date):O', title='Date', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
         xOffset=alt.X('source:N', sort=['Zillow', 'Rently', 'Overall']),
         y=alt.Y('inquires_per_home:Q', title='Inquiries per Home'),
-        color=alt.Color('source:N', title='source', scale=alt.Scale(
+        color=alt.Color('source:N', title='Source', scale=alt.Scale(
             domain=['Zillow', 'Rently', 'Overall'],
             range=[TEAL, PURPLE, GRAY]
         )),

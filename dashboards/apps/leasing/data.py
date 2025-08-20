@@ -16,7 +16,7 @@ def get_service_account_info(local=False):
 def leasing_scraper_data(_credentials):
     query = """
         SELECT *
-        FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
+        FROM `homevest-data.dbt_jocelynvthai_tin.leasing_scraper_data`
     """
     return pd.read_gbq(query, credentials=_credentials)
 
@@ -44,7 +44,7 @@ def raw_inquiries_data(_credentials):
             ld.mls_listing_id,
             rsi.rental_site_listing_id
         FROM listed_dates AS ld
-        LEFT JOIN `homevest-data.dbt_jocelynvthai.fct_rental_site_inquiries` AS rsi
+        LEFT JOIN `homevest-data.dbt_prod.fct_rental_site_inquiries` AS rsi
             ON ld.mls_listing_id = rsi.mls_listing_id
             AND ld.date = DATE(rsi.inquiry_created_at)
 

@@ -45,7 +45,7 @@ def competitors_filters(leasing_df):
 def metrics():
     st.subheader("Metrics")
     st.markdown('''
-        <div style="background-color: #262730; padding: 10px; border-radius: 5px; color: #fff;">
+        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px;">
         <strong>actual_vacated</strong>: when status changes from 'Notice Unrented' to 'Vacant Unrented Not Ready'<br>
         <strong>actual_available</strong>: when status changes from 'Vacant Unrented Not Ready' to 'Vacant Unrented Ready'<br>
         <strong>latest_lease_signed</strong>: day after the last pull date, if there is 1+ days since home has appeared in pull<br>
@@ -62,24 +62,38 @@ def clearance_rates(filtered_leasing_period_df, start_date, end_date):
     prelease_df = filtered_leasing_period_df[filtered_leasing_period_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
     rent_ready_df = filtered_leasing_period_df[filtered_leasing_period_df['last_status'].isin(['Vacant Unrented Ready'])]
 
-    clearance_rates = [
-        len(prelease_df[(prelease_df['last_lease_signed']>=start_date) & (prelease_df['last_lease_signed']<=end_date)])*100 / len(prelease_df), 
-        len(rent_ready_df[(rent_ready_df['last_lease_signed']>=start_date) & (rent_ready_df['last_lease_signed']<=end_date)])*100 / len(rent_ready_df)
-    ]
+    if len(prelease_df) > 0:
+        prelease_clearance_rate = len(prelease_df[(prelease_df['last_lease_signed'] >= start_date) & (prelease_df['last_lease_signed'] <= end_date)]) * 100 / len(prelease_df)
+    else:
+        prelease_clearance_rate = 0
+    if len(rent_ready_df) > 0:
+        rent_ready_clearance_rate = len(rent_ready_df[(rent_ready_df['last_lease_signed'] >= start_date) & (rent_ready_df['last_lease_signed'] <= end_date)]) * 100 / len(rent_ready_df)
+    else:
+        rent_ready_clearance_rate = 0
+
     col_prelease_clearance_rate, col_rent_ready_clearance_rate = st.columns(2)
     with col_prelease_clearance_rate:
-        st.metric("Pre-lease Clearance Rate", f"{clearance_rates[0]:.2f}%", help="% of pre-lease homes (Notice Unrented, Vacant Unrented Not Ready) rented in period range")
+        st.metric("Pre-lease Clearance Rate", f"{prelease_clearance_rate:.2f}%", help="% of pre-lease homes (Notice Unrented, Vacant Unrented Not Ready) rented in period range")
     with col_rent_ready_clearance_rate:
-        st.metric("Rent Ready Clearance Rate", f"{clearance_rates[1]:.2f}%", help="% of pre-lease homes (Vacant Unrented Ready) rented in period range")
+        st.metric("Rent Ready Clearance Rate", f"{rent_ready_clearance_rate:.2f}%", help="% of rent ready homes (Vacant Unrented Ready) rented in period range")
 
 
-def rent_changes(filtered_leasing_period_df, color_scale):
+
+def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
     st.subheader("Leased Homes Stats")
-    homes_rented_df = filtered_leasing_period_df[filtered_leasing_period_df['last_lease_signed'].notna()]
+
+    homes_rented_df = filtered_leasing_period_df[(filtered_leasing_period_df['last_lease_signed'] >= start_date) & (filtered_leasing_period_df['last_lease_signed'] <= end_date)]
+    homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
+    selected_lease_type = st.selectbox("Select a lease type", options=['All', 'Pre-lease', 'Rent Ready'], key='rent_changes_lease_type')
+    if selected_lease_type == 'All':
+        homes_rented_type_df = homes_rented_df
+    elif selected_lease_type == 'Pre-lease':
+        homes_rented_type_df = homes_rented_df[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
+    elif selected_lease_type == 'Rent Ready':
+        homes_rented_type_df = homes_rented_df[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])]
 
     # Rent Change Chart
-    homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
-    rent_change_chart = alt.Chart(homes_rented_df).mark_point().encode(
+    rent_change_chart = alt.Chart(homes_rented_type_df).mark_point().encode(
         x=alt.X('rent_change:Q', title='Rent Δ ($)'),
         y=alt.Y('market_name:N', title=None),
         color=alt.Color('market_name:N', scale=color_scale, title='Market'),
@@ -101,7 +115,7 @@ def rent_changes(filtered_leasing_period_df, color_scale):
     st.altair_chart((rent_change_chart + zero_line), use_container_width=True)
 
     # Days on Market Chart
-    dom_chart = alt.Chart(homes_rented_df).mark_point().encode(
+    dom_chart = alt.Chart(homes_rented_type_df).mark_point().encode(
         x=alt.X('home_rented_days_on_market:Q', title='# Days'),
         y=alt.Y('market_name:N', title=None),
         color=alt.Color('market_name:N', scale=color_scale, title='Market', legend=None),
@@ -119,22 +133,44 @@ def rent_changes(filtered_leasing_period_df, color_scale):
     # Leased Homes Summary Statistics
     st.markdown("<h6><b>Leased Homes Summary Statistics</b></h6>", unsafe_allow_html=True)
     stats_df = homes_rented_df.groupby('market_name').agg({
+        'last_status': [
+            ('num_homes_leased', 'count'),
+            ('num_homes_leased_prelease', lambda x: x.isin(['Notice Unrented', 'Vacant Unrented Not Ready']).sum()),
+            ('num_homes_leased_rent_ready', lambda x: x.isin(['Vacant Unrented Ready']).sum())
+        ],
         'rent_change': [
-            ('Count', 'count'),
-            ('Average', 'mean'),
-            ('Median', 'median')
+            ('average_rent_change', 'mean'),
+            ('average_rent_change_prelease', lambda x: x[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])].mean()), 
+            ('average_rent_change_rent_ready', lambda x: x[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])].mean()), 
+            ('median_rent_change', 'median'),
+            ('median_rent_change_prelease', lambda x: x[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])].median()), 
+            ('median_rent_change_rent_ready', lambda x: x[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])].median())
         ],
         'home_rented_days_on_market': [
-            ('Average', 'mean'),
-            ('Median', 'median')
-        ]
+            ('average_days_on_market', 'mean'),
+            ('average_days_on_market_prelease', lambda x: x[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])].mean()), 
+            ('average_days_on_market_rent_ready', lambda x: x[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])].mean()), 
+            ('median_days_on_market', 'median'), 
+            ('median_days_on_market_prelease', lambda x: x[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])].median()), 
+            ('median_days_on_market_rent_ready', lambda x: x[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])].median())
+        ],
     }).round(2)
     stats_df.columns = pd.MultiIndex.from_tuples([
-        ('', '# Homes Leased'),
-        ('Rent Δ ($)', 'Average'),
-        ('Rent Δ ($)', 'Median'),
-        ('Days on Market', 'Average'),
-        ('Days on Market', 'Median')
+        ('# Homes Leased', ''),
+        ('# Homes Leased', 'Pre-lease'),
+        ('# Homes Leased', 'Rent Ready'),
+        ('Average Rent Δ ($)', ''),
+        ('Average Rent Δ ($)', 'Pre-lease'),
+        ('Average Rent Δ ($)', 'Rent Ready'),
+        ('Median Rent Δ ($)', ''),
+        ('Median Rent Δ ($)', 'Pre-lease'),
+        ('Median Rent Δ ($)', 'Rent Ready'),
+        ('Average Days on Market', ''),
+        ('Average Days on Market', 'Pre-lease'),
+        ('Average Days on Market', 'Rent Ready'), 
+        ('Median Days on Market', ''), 
+        ('Median Days on Market', 'Pre-lease'),
+        ('Median Days on Market', 'Rent Ready')
     ])
     st.dataframe(stats_df, use_container_width=True)
 
@@ -164,7 +200,7 @@ def turn_times(filtered_leasing_period_df, color_scale):
         **{
             '# Homes Turned': ('actual_turn_time', 'count'),
             'Average Turn Time (days)': ('actual_turn_time', 'mean'),
-            'Median Turn Time (days)': ('actual_turn_time', 'median')
+            'Median Turn Time (days)': ('actual_turn_time', 'median'), 
         }
     ).round(2)
     st.dataframe(stats_df, use_container_width=True)

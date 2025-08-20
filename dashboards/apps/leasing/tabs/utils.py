@@ -40,7 +40,7 @@ def filters(df, tab_name):
         available_granularities = filtered_df['time_granularity'].unique()
         selected_time_granularity = st.selectbox("Select a time granularity",
                                       options=[g for g in ['day', 'week', 'month', 'quarter', 'year'] if g in available_granularities], 
-                                      index=0, 
+                                      index=1 if 'week' in available_granularities else 0, 
                                       key=f'{tab_name}_time_granularity')
         filtered_df = filtered_df[filtered_df['time_granularity'] == selected_time_granularity]
 
@@ -80,8 +80,8 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     stage_config = funnel_stages[selected_stage]
     
     # First bar chart
-    first_bars = alt.Chart(grouped_df).mark_bar().encode(
-        x=alt.X('date:T', title='Date'),
+    first_bars = alt.Chart(grouped_df).mark_bar(size=25).encode(
+        x=alt.X('date:T', title='Date', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
         y=alt.Y(f"{stage_config['first_metric']}:Q", 
                 title='Count',
                 axis=alt.Axis(titleColor=GRAY)),
@@ -98,8 +98,8 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     )
 
     # Second bar chart
-    second_bars = alt.Chart(grouped_df).mark_bar().encode(
-        x=alt.X('date:T'),
+    second_bars = alt.Chart(grouped_df).mark_bar(size=25).encode(
+        x=alt.X('date:T', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
         y=alt.Y(f"{stage_config['second_metric']}:Q"),
         color=alt.value(TEAL),
         tooltip=[
@@ -120,7 +120,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
         dy=-5
     ).encode(
         x=alt.X('date:T'),
-        y=alt.Y(f"{stage_config['first_metric']}:Q"),
+        y=alt.Y(f"{stage_config['second_metric']}:Q"),  # Change this line
         text=alt.Text(f"{stage_config['percentage']}:Q", format='.0%'),
         opacity=alt.condition(
             f'isValid(datum.{stage_config["percentage"]})',
@@ -183,7 +183,8 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
 
     # Layer and plot the charts
     bars_layer = alt.layer(first_bars, second_bars, text).properties(
-        width=1000 
+        width=1000,
+        height=400  # Adjust the height as needed
     )
     main_chart = alt.layer(bars_layer, line).resolve_scale(y='independent')
     
