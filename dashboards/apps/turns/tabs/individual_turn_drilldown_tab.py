@@ -32,7 +32,7 @@ def drilldown_filters(turns_df, construction_scopes_df, line_items_df):
             f"""
             <div style='text-align: right; padding: 10px'>
                 <h6>Project Type(s)</h6>
-                <h6 style='color: {'mediumSlateBlue'};'>{selected_turn_arr["project_types"].replace('_', ' ').title()}</h6>
+                <h6 style='color: {TEAL};'>{selected_turn_arr["project_types"].replace('_', ' ').title()}</h6>
             </div>
             """,
             unsafe_allow_html=True
@@ -71,8 +71,8 @@ def individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_sc
     # Overall Budget
     project_total_estimated_cost = selected_turn_arr['project_total_estimated_cost'] if not pd.isnull(selected_turn_arr['project_total_estimated_cost']) else 0
     with st.container():
-        st.markdown(f"<h5>Total Budget: <span style='color: mediumSlateBlue;'>${project_total_estimated_cost:,.2f}</span></h5>", unsafe_allow_html=True)
-        st.markdown(f"<h5>Invoiced Cost: <span style='color: mediumSlateBlue;'>${filtered_line_items_df['amount'].sum():,.2f}</span></h5>", unsafe_allow_html=True)
+        st.markdown(f"<h5>Total Budget: <span style='color: {TEAL};'>${project_total_estimated_cost:,.2f}</span></h5>", unsafe_allow_html=True)
+        st.markdown(f"<h5>Invoiced Cost: <span style='color: {TEAL};'>${filtered_line_items_df['amount'].sum():,.2f}</span></h5>", unsafe_allow_html=True)
 
     # Budget Breakdown
     # project_estimated_cost = selected_turn_arr['project_estimated_cost'] if not pd.isnull(selected_turn_arr['project_estimated_cost']) else 0
