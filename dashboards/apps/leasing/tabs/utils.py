@@ -134,6 +134,7 @@ def create_funnel_chart(grouped_df, funnel_stages, chart_type="application"):
     time_title = 'Average Time Spent (Hours)' if 'avg_hours' in stage_config else 'Average Time Spent (Days)'
     
     line = alt.Chart(grouped_df).mark_line(
+        point=alt.OverlayMarkDef(color=PURPLE),  # Set point color to purple
         color=PURPLE,
         strokeWidth=2
     ).encode(

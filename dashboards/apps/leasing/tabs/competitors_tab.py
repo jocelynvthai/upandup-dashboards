@@ -3,6 +3,8 @@ import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
 
+from tabs.utils import TEAL
+
 
 def competitors_filters(leasing_df):
     col_date_range, col_market, col_competitor = st.columns(3)
@@ -27,7 +29,7 @@ def competitors_filters(leasing_df):
         color_scale = alt.Scale(scheme='tealblues')  
         if selected_market != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['market_name'] == selected_market]
-            color_scale = alt.Scale(range=['#15b8a6']) 
+            color_scale = alt.Scale(range=[TEAL]) 
     
     with col_competitor:
         selected_competitor = st.selectbox("Select a competitor", 
@@ -131,7 +133,7 @@ def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
     st.altair_chart(dom_chart + zero_line, use_container_width=True)
 
     # Leased Homes Summary Statistics
-    st.markdown("<h6><b>Leased Homes Summary Statistics</b></h6>", unsafe_allow_html=True)
+    st.markdown("<h6><b>Summary Statistics</b></h6>", unsafe_allow_html=True)
     stats_df = homes_rented_df.groupby('market_name').agg({
         'last_status': [
             ('num_homes_leased', 'count'),
@@ -179,23 +181,19 @@ def turn_times(filtered_leasing_period_df, color_scale):
     st.subheader("Turn Times")
     turn_times_df = filtered_leasing_period_df[filtered_leasing_period_df['actual_turn_time'].notna()]
 
-    # Chart
-    turn_times_chart = alt.Chart(turn_times_df).mark_point().encode(
-        x=alt.X('actual_turn_time:Q', title='Turn Time (days)', axis=alt.Axis(format='d')),
-        y=alt.Y('market_name:N', title=None),
-        color=alt.Color('market_name:N', scale=color_scale, title='Market'),
+    # Histogram
+    turn_times_histogram = alt.Chart(turn_times_df).mark_bar(color=TEAL).encode(
+        x=alt.X('actual_turn_time:Q', bin=alt.Bin(maxbins=30), title='Turn Time (days)', axis=alt.Axis(format='d')),
+        y=alt.Y('count()', title='# Homes'),
         tooltip=[
-            alt.Tooltip('address', title='Address'),
-            alt.Tooltip('market_name', title='Market'),
-            alt.Tooltip('actual_vacated', title='Vacated On'),
-            alt.Tooltip('actual_available', title='Available On'),
-            alt.Tooltip('actual_turn_time', title='Turn Time (days)')
+            alt.Tooltip('count()', title='# Homes'),
+            alt.Tooltip('actual_turn_time:Q', title='Turn Time (days)')
         ]
     )
-    st.altair_chart(turn_times_chart,  use_container_width=True)
+    st.altair_chart(turn_times_histogram, use_container_width=True)
 
     # Summary Statistics
-    st.markdown("<h6><b>Turn Times Summary Statistics</b></h6>", unsafe_allow_html=True)
+    st.markdown("<h6><b>Summary Statistics</b></h6>", unsafe_allow_html=True)
     stats_df = turn_times_df.groupby('market_name').agg(
         **{
             '# Homes Turned': ('actual_turn_time', 'count'),

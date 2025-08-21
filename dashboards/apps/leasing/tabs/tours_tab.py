@@ -68,26 +68,30 @@ def num_tours_by_source(grouped_tours_df):
         var_name='tour_type', 
         value_name='count'
     )
-    
-    # Prepare data for line chart (avg tours per home)
+    chart_data['tour_type_display'] = chart_data['tour_type'].map({
+        'num_tours_safe_mode': 'Safe Mode',
+        'num_tours_doorman': 'Doorman'
+    })
     line_data = grouped_tours_df.reset_index()[['date', 'avg_num_tours_per_home']]
-    
-    # Create stacked bar chart
     bars = alt.Chart(chart_data).mark_bar().encode(
         x=alt.X('yearmonthdate(date):O', title='Tour Creation Date', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
         y=alt.Y('count:Q', title='Number of Tours'),
         color=alt.Color(
-            'tour_type:N',
+            'tour_type_display:N',
             title='Tour Type',
             scale=alt.Scale(
-                domain=['num_tours_safe_mode', 'num_tours_doorman'],
+                domain=['Safe Mode', 'Doorman'],
                 range=[TEAL, PURPLE]
             ),
             legend=alt.Legend(
-                labelExpr="datum.value == 'num_tours_safe_mode' ? 'Safe Mode' : 'Doorman'"
+                labelExpr="datum.value" 
             )
         ),
-        tooltip=['date:T', 'tour_type:N', 'count:Q']
+        tooltip=[
+            'date:T', 
+            alt.Tooltip('tour_type_display:N', title='Tour Type'),
+            alt.Tooltip('count:Q', title='# Tours')
+        ]
     )
     
     # Create line chart for avg tours per home
@@ -98,7 +102,7 @@ def num_tours_by_source(grouped_tours_df):
     ).encode(
         x=alt.X('yearmonthdate(date):O'),
         y=alt.Y('avg_num_tours_per_home:Q', title='Avg # Tours per Home'),
-        tooltip=['date:T', alt.Tooltip('avg_num_tours_per_home:Q', format='.2f')]
+        tooltip=['date:T', alt.Tooltip('avg_num_tours_per_home:Q', title='Avg # Tours per Home', format='.2f')]
     )
     
     # Combine charts with dual y-axes
@@ -123,30 +127,36 @@ def num_tours_by_farthest_funnel_stage(grouped_tours_df):
         var_name='funnel_stage', 
         value_name='count'
     )
-    
+
+    # Add a new column for nice names
+    display_name_mapping = {
+        'num_tours': 'Total',
+        'num_id_verified': 'ID Verified',
+        'num_prequalified': 'Prequalified',
+        'num_created_application': 'Created Application',
+        'num_paid_application_fee': 'Paid Application Fee'
+    }
+    chart_data['funnel_stage_display'] = chart_data['funnel_stage'].map(display_name_mapping)
+
     # Create grouped bar chart
     chart = alt.Chart(chart_data).mark_bar().encode(
         x=alt.X('yearmonthdate(date):O', title='Tour Creation Date', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
-        xOffset=alt.X('funnel_stage:O', sort=['num_tours', 'num_id_verified', 'num_prequalified', 'num_created_application', 'num_paid_application_fee']),
-        y=alt.Y('count:Q', title='Count'),
+        xOffset=alt.X('funnel_stage_display:O', sort=list(display_name_mapping.values())),
+        y=alt.Y('count:Q', title='# Tours'),
         color=alt.Color(
-            'funnel_stage:O',  # Changed from N to O
+            'funnel_stage_display:O',
             title='Farthest Funnel Stage',
             scale=alt.Scale(
-                domain=['num_tours', 'num_id_verified', 'num_prequalified', 'num_created_application', 'num_paid_application_fee'],
+                domain=list(display_name_mapping.values()),
                 range=[GRAY, LIGHT_TEAL, TEAL, LIGHT_PURPLE, PURPLE]
             ),
-            legend=alt.Legend(
-                labelExpr="""
-                datum.value == 'num_tours' ? 'Total Tours' :
-                datum.value == 'num_id_verified' ? 'ID Verified' :
-                datum.value == 'num_prequalified' ? 'Prequalified' :
-                datum.value == 'num_created_application' ? 'Created Application' :
-                'Paid Application Fee'
-                """
-            )
+            legend=alt.Legend()
         ),
-        tooltip=['date:T', 'funnel_stage:O', 'count:Q']
+        tooltip=[
+            alt.Tooltip('date:T', title='Date', format='%Y-%m-%d'),
+            alt.Tooltip('funnel_stage_display:O', title='Farthest Funnel Stage'), 
+            alt.Tooltip('count:Q', title='# Tours')
+        ]
     ).properties(
         width=800,
         height=400
@@ -156,7 +166,6 @@ def num_tours_by_farthest_funnel_stage(grouped_tours_df):
 
 def homes_with_zero_tours(grouped_tours_df):
     st.subheader("% of Homes with Zero Tours")
-    st.dataframe(grouped_tours_df)
 
     # Metrics
     st.metric("% of Homes with Zero Tours", f"{grouped_tours_df['perc_homes_with_zero_tours'].mean() * 100:.2f}%")

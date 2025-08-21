@@ -96,7 +96,7 @@ def num_inquiries(grouped_inquiries_df, selected_time_granularity):
         )),
         tooltip=[
             alt.Tooltip('date:T', title='Date', format='%Y-%m-%d'),
-            alt.Tooltip('source:N', title='source'),
+            alt.Tooltip('source:N', title='Source'),
             alt.Tooltip('inquires_per_home:Q', title='Inquiries/Home', format='.2f')
         ]
     )
@@ -180,11 +180,11 @@ def inquiries_prequalified(grouped_inquiries_df):
     # Metrics
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Overall", f'{grouped_inquiries_df["zillow_num_prequalified"].sum() * 100  / grouped_inquiries_df["num_inquiries"].sum():.2f}%')
+        st.metric("Overall", f'{grouped_inquiries_df["num_prequalified"].sum() * 100  / grouped_inquiries_df["num_inquiries"].sum():.2f}%')
     with col2:
-        st.metric("Zillow", f'{grouped_inquiries_df["rently_num_prequalified"].sum() * 100  / grouped_inquiries_df["zillow_num_inquiries"].sum():.2f}%')
+        st.metric("Zillow", f'{grouped_inquiries_df["zillow_num_prequalified"].sum() * 100  / grouped_inquiries_df["zillow_num_inquiries"].sum():.2f}%')
     with col3:
-        st.metric("Rently", f'{grouped_inquiries_df["num_prequalified"].sum() * 100  / grouped_inquiries_df["rently_num_inquiries"].sum():.2f}%')
+        st.metric("Rently", f'{grouped_inquiries_df["rently_num_prequalified"].sum() * 100  / grouped_inquiries_df["rently_num_inquiries"].sum():.2f}%')
 
     # Chart
     chart_data = pd.melt(
@@ -227,7 +227,6 @@ def inquiries_prequalified(grouped_inquiries_df):
 
 def homes_with_zero_inquiries(grouped_inquiries_df):
     st.subheader("% of Homes with Zero Inquiries")
-    st.dataframe(grouped_inquiries_df)
 
     # Metrics
     st.metric("% of Homes with Zero Inquiries", f"{grouped_inquiries_df['perc_homes_with_zero_inquiries'].mean() * 100:.2f}%")
