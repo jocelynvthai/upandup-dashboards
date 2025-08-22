@@ -20,8 +20,11 @@ RED = "#f44336"
 
 
 
-def filters(df, tab_name):
-    col_date_range, col_time_granularity, col_fund, col_market = st.columns(4)
+def filters(df, tab_name, community_filter=False):
+    if community_filter:
+        col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(5)
+    else:
+        col_date_range, col_time_granularity, col_fund, col_market = st.columns(4)
     filtered_df = df.copy()
 
     with col_date_range:
@@ -59,6 +62,15 @@ def filters(df, tab_name):
                                        key=f'{tab_name}_market')
         if selected_market != 'All':
             filtered_df = filtered_df[filtered_df['market'] == selected_market]
+
+    if community_filter:
+        with col_community:
+            selected_community = st.selectbox("Select a community",
+                                               options=['All'] + list(filtered_df['community'].unique()), 
+                                               index=0, 
+                                               key=f'{tab_name}_community')
+            if selected_community != 'All':
+                filtered_df = filtered_df[filtered_df['community'] == selected_community]
 
     return filtered_df, selected_time_granularity
 

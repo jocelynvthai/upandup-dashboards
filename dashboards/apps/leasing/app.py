@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
 raw_inquiries_df = raw_inquiries_data(credentials)
@@ -44,24 +44,24 @@ with summary_tab:
     summary_start_date, summary_end_date = summary_filters(rental_applications_df)
     summary_metrics(rental_applications_df, summary_start_date, summary_end_date, raw_inquiries_df)
 with leasing_funnel_tab:
-    filtered_leasing_funnel_df, filtered_selected_time_granularity = filters(leasing_funnel_df, 'leasing_funnel')
+    filtered_leasing_funnel_df, leasing_selected_time_granularity = filters(leasing_funnel_df, 'leasing_funnel')
     grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
-    leasing_funnel_summary_metrics(grouped_leasing_funnel_df, filtered_selected_time_granularity)
+    leasing_funnel_summary_metrics(grouped_leasing_funnel_df, leasing_selected_time_granularity)
     leasing_funnel_chart(grouped_leasing_funnel_df)
 with application_funnel_tab:
-    filtered_application_funnel_df, filtered_selected_time_granularity = filters(leasing_funnel_df, 'application_funnel')
+    filtered_application_funnel_df, application_selected_time_granularity = filters(leasing_funnel_df, 'application_funnel')
     grouped_application_funnel_df = application_funnel_grouped(filtered_application_funnel_df)
-    application_funnel_summary_metrics(grouped_application_funnel_df, filtered_selected_time_granularity)
+    application_funnel_summary_metrics(grouped_application_funnel_df, application_selected_time_granularity)
     application_funnel_chart(grouped_application_funnel_df)
 with inquiries_tab:
-    filtered_inquiries_df, filtered_selected_time_granularity = filters(inquiries_df, 'inquiries')
+    filtered_inquiries_df, inquiries_selected_time_granularity = filters(inquiries_df, 'inquiries', community_filter=True)
     grouped_inquiries_df = inquiries_grouped(filtered_inquiries_df)
-    num_inquiries(grouped_inquiries_df, filtered_selected_time_granularity)
+    num_inquiries(grouped_inquiries_df, inquiries_selected_time_granularity)
     inquiries_filled_out_prequalification_form(grouped_inquiries_df)
     inquiries_prequalified(grouped_inquiries_df)
     homes_with_zero_inquiries(grouped_inquiries_df)
 with tours_tab: 
-    filtered_tours_df, filtered_selected_time_granularity = filters(tours_df, 'tours')
+    filtered_tours_df, tours_selected_time_granularity = filters(tours_df, 'tours', community_filter=True)
     grouped_tours_df = tours_grouped(filtered_tours_df)
     tour_metrics(grouped_tours_df)
     num_tours_by_source(grouped_tours_df)

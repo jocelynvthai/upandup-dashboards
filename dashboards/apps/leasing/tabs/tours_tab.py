@@ -14,6 +14,7 @@ def tours_grouped(filtered_tours_df):
         num_prequalified=('num_prequalified', 'sum'),
         num_created_application=('num_applicants', 'sum'),
         num_paid_application_fee=('num_paid_applicants', 'sum'),
+        num_deals=('num_completed_applicants', 'sum'),
     ).reset_index()
     grouped_tours_df['avg_num_tours_per_home'] = grouped_tours_df['num_tours'] / grouped_tours_df['num_homes_listed']
 
@@ -33,7 +34,7 @@ def tours_grouped(filtered_tours_df):
 
 
 def tour_metrics(grouped_tours_df):
-    col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns([0.5, 0.8, 0.9, 1, 1, 1, 1, 1, 1])
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("&#35; Tours", f"{grouped_tours_df['num_tours'].sum()}")
     with col2:
@@ -41,21 +42,28 @@ def tour_metrics(grouped_tours_df):
     with col3:
         st.metric("&#35; Tours (Safe Mode)", f"{grouped_tours_df['num_tours_safe_mode'].sum()}")
     with col4:
+        st.metric('Avg per home per week', f"{grouped_tours_df['num_tours'].sum() / grouped_tours_df['num_homes_listed'].sum():.2f}")
+    with col5: 
+        st.metric('Median per home', f"{ grouped_tours_df['median_tours_per_home'].median():.2f}")
+
+    funnel_col1, funnel_col2, funnel_col3, funnel_col4, funnel_col5 = st.columns(5)
+    with funnel_col1:
         st.metric("# ID Verified", f"{grouped_tours_df['num_id_verified'].sum()}")
         st.markdown(f"<small style='margin-top: -25px; display: block;'>{grouped_tours_df['num_id_verified'].sum() / grouped_tours_df['num_tours'].sum() * 100:.2f}% of tours</small>", unsafe_allow_html=True)
-    with col5:
+    with funnel_col2:
         st.metric("# Prequalified", f"{grouped_tours_df['num_prequalified'].sum()}")
         st.markdown(f"<small style='margin-top: -25px; display: block;'>{grouped_tours_df['num_prequalified'].sum() / grouped_tours_df['num_tours'].sum() * 100:.2f}% of tours</small>", unsafe_allow_html=True)
-    with col6:
+    with funnel_col3:
         st.metric("# Created Application", f"{grouped_tours_df['num_created_application'].sum()}")
         st.markdown(f"<small style='margin-top: -25px; display: block;'>{grouped_tours_df['num_created_application'].sum() / grouped_tours_df['num_tours'].sum() * 100:.2f}% of tours</small>", unsafe_allow_html=True)
-    with col7:
+    with funnel_col4:
         st.metric("# Paid Application Fee", f"{grouped_tours_df['num_paid_application_fee'].sum()}")
         st.markdown(f"<small style='margin-top: -25px; display: block;'>{grouped_tours_df['num_paid_application_fee'].sum() / grouped_tours_df['num_tours'].sum() * 100:.2f}% of tours</small>", unsafe_allow_html=True)
-    with col8:
-        st.metric('Avg per home per week', f"{grouped_tours_df['num_tours'].sum() / grouped_tours_df['num_homes_listed'].sum():.2f}")
-    with col9: 
-        st.metric('Median per home', f"{ grouped_tours_df['median_tours_per_home'].median():.2f}")
+    with funnel_col5:
+        st.metric("# Deals", f"{grouped_tours_df['num_deals'].sum()}")
+        st.markdown(f"<small style='margin-top: -25px; display: block;'>{grouped_tours_df['num_deals'].sum() / grouped_tours_df['num_tours'].sum() * 100:.2f}% of tours</small>", unsafe_allow_html=True)
+    
+
 
 
 def num_tours_by_source(grouped_tours_df):
