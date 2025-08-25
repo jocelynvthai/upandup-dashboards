@@ -7,8 +7,11 @@ from tabs.utils import LIGHT_RED
 
 def summary_filters(rental_applications_df):
     col_date_range = st.columns(1)
+
+    today = datetime.now()
+    start_of_current_week = today - timedelta(days=today.weekday())
     date_range = st.date_input("Pick a period range", 
-                            value=(datetime.now() - timedelta(days=30),  datetime.now()), 
+                            value=(start_of_current_week - timedelta(days=7), start_of_current_week - timedelta(days=1)), 
                             format='MM/DD/YYYY',
                             key='summary_date_range')
     if len(date_range) != 2:
@@ -18,7 +21,7 @@ def summary_filters(rental_applications_df):
 
 
 def summary_metrics(rental_applications_df, start_date, end_date, raw_inquiries_df):
-    st.subheader("Summary Metrics")
+    st.subheader("Snapshot Summary Metrics", help="""This is a snapshot of the metrics for the selected period.""")
 
     num_inquiries = raw_inquiries_df[
         (raw_inquiries_df['date'] >= pd.to_datetime(start_date).tz_localize('UTC')) & 

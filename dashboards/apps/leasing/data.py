@@ -2,7 +2,6 @@ import json
 import streamlit as st
 import pandas as pd
 
-
 def get_service_account_info(local=False):
     if local:
         service_account_info = st.secrets["gcp_service_account"]
@@ -17,6 +16,15 @@ def leasing_scraper_data(_credentials):
     query = """
         SELECT *
         FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def leasing_scraper_rent_changes_data(_credentials):
+    query = """
+        SELECT *
+        FROM `homevest-data.dbt_jocelynvthai_tin.leasing_scraper_rent_changes`
     """
     return pd.read_gbq(query, credentials=_credentials)
 
@@ -108,7 +116,7 @@ def tours_data(_credentials):
 @st.cache_data
 def vacancy_data(_credentials):
     query = """
-        SELECT * FROM `homevest-data.dbt_jocelynvthai_tin.vacancy_curve`
+        SELECT * FROM `homevest-data.dbt_prod_tin.vacancy_curve`
     """
     return pd.read_gbq(query, credentials=_credentials)
 

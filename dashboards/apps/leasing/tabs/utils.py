@@ -47,7 +47,7 @@ def filters(df, tab_name, community_filter=False):
 
     with col_fund:
         selected_fund = st.selectbox("Select a fund", 
-                                     options=['All'] + list(filtered_df['fund'].unique()), 
+                                     options=['All'] + sorted(filtered_df['fund'].unique()), 
                                      index=0, 
                                      key=f'{tab_name}_fund')
         if selected_fund != 'All':
@@ -55,7 +55,7 @@ def filters(df, tab_name, community_filter=False):
 
     with col_market:
         selected_market = st.selectbox("Select a market",
-                                       options=['All'] + list(filtered_df['market'].unique()), 
+                                       options=['All'] + sorted(filtered_df['market'].unique()), 
                                        index=0,
                                        key=f'{tab_name}_market')
         if selected_market != 'All':
@@ -64,7 +64,7 @@ def filters(df, tab_name, community_filter=False):
     if community_filter:
         with col_community:
             selected_community = st.selectbox("Select a community",
-                                               options=['All'] + list(filtered_df['community'].unique()), 
+                                               options=['All'] + sorted(filtered_df['community'].dropna().unique()), 
                                                index=0, 
                                                key=f'{tab_name}_community')
             if selected_community != 'All':

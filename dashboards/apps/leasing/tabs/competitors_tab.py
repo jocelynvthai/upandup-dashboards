@@ -23,7 +23,7 @@ def competitors_filters(leasing_df):
                                                         (filtered_leasing_period_df['last_pull_date'] >= (start_date - timedelta(days=1)))]
     with col_market:
         selected_market = st.selectbox("Select a market", 
-                                options=['All'] + list(leasing_df['market_name'].unique()), 
+                                options=['All'] + sorted(leasing_df['market_name'].unique()), 
                                 index=0,
                                 key='competitors_market')
         color_scale = alt.Scale(scheme='tealblues')  
@@ -81,11 +81,12 @@ def clearance_rates(filtered_leasing_period_df, start_date, end_date):
 
 
 
-def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
+def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, start_date, end_date, color_scale):
     st.subheader("Leased Homes Stats")
-
     homes_rented_df = filtered_leasing_period_df[(filtered_leasing_period_df['last_lease_signed'] >= start_date) & (filtered_leasing_period_df['last_lease_signed'] <= end_date)]
-    homes_rented_df['rent_change'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
+    homes_rented_df['rent_change_overall'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
+
+
     selected_lease_type = st.selectbox("Select a lease type", options=['All', 'Pre-lease', 'Rent Ready'], key='rent_changes_lease_type')
     if selected_lease_type == 'All':
         homes_rented_type_df = homes_rented_df
@@ -94,9 +95,10 @@ def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
     elif selected_lease_type == 'Rent Ready':
         homes_rented_type_df = homes_rented_df[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])]
 
+
     # Rent Change Chart
     rent_change_chart = alt.Chart(homes_rented_type_df).mark_point().encode(
-        x=alt.X('rent_change:Q', title='Rent Δ ($)'),
+        x=alt.X('rent_change_overall:Q', title='Rent Δ ($)'),
         y=alt.Y('market_name:N', title=None),
         color=alt.Color('market_name:N', scale=color_scale, title='Market'),
         tooltip=[
@@ -104,17 +106,51 @@ def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
             alt.Tooltip('market_name', title='Market'),
             alt.Tooltip('first_rent', title='Initial Rent ($)'),
             alt.Tooltip('last_rent', title='Current Rent ($)'),
-            alt.Tooltip('rent_change', title='Rent Δ ($)'),
+            alt.Tooltip('rent_change_overall', title='Rent Δ ($)'),
             alt.Tooltip('home_rented_days_on_market', title='Days on Market'), 
             alt.Tooltip('last_lease_signed', title='Lease Signed')
         ]
     ).properties(
-        title='Rent Δ'
+        title=alt.Title(
+            text='Rent Δ', 
+            subtitle='Leased Rent - Initial Rent'
+        )
     )
     zero_line = alt.Chart(pd.DataFrame({'x': [0]})).mark_rule(
         color='gray'
     ).encode(x='x:Q')
     st.altair_chart((rent_change_chart + zero_line), use_container_width=True)
+
+
+
+    # Individual Rent Changes Chart
+    filtered_leasing_rent_changes_df = leasing_rent_changes_df.merge(
+        homes_rented_type_df, on='property_id', how='inner'
+    )
+    filtered_leasing_rent_changes_df = filtered_leasing_rent_changes_df[
+        (filtered_leasing_rent_changes_df['date_of_rent_change'] >= filtered_leasing_rent_changes_df['first_pull_date']) &
+        (filtered_leasing_rent_changes_df['date_of_rent_change'] <= filtered_leasing_rent_changes_df['last_pull_date'])
+    ]
+    filtered_leasing_rent_changes_df['days_listed'] = (filtered_leasing_rent_changes_df['date_of_rent_change'] - filtered_leasing_rent_changes_df['first_pull_date']).dt.days
+    individual_rent_changes_chart = alt.Chart(filtered_leasing_rent_changes_df).mark_point(color=TEAL).encode(
+        x=alt.X('days_listed:Q', title='Days Listed'),
+        y=alt.Y('rent_change:Q', title='Rent Change ($)'), 
+        tooltip=[
+            alt.Tooltip('address', title='Address'),
+            alt.Tooltip('new_rent', title='New Rent', format='$.2f'),
+            alt.Tooltip('prior_rent', title='Prior Rent', format='$.2f'),
+            alt.Tooltip('rent_change', title='Rent Δ', format='$.2f'),
+        ]
+    ).properties(
+        title=alt.Title(
+            text='Individual Rent Δ', 
+            subtitle='Change in rent vs # days the home has been listed'
+        ),
+        height=800
+    )
+    st.altair_chart(individual_rent_changes_chart, use_container_width=True)
+
+
 
     # Days on Market Chart
     dom_chart = alt.Chart(homes_rented_type_df).mark_point().encode(
@@ -140,7 +176,7 @@ def rent_changes(filtered_leasing_period_df, start_date, end_date, color_scale):
             ('num_homes_leased_prelease', lambda x: x.isin(['Notice Unrented', 'Vacant Unrented Not Ready']).sum()),
             ('num_homes_leased_rent_ready', lambda x: x.isin(['Vacant Unrented Ready']).sum())
         ],
-        'rent_change': [
+        'rent_change_overall': [
             ('average_rent_change', 'mean'),
             ('average_rent_change_prelease', lambda x: x[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])].mean()), 
             ('average_rent_change_rent_ready', lambda x: x[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])].mean()), 
