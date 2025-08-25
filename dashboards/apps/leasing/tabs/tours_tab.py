@@ -104,9 +104,8 @@ def num_tours_by_source(grouped_tours_df):
     
     # Create line chart for avg tours per home
     line = alt.Chart(line_data).mark_line(
-        point=alt.OverlayMarkDef(color=LIGHT_GRAY),
-        color=LIGHT_GRAY,
-        strokeWidth=3
+        point={'color': LIGHT_GRAY},
+        color=LIGHT_GRAY
     ).encode(
         x=alt.X('yearmonthdate(date):O'),
         y=alt.Y('avg_num_tours_per_home:Q', title='Avg # Tours per Home'),

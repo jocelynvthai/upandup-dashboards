@@ -8,15 +8,13 @@ LIGHT_GRAY = "#d3d3d3"
 GRAY = "#808080" 
 LIGHT_TEAL = "#5cc9b8" 
 TEAL = "#15b8a6" 
+DARK_TEAL = "#008080"
 LIGHT_PURPLE = "#d1c4e9" 
 PURPLE = "#9575cd" 
 DARK_PURPLE = "#512da8" 
 LIGHT_RED = "#ffcdd2"
 RED = "#f44336"
-#5cc9b8 - A medium-light teal (good balance)
-#7dd3c0 - Lighter teal
-#a3e0d1 - Very light teal
-#c7ebe3 - Extra light teal (subtle)
+ORANGE = "#ffa500"
 
 
 
@@ -138,9 +136,8 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
     )
     
     line = alt.Chart(grouped_df).mark_line(
-        point=alt.OverlayMarkDef(color=PURPLE),  # Set point color to purple
-        color=PURPLE,
-        strokeWidth=2
+        point={'color': PURPLE},
+        color=PURPLE
     ).encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{time_metric_column}:Q",
@@ -167,8 +164,7 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
         y=alt.Y('y:O', axis=None),
         color=alt.Color('color:N', scale=None, legend=None)
     )
-    legend_line = alt.Chart(legend_data.iloc[2:]).mark_line(
-        strokeWidth=3, point=True
+    legend_line = alt.Chart(legend_data.iloc[2:]).mark_line(point=True
     ).encode(
         x=alt.X('x:O', axis=None, scale=alt.Scale(domain=[1])),
         y=alt.Y('y:O', axis=None),
@@ -268,9 +264,8 @@ def create_funnel_chart_old(grouped_df, funnel_stages, chart_type="application")
     time_title = 'Average Time Spent (Hours)' if 'avg_hours' in stage_config else 'Average Time Spent (Days)'
     
     line = alt.Chart(grouped_df).mark_line(
-        point=alt.OverlayMarkDef(color=PURPLE),  # Set point color to purple
-        color=PURPLE,
-        strokeWidth=2
+        point={'color': PURPLE},
+        color=PURPLE
     ).encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{stage_config[time_metric]}:Q",
@@ -298,7 +293,7 @@ def create_funnel_chart_old(grouped_df, funnel_stages, chart_type="application")
         color=alt.Color('color:N', scale=None, legend=None)
     )
     legend_line = alt.Chart(legend_data.iloc[2:]).mark_line(
-        strokeWidth=3, point=True
+        point=True
     ).encode(
         x=alt.X('x:O', axis=None, scale=alt.Scale(domain=[1])),
         y=alt.Y('y:O', axis=None),

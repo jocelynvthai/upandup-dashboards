@@ -19,8 +19,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
 raw_inquiries_df = raw_inquiries_data(credentials)

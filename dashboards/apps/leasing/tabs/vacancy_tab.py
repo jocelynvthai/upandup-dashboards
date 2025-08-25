@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from tabs.utils import LIGHT_GRAY, LIGHT_TEAL, LIGHT_PURPLE, DARK_PURPLE
+from tabs.utils import LIGHT_GRAY, TEAL, LIGHT_PURPLE, PURPLE, DARK_PURPLE
 
 def vacancy_filters(distinct_vacancy_df, vacancy_df):
     distinct_vacancies = distinct_vacancy_df['address'] + ' -- ' + distinct_vacancy_df['vacancy_start_date'].astype(str)
@@ -27,28 +27,8 @@ def vacancy_curve(filtered_vacancy_df):
     with col5:
         st.metric("# Days Listed", filtered_vacancy_df['is_internally_listed'].sum())
 
-    # Melt the data for easier plotting with Altair
-    chart_data_melted = pd.melt(
-        filtered_vacancy_df, 
-        id_vars=['days_since_vacancy_start'],
-        value_vars=['cumulative_num_inquiries', 'cumulative_num_tours', 'cumulative_num_applications'],
-        var_name='metric',
-        value_name='count'
-    )
     
-    # Rename metrics for better display
-    metric_names = {
-        'cumulative_num_inquiries': 'Inquiries',
-        'cumulative_num_tours': 'Tours',
-        'cumulative_num_applications': 'Applications'
-    }
-    chart_data_melted['metric'] = chart_data_melted['metric'].map(metric_names)
-    
-    # Define colors for each metric
-    color_scale = alt.Scale(domain=['Inquiries', 'Tours', 'Applications'], 
-                           range=[LIGHT_TEAL, LIGHT_PURPLE, DARK_PURPLE])
-    
-    # Create background layer for internally listed days
+    # 1. is_internally_listed background
     background = alt.Chart(filtered_vacancy_df).mark_bar(
         opacity=0.3,
         width=10,
@@ -56,37 +36,64 @@ def vacancy_curve(filtered_vacancy_df):
     ).encode(
         x=alt.X('days_since_vacancy_start:Q'),
         y=alt.value(0),
-        y2=alt.value('height')
+        y2=alt.value('height'), 
+        tooltip=[
+            alt.Tooltip('days_since_vacancy_start:Q', title='Days Since Vacancy Start'),
+            alt.Tooltip('is_internally_listed:N', title='Is Internally Listed')
+        ]
     ).transform_filter(
         alt.datum.is_internally_listed == True
     )
 
-    # Prepare dummy background data for legend
+    # prepare data for metrics over vacancy line charts
+    chart_data_melted = pd.melt(
+        filtered_vacancy_df, 
+        id_vars=['days_since_vacancy_start'],
+        value_vars=['cumulative_num_inquiries', 'cumulative_num_tours', 'cumulative_num_applications'],
+        var_name='metric',
+        value_name='count'
+    )
+    metric_names = {
+        'cumulative_num_inquiries': 'Inquiries',
+        'cumulative_num_tours': 'Tours',
+        'cumulative_num_applications': 'Applications'
+    }
+    chart_data_melted['metric'] = chart_data_melted['metric'].map(metric_names)
+
+    # is_internally_listed dummy data for legend
     background_data = filtered_vacancy_df[filtered_vacancy_df['is_internally_listed']][['days_since_vacancy_start']]
     background_data['metric'] = 'Listing Window'
-    background_data['count'] = 0  # Won't be visible as lines since all values are 0
+    background_data['count'] = None 
+    listed_rent_data = filtered_vacancy_df[['days_since_vacancy_start']]
+    listed_rent_data['metric'] = 'Listed Rent'
+    listed_rent_data['count'] = None
+    combined_data = pd.concat([chart_data_melted, background_data, listed_rent_data], ignore_index=True)
 
-    # Combine chart data with background data
-    combined_data = pd.concat([chart_data_melted, background_data], ignore_index=True)
-
-    # Update color scale to include the background
-    color_scale = alt.Scale(
-        domain=['Inquiries', 'Tours', 'Applications', 'Listing Window'], 
-        range=[LIGHT_TEAL, LIGHT_PURPLE, DARK_PURPLE, LIGHT_GRAY]
-    )
-
-    # Create Altair line chart with updated data
-    chart = alt.Chart(combined_data).mark_line(point=True, strokeWidth=3).encode(
+    # 2. metrics over vacancy line charts
+    color_scale = alt.Scale(domain=['Inquiries', 'Tours', 'Applications', 'Listed Rent', 'Listing Window'], 
+                            range=[LIGHT_PURPLE, PURPLE, DARK_PURPLE, TEAL, LIGHT_GRAY])
+    metrics_chart = alt.Chart(combined_data).mark_line(point=True).encode(
         x=alt.X('days_since_vacancy_start:Q', title='Days Since Vacancy Start'),
         y=alt.Y('count:Q', title='Cumulative Count'),
         color=alt.Color('metric:N', scale=color_scale, title='Metric'),
         tooltip=[
-            alt.Tooltip('days_since_vacancy_start:Q', title='Days Since Start'),
+            alt.Tooltip('days_since_vacancy_start:Q', title='Days Since Vacancy Start'),
             alt.Tooltip('metric:N', title='Metric'),
             alt.Tooltip('count:Q', title='Count')
         ]
     )
+
+     # 3. most_recent_listed_rent line chart
+    rent_chart = alt.Chart(filtered_vacancy_df).mark_line(point={'color': TEAL}, color=TEAL).encode(
+        x=alt.X('days_since_vacancy_start:Q', title='Days Since Vacancy Start'),
+        y=alt.Y('most_recent_listed_rent:Q', title='Most Recent Listed Rent'),
+        tooltip=[
+            alt.Tooltip('days_since_vacancy_start:Q', title='Days Since Start'),
+            alt.Tooltip('most_recent_listed_rent:Q', title='Listed Rent')
+        ]
+    )
     
     st.subheader("Cumulative Metrics Over Vacancy")
-    st.altair_chart(background + chart, use_container_width=True)
+    metrics_layer = alt.layer(background, metrics_chart)
+    st.altair_chart(alt.layer(metrics_layer, rent_chart).resolve_scale(y='independent'), use_container_width=True)
 

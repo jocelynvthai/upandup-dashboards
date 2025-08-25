@@ -103,8 +103,7 @@ def num_inquiries(grouped_inquiries_df, selected_time_granularity):
     
     # Line chart for num_homes_listed (using same y-axis scale)
     line_chart = alt.Chart(grouped_inquiries_df).mark_line(
-        point=alt.OverlayMarkDef(color=LIGHT_GRAY),
-        strokeWidth=3,
+        point={'color': LIGHT_GRAY},
         color=LIGHT_GRAY
     ).encode(
         x=alt.X('yearmonthdate(date):O'),
