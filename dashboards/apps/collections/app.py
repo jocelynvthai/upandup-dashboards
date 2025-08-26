@@ -5,7 +5,7 @@ from data import get_service_account_info, get_bad_debt_inputs_data, get_collect
 from tabs.data_tab import data_filters, late_collections_over_ar, ar_over_gpr
 from tabs.ontime_collections_tab import ontime_collections_curve_filters, ontime_collections_curve, ontime_collections_drilldown
 from tabs.late_collections_tab import late_collections_curve_filters, late_collections_curve, late_collections_drilldown
-from tabs.bad_debt_tab import bad_debt_over_time_filters, bad_debt_over_time, bad_debt_projection
+from tabs.bad_debt_tab import bad_debt_over_time_filters, bad_debt_over_time, bad_debt_month_to_date, bad_debt_projection
 from tabs.evictions_tab import evictions
 
 # Configure page layout
@@ -44,9 +44,10 @@ with late_collections_tab:
     late_collections_curve(collections_curve_data, late_collections_selected_fund)
     late_collections_drilldown(bad_debt_inputs_data, late_collections_selected_fund)
 with bad_debt_tab:
-    bad_debt_selected_fund = bad_debt_over_time_filters(bad_debt_inputs_data)
-    bad_debt_over_time(bad_debt_inputs_data, bad_debt_selected_fund)
-    bad_debt_projection(bad_debt_inputs_data, bad_debt_selected_fund)
+    filtered_bad_debt_inputs, bad_debt_selected_fund = bad_debt_over_time_filters(bad_debt_inputs_data)
+    bad_debt_over_time(filtered_bad_debt_inputs)
+    bad_debt_month_to_date(filtered_bad_debt_inputs)
+    bad_debt_projection(filtered_bad_debt_inputs)
 with evictions_tab:
     evictions(evictions_data)
 with data_tab:
