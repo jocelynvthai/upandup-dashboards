@@ -2,18 +2,24 @@ import streamlit as st
 
 from tabs.utils import fund_filter 
 
-def evictions(evictions_data):
+def evictions_filters(evictions_data):
     selected_fund = fund_filter(key='evictions_select_fund', data=evictions_data, include_all=True)
-    
     if selected_fund != 'All':
-        fund_evictions_data = evictions_data[evictions_data['fund'] == selected_fund]
+        filtered_evictions_data = evictions_data[evictions_data['fund'] == selected_fund]
     else:
-        fund_evictions_data = evictions_data.copy()
+        filtered_evictions_data = evictions_data.copy()
+    return filtered_evictions_data, selected_fund
 
+
+def gpr_evictions(filtered_evictions_data):
+    st.subheader("GPR Evictions")
+    st.dataframe(filtered_evictions_data)
+
+def evictions_by_status(filtered_evictions_data):
     for status in ['pending', 'completed', 'canceled']:
         st.subheader(f"{status.title()} Evictions")
 
-        display_df = fund_evictions_data[fund_evictions_data['status'] == status]
+        display_df = filtered_evictions_data[filtered_evictions_data['status'] == status]
         display_df['rental_link'] = "https://hudson.upandup.co/rent-roll/" + display_df['rental_id'].astype(str)
             
         display_df = display_df[[ 
@@ -80,5 +86,6 @@ def evictions(evictions_data):
                             width="small"
                         )
                      })
+        
 
         
