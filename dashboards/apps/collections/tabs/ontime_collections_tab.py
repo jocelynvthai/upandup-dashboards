@@ -120,7 +120,7 @@ def ontime_collections_drilldown(bad_debt_inputs_data, selected_fund):
         display_df[[
             'fund', 
             'address', 
-            'in_evictions_this_month', 
+            'in_evictions', 
             'move_out_date', 
             'occupancy_date', 
             'rent_charged', 
@@ -132,7 +132,7 @@ def ontime_collections_drilldown(bad_debt_inputs_data, selected_fund):
         ]].rename(columns={
             'fund': 'Fund',
             'address': 'Address',
-            'in_evictions_this_month': 'In Evictions',
+            'in_evictions': 'In Evictions',
             'move_out_date': 'Move Out Date',
             'occupancy_date': 'Occupancy Date',
             'rent_charged': 'Rent Charged',

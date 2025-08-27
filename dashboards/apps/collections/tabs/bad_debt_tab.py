@@ -88,7 +88,7 @@ def bad_debt_month_to_date(filtered_bad_debt_inputs):
     st.subheader(f"({this_month}) Non-Zero Bad Debt")
 
     this_month_bad_debt_inputs = filtered_bad_debt_inputs[(filtered_bad_debt_inputs['month'] == this_month) & (filtered_bad_debt_inputs['bad_debt'] != 0)]
-    display_columns = ['address', 'state', 'move_out_date', 'was_evicted', 'in_evictions_this_month', 
+    display_columns = ['address', 'state', 'move_out_date', 'was_evicted', 'in_evictions', 
                        'rental_status', 'unpaid_rent_this_month', 'unpaid_rent_covered_by_wallet', 
                        'bom_bad_debt_recovered_by_late_collections', 'bad_debt']
 

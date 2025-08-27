@@ -1,7 +1,7 @@
 import streamlit as st
 import altair as alt
 
-from tabs.utils import date_month_filter, fund_filter
+from tabs.utils import date_month_filter, fund_filter, TEAL
 
 
 def data_filters(bad_debt_inputs_data):
@@ -61,7 +61,7 @@ def late_collections_over_ar(bad_debt_inputs_data, selected_month_year):
         x=alt.X('month:T', axis=alt.Axis(format='%b %Y', title='Month', labelFlush=False)),
         y=alt.Y('late_collections_ratio:Q', title='Late Collections Ratio', 
         axis=alt.Axis(format='.1%')), 
-        color=alt.value('#15b8a6'),
+        color=alt.value(TEAL),
         tooltip=[
             alt.Tooltip('month:T', title='Month', format='%b %Y'),
             alt.Tooltip('total_late_rent_collections:Q', title='Late Collections', format='$,.0f'),
@@ -113,7 +113,7 @@ def ar_over_gpr(bad_debt_inputs_data, selected_month_year):
         x=alt.X('month:T', axis=alt.Axis(format='%b %Y', title='Month', labelFlush=False)),
         y=alt.Y('ar_over_gpr:Q', title='AR Over GPR',
         axis=alt.Axis(format='.1%')), 
-        color=alt.value('#15b8a6')
+        color=alt.value(TEAL)
     )
     st.altair_chart(chart)
 

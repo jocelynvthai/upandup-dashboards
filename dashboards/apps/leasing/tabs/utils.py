@@ -17,7 +17,6 @@ RED = "#f44336"
 ORANGE = "#ffa500"
 
 
-
 def filters(df, tab_name, community_filter=False):
     if community_filter:
         col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(5)

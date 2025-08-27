@@ -1,7 +1,7 @@
 import streamlit as st
 from google.oauth2 import service_account
 
-from data import get_service_account_info, get_bad_debt_inputs_data, get_collections_curve_data, get_evictions_data
+from data import get_service_account_info, get_bad_debt_inputs_data, get_collections_curve_data, get_evictions_data, gpr_evictions_data
 from tabs.data_tab import data_filters, late_collections_over_ar, ar_over_gpr
 from tabs.ontime_collections_tab import ontime_collections_curve_filters, ontime_collections_curve, ontime_collections_drilldown
 from tabs.late_collections_tab import late_collections_curve_filters, late_collections_curve, late_collections_drilldown
@@ -31,6 +31,7 @@ credentials = service_account.Credentials.from_service_account_info(get_service_
 bad_debt_inputs_data = get_bad_debt_inputs_data(credentials)
 collections_curve_data = get_collections_curve_data(credentials)
 evictions_data = get_evictions_data(credentials)
+gpr_evictions_data = gpr_evictions_data(credentials)
 
 # Application
 st.title("Collections Dashboard")
@@ -50,7 +51,7 @@ with bad_debt_tab:
     bad_debt_projection(filtered_bad_debt_inputs)
 with evictions_tab:
     filtered_evictions_data, evictions_selected_fund = evictions_filters(evictions_data)
-    gpr_evictions(filtered_evictions_data)
+    gpr_evictions(gpr_evictions_data)
     evictions_by_status(filtered_evictions_data)
 with data_tab:
     filtered_bad_debt_inputs, selected_month_year = data_filters(bad_debt_inputs_data)

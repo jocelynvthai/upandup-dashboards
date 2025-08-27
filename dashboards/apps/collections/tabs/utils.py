@@ -3,6 +3,8 @@ import altair as alt
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+TEAL = "#15b8a6" 
+
 def date_month_filter(key):
     current_date = datetime.now()
     month_year_options = []

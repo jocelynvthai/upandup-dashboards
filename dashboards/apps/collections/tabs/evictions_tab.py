@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
+import altair as alt
 
-from tabs.utils import fund_filter 
+from tabs.utils import fund_filter, TEAL
 
 def evictions_filters(evictions_data):
     selected_fund = fund_filter(key='evictions_select_fund', data=evictions_data, include_all=True)
@@ -13,7 +15,33 @@ def evictions_filters(evictions_data):
 
 def gpr_evictions(filtered_evictions_data):
     st.subheader("GPR Evictions")
-    st.dataframe(filtered_evictions_data)
+    selected_occupancy = st.selectbox("Occupancy Status", ['All', 'Occupied'])
+
+    if selected_occupancy == 'Occupied':
+        filtered_evictions_data_status = filtered_evictions_data[~filtered_evictions_data['pg_occupancy_status'].isin(['vacant_unleased', 'vacant_leased'])]
+    else:
+        filtered_evictions_data_status = filtered_evictions_data
+    
+    monthly_gpr_evictions = filtered_evictions_data_status.groupby('month').agg(
+        total_gpr=('gpr', 'sum'),
+        gpr_in_evictions=('gpr', lambda x: x[filtered_evictions_data_status['in_evictions']].sum())
+    ).reset_index()
+    monthly_gpr_evictions['gpr_in_evictions_percentage'] = monthly_gpr_evictions['gpr_in_evictions'] * 100 / monthly_gpr_evictions['total_gpr']
+
+    monthly_gpr_evictions_chart = alt.Chart(monthly_gpr_evictions).mark_line(color=TEAL, point={'color': TEAL}).encode(
+        x='month:T', 
+        y='gpr_in_evictions_percentage:Q', 
+        tooltip=[
+            alt.Tooltip('month:T', title='Month', format='%b %Y'),
+            alt.Tooltip('gpr_in_evictions:Q', title='GPR in Evictions', format='$,.0f'),
+            alt.Tooltip('total_gpr:Q', title='Total GPR', format='$,.0f'),
+            alt.Tooltip('gpr_in_evictions_percentage:Q', title='GPR in Evictions Percentage', format='.1%')
+        ] 
+    ).properties(
+        title='GPR in Evictions Percentage Over Time'
+    )
+    st.altair_chart(monthly_gpr_evictions_chart, use_container_width=True)
+
 
 def evictions_by_status(filtered_evictions_data):
     for status in ['pending', 'completed', 'canceled']:
@@ -86,6 +114,7 @@ def evictions_by_status(filtered_evictions_data):
                             width="small"
                         )
                      })
+
         
 
         
