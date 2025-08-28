@@ -53,8 +53,18 @@ def construction_scopes_data(_credentials):
 @st.cache_data
 def tickets_data(_credentials):
     query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod.stg_tickets`
+        SELECT 
+            t.*,
+            t.max_cost AS approved_budgets,
+            l.slug, 
+            v.name AS vendor_name
+        FROM `homevest-data.dbt_prod.stg_tickets` AS t
+        LEFT JOIN `homevest-data.dbt_prod.stg_tickets_latchel_data` AS l
+            ON t.external_id = CAST(l.job_id AS STRING)
+        LEFT JOIN `homevest-data.dbt_prod.stg_ticket_vendor_assignments` AS tva
+            ON t.id = tva.ticket_id
+        LEFT JOIN `homevest-data.dbt_prod.dim_vendors` AS v
+            ON tva.vendor_id = v.id
     """
     return pd.read_gbq(query, credentials=_credentials)
 

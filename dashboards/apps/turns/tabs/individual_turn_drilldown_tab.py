@@ -74,29 +74,38 @@ def individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_sc
         st.markdown(f"<h5>Total Budget: <span style='color: {TEAL};'>${project_total_estimated_cost:,.2f}</span></h5>", unsafe_allow_html=True)
         st.markdown(f"<h5>Invoiced Cost: <span style='color: {TEAL};'>${filtered_line_items_df['amount'].sum():,.2f}</span></h5>", unsafe_allow_html=True)
 
-    # Budget Breakdown
-    # project_estimated_cost = selected_turn_arr['project_estimated_cost'] if not pd.isnull(selected_turn_arr['project_estimated_cost']) else 0
-    # occupancy_inspection_estimated_cost = selected_turn_arr['occupancy_inspection_estimated_cost'] if not pd.isnull(selected_turn_arr['occupancy_inspection_estimated_cost']) else 0
-    # ticket_approved_budgets = selected_turn_arr['project_ticket_approved_budgets'] if not pd.isnull(selected_turn_arr['project_ticket_approved_budgets']) else 0
-    # budget_data = pd.DataFrame({ "Source": ["Main Project(s)"], "Budgeted Amount": [project_estimated_cost] })
-    # if "_oi" in selected_turn_arr['project_types'].lower():
-    #     budget_data = pd.concat([budget_data, pd.DataFrame([["Occupancy Inspection", occupancy_inspection_estimated_cost]], columns=budget_data.columns)])
-    # if (selected_turn_arr['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.'):
-    #     budget_data = pd.concat([budget_data, pd.DataFrame([["Approved Latchel Tickets", ticket_approved_budgets]], columns=budget_data.columns)])
-    # with st.container(horizontal=True, width=600):
-    #     st.dataframe(budget_data, hide_index=True, column_config={"Budgeted Amount": st.column_config.NumberColumn(format="accounting")})
     for index, row in filtered_construction_scopes_df.reset_index(drop=True).iterrows():
         with st.container(horizontal=True):
             st.metric(f'Project #{index+1} Type', f"{row['type'].replace('_', ' ').title()}", width=250)
             st.metric('Project Status', f"{row['project_status'].replace('_', ' ').title()}", width=250)
-            st.metric('Project Estimated Cost', f"${0 if pd.isna(row['project_estimated_cost']) else row['project_estimated_cost']:,.2f}", width=200)
+            st.metric(
+                'Project Estimated Cost',
+                f"${0 if pd.isna(row['project_estimated_cost']) else row['project_estimated_cost']:,.2f}",
+                width=200,
+                help=f"[Hudson Project ↪](https://hudson.upandup.co/construction/projects/{row['project_id']})"
+            )
             if selected_turn_arr['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.':
-                st.metric('Ticket Approved Budgets', f"${0 if pd.isna(row['ticket_approved_budgets']) else row['ticket_approved_budgets']:,.2f}", width=200)
+                st.metric('Ticket Approved Budgets', 
+                    f"${0 if pd.isna(row['ticket_approved_budgets']) else row['ticket_approved_budgets']:,.2f}", 
+                    width=200,
+                    help='Sum of the approved budgets of all tickets associated with this project'
+                )
 
-        project_tickets_df = tickets_df[tickets_df['project_id'] == row['project_id']]
-        tickets_columns = ['external_source', 'external_id', 'title', 'category', 'description', 'max_cost', 'status', 'tracking_status']
-        if not project_tickets_df.empty:
-            st.dataframe(project_tickets_df[tickets_columns], hide_index=True)
+        display_df = tickets_df[tickets_df['project_id'] == row['project_id']]
+        display_df['link'] = display_df['slug'].apply(lambda slug: f"https://app.latchel.com/admin/work-order/{slug}")
+        display_df = display_df[['external_source', 'link', 'title', 'category', 'vendor_name', 'description', 'approved_budgets', 'status', 'tracking_status']]
+        display_df.columns = [col.replace('_', ' ').title() for col in display_df.columns]
+        if not display_df.empty:
+            st.dataframe(
+                display_df, 
+                hide_index=True, 
+                column_config={
+                        'Link': st.column_config.LinkColumn(
+                        display_text='↪',
+                        pinned=True,
+                    )
+                }
+            )
         else:
             st.badge("No tickets found for this project!", color="violet")
         if index != len(filtered_construction_scopes_df) - 1:
@@ -130,14 +139,8 @@ def individual_turn_drilldown(filtered_line_items_df):
                 display_text='↪',
                 pinned=True,
             ),
-            'Date': st.column_config.DateColumn(    
-                width=1,
-                format="M/D/YY"
-            ),
             'Amount': st.column_config.NumberColumn(
-                width=1,
-                format="accounting"
+                format="dollar"
             ),
-            # 'Memo': st.column_config.LinkColumn()
         }
     )
