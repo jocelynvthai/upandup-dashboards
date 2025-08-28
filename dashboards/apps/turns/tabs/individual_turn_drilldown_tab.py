@@ -144,3 +144,17 @@ def individual_turn_drilldown(filtered_line_items_df):
             ),
         }
     )
+
+
+def invoices_by_vendor(filtered_line_items_df):
+    st.subheader("Invoices by Vendor")
+
+    grouped_df = filtered_line_items_df.groupby(['vendor_id', 'vendor_company_name', 'vendor_contact_name', 'vendor_primary_email']).agg({'amount': 'sum'}).reset_index()
+    grouped_df.columns = [col.replace('_', ' ').title() for col in grouped_df.columns]
+    st.dataframe(
+        grouped_df,
+        hide_index=True,
+        column_config={
+            'Amount': st.column_config.NumberColumn(format="dollar")
+        }
+    )
