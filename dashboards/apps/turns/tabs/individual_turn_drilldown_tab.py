@@ -117,12 +117,12 @@ def individual_turn_drilldown(filtered_line_items_df):
     st.subheader("Line Items")
     output_df = filtered_line_items_df[[
         'date',
-        'amount',
-        'gl_account_name',
-        'memo',
-        'description',
         'vendor_contact_name',
-        'vendor_company_name'
+        'vendor_company_name', 
+        'gl_account_name',
+        'description',
+        'amount',
+        'memo',
     ]].copy()
 
     output_df['link'] = output_df.apply(

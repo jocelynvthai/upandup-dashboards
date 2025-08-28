@@ -2,6 +2,7 @@ import streamlit as st
 from google.oauth2 import service_account
 
 from data import get_service_account_info, turns_data, construction_scopes_data, tickets_data, line_items_data
+from tabs.summary_tab import turn_cost_over_time
 from tabs.individual_turn_drilldown_tab import drilldown_filters, individual_turn_timeline, individual_turn_budget_breakdown, individual_turn_drilldown, invoices_by_vendor
 from tabs.economic_turn_costs_tab import economic_turn_costs_filters, economic_turn_costs
 
@@ -32,7 +33,9 @@ line_items_df = line_items_data(credentials)
 
 # Application
 st.title("Turns Dashboard")
-individual_turn_drilldown_tab, economic_turn_costs_tab = st.tabs(["Individual Turn Drilldown", "Economic Turn Costs",])
+summary_tab, individual_turn_drilldown_tab, economic_turn_costs_tab = st.tabs(["Summary", "Individual Turn Drilldown", "Economic Turn Costs",])
+with summary_tab:
+    turn_cost_over_time(turns_df)
 with individual_turn_drilldown_tab:
     selected_turn_arr, filtered_construction_scopes_df, filtered_line_items_df = drilldown_filters(turns_df, construction_scopes_df, line_items_df)
     individual_turn_timeline(selected_turn_arr)
