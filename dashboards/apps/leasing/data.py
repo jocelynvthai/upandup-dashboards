@@ -135,3 +135,26 @@ def distinct_vacancy_data(_credentials):
     """
     return pd.read_gbq(query, credentials=_credentials)
 
+
+@st.cache_data
+def projected_economic_occupancy_data(_credentials):
+    query = """
+        SELECT 
+            * EXCEPT(total_gpr, total_gpr_not_vacant),
+            CAST(total_gpr AS FLOAT64) AS total_gpr,
+            CAST(total_gpr_not_vacant AS FLOAT64) AS total_gpr_not_vacant
+        FROM `homevest-data.dbt_prod_tin.projected_economic_occupancy`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def budget_economic_occupancy_data(_credentials):
+    query = """
+        SELECT * FROM `homevest-data.dbt_prod_tin.budget_economic_occupancy`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+
+

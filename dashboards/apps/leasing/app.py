@@ -11,7 +11,9 @@ from data import (
     inquiries_data, 
     tours_data, 
     vacancy_data, 
-    distinct_vacancy_data
+    distinct_vacancy_data, 
+    projected_economic_occupancy_data, 
+    budget_economic_occupancy_data
 )
 from tabs.utils import filters
 from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, leased_homes_stats, turn_times
@@ -21,6 +23,7 @@ from tabs.application_funnel_tab import application_funnel_grouped, application_
 from tabs.inquiries_tab import inquiries_grouped, num_inquiries, inquiries_filled_out_prequalification_form, inquiries_prequalified, homes_with_zero_inquiries
 from tabs.tours_tab import tours_grouped, tour_metrics, num_tours_by_source, num_tours_by_farthest_funnel_stage, homes_with_zero_tours
 from tabs.vacancy_tab import vacancy_filters, vacancy_curve
+from tabs.occupancy_tab import occupancy_forecast, occupancy_targets
 
 # Configure page layout
 st.set_page_config(
@@ -32,7 +35,7 @@ st.set_page_config(
 
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
 leasing_df = leasing_scraper_data(credentials)
 leasing_rent_changes_df = leasing_scraper_rent_changes_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
@@ -42,11 +45,13 @@ inquiries_df = inquiries_data(credentials)
 tours_df = tours_data(credentials)
 vacancy_df = vacancy_data(credentials)
 distinct_vacancy_df = distinct_vacancy_data(credentials)
+projected_economic_occupancy_df = projected_economic_occupancy_data(credentials)
+budget_economic_occupancy_df = budget_economic_occupancy_data(credentials)
 
 # Application
 st.title("Leasing Dashboard")
 
-summary_tab, competitors_tab, leasing_funnel_tab, application_funnel_tab, inquiries_tab, tours_tab, vacancy_tab = st.tabs(["Snapshot Summary", 'Competitors', 'Leasing Funnel', 'Application Funnel', 'Inquiries', 'Tours', 'Vacancy'])
+summary_tab, competitors_tab, leasing_funnel_tab, application_funnel_tab, inquiries_tab, tours_tab, vacancy_tab, occupancy_tab = st.tabs(["Snapshot Summary", 'Competitors', 'Leasing Funnel', 'Application Funnel', 'Inquiries', 'Tours', 'Vacancy', 'Occupancy'])
 with summary_tab:
     summary_start_date, summary_end_date = summary_filters(rental_applications_df)
     summary_metrics(rental_applications_df, summary_start_date, summary_end_date, raw_inquiries_df)
@@ -83,7 +88,9 @@ with tours_tab:
 with vacancy_tab:
     filtered_vacancy_df, selected_vacancy = vacancy_filters(distinct_vacancy_df, vacancy_df)
     vacancy_curve(filtered_vacancy_df)
-    
+with occupancy_tab:
+    occupancy_forecast(projected_economic_occupancy_df, budget_economic_occupancy_df)
+    occupancy_targets()
 
     
 
