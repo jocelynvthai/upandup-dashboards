@@ -6,6 +6,7 @@ from tabs.utils import LIGHT_RED
 
 
 def summary_filters(rental_applications_df):
+    st.badge('This is a snapshot view!', color='violet')
     col_date_range = st.columns(1)
 
     today = datetime.now()
@@ -21,7 +22,7 @@ def summary_filters(rental_applications_df):
 
 
 def summary_metrics(rental_applications_df, start_date, end_date, raw_inquiries_df):
-    st.subheader("Snapshot Summary Metrics", help="""This is a snapshot of the metrics for the selected period.""")
+    st.subheader("Summary Metrics", help="""This is a snapshot of the metrics for the selected period.""")
 
     num_inquiries = raw_inquiries_df[
         (raw_inquiries_df['date'] >= pd.to_datetime(start_date).tz_localize('UTC')) & 
