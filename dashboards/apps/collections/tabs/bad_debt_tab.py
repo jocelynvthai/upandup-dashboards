@@ -36,12 +36,11 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
 
     # Create a list of months for the domain (15th of each month)
     all_months = pd.date_range(
-        start=(bad_debt_fund['month'].min() - pd.DateOffset(days=30)).replace(day=15),
+        start=(bad_debt_fund['month'].min() - pd.DateOffset(days=15)),
         end=bad_debt_fund['month'].max(),
         freq='MS'
-    ) + pd.Timedelta(days=1)
+    )
     
-
     bad_debt_fund['month_str'] = bad_debt_fund['month'].dt.strftime('%Y-%m')
     latest_month = bad_debt_fund['month_str'].max()
     chart = alt.Chart(bad_debt_fund).mark_bar(size=40, color='#15b8a6').encode(
@@ -50,9 +49,7 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
             title='Month',
             axis=alt.Axis(
                 format='%b %Y',
-                labelAngle=0,
                 tickCount='month',
-                labelPadding=15,
                 labelAlign='left'
             ),
             scale=alt.Scale(domain=list(all_months))

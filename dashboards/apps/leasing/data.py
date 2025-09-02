@@ -152,14 +152,31 @@ def projected_economic_occupancy_data(_credentials):
 def budget_economic_occupancy_data(_credentials):
     query = """
         SELECT 
-            * EXCEPT(gross_potential_rent, early_term_loss, eviction_loss, average_vacancy_loss_recovered_per_lease),
+            * EXCEPT(gross_potential_rent, early_term_loss, eviction_loss, average_vacancy_loss_recovered_per_lease, prev_period_gross_potential_rent),
             CAST(gross_potential_rent AS FLOAT64) AS gross_potential_rent,
             CAST(early_term_loss AS FLOAT64) AS early_term_loss,
             CAST(eviction_loss AS FLOAT64) AS eviction_loss,
-            CAST(average_vacancy_loss_recovered_per_lease AS FLOAT64) AS average_vacancy_loss_recovered_per_lease
+            CAST(average_vacancy_loss_recovered_per_lease AS FLOAT64) AS average_vacancy_loss_recovered_per_lease, 
+            CAST(prev_period_gross_potential_rent AS FLOAT64) AS prev_period_gross_potential_rent
         FROM `homevest-data.dbt_prod_tin.budget_economic_occupancy`
     """
     return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def rental_data(_credentials):
+    query = """
+        SELECT 
+            r.*, 
+            ad.address, 
+            ad.fund, 
+            ad.market, 
+        FROM `homevest-data.dbt_prod.stg_actual_rentals` AS r
+        LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS ad
+            ON r.property_id = ad.property_id
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
 
 
 
