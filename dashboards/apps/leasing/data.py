@@ -114,7 +114,7 @@ def tours_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 @st.cache_data
-def vacancy_data(_credentials):
+def vacancy_curve_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod_tin.vacancy_curve`
     """
@@ -122,7 +122,7 @@ def vacancy_data(_credentials):
 
 
 @st.cache_data
-def distinct_vacancy_data(_credentials):
+def distinct_vacancies_data(_credentials):
     query = """
         SELECT DISTINCT
             property_id,
