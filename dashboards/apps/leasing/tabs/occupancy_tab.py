@@ -63,8 +63,8 @@ def economic_occupancy(projected_economic_occupancy_df, budget_economic_occupanc
         var_name='type',
         value_name='value'
     )
-    economic_occupancy['month_str'] = pd.to_datetime(economic_occupancy['date']).dt.strftime('%Y-%m-%d')
-    economic_occupancy['type'] = economic_occupancy['type'].map({'economic_occupancy_projected': 'Projected', 'economic_occupancy_budget': 'Budget'})
+    economic_occupancy['month_str'] = pd.to_datetime(economic_occupancy['date']).dt.strftime('%Y-%m')
+    economic_occupancy['type'] = economic_occupancy['type'].map({'economic_occupancy_projected': 'Projected', 'economic_occupancy_budget': 'Target'})
 
     all_months = pd.date_range(
         start=(monthly_projected_economic_occupancy['date'].min()),
@@ -72,11 +72,13 @@ def economic_occupancy(projected_economic_occupancy_df, budget_economic_occupanc
         freq='MS'
     )
 
-    chart = alt.Chart(economic_occupancy).mark_bar().encode(
-        x=alt.X('month_str:O', title='Month', axis=alt.Axis(labelAngle=-90)),
-        y=alt.Y('value:Q', title='Economic Occupancy (%)'),
+    min_value = max(economic_occupancy['value'].min() - 10, 0)
+
+    chart = alt.Chart(economic_occupancy).mark_line(point=True).encode(
+        x=alt.X('month_str:O', title='Month', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('value:Q', title='Economic Occupancy (%)',
+                scale=alt.Scale(domain=[min_value, 100], padding=10)),
         color=alt.Color('type:N', scale=alt.Scale(range=[TEAL, PURPLE])), 
-        xOffset='type:N', 
         tooltip=[
             alt.Tooltip("month_str:O", title='Month'), 
             alt.Tooltip('type:N', title='Type'), 
@@ -89,20 +91,21 @@ def economic_occupancy(projected_economic_occupancy_df, budget_economic_occupanc
 
 def upcoming_moves(rental_df): 
     types = {
-        'occupancy_date': 'Occupancy Date',
-        'move_out_date': 'Move Out Date'
+        'occupancy_date': 'Move-In Date',
+        'move_out_date': 'Move-Out Date'
     }
     for type in types.keys():
         formal_type = types[type].replace(' Date', '')
-        st.subheader(f"Upcoming {formal_type}")
+        st.subheader(f"Upcoming {formal_type}s")
 
         upcoming_moves = rental_df[rental_df[type] > datetime.now()][['address', 'fund', 'market', type]]
         if upcoming_moves.empty:
             st.badge(f"No upcoming {formal_type}s!", color="violet")
             continue
         upcoming_moves['month'] = pd.to_datetime(upcoming_moves[type]).dt.strftime('%B %Y')
+        upcoming_moves.sort_values(by=type, ascending=True, inplace=True)
         upcoming_moves.columns = [col.replace('_', ' ').title() for col in upcoming_moves.columns]
-        st.dataframe(upcoming_moves.sort_values(by=types[type], ascending=True), hide_index=True)
+        st.dataframe(upcoming_moves, hide_index=True)
 
 
 
