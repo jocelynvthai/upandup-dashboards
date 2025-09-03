@@ -108,6 +108,18 @@ def upcoming_moves(rental_df):
         st.dataframe(upcoming_moves, hide_index=True)
 
 
+def num_leases_to_target(projected_economic_occupancy_df, budget_economic_occupancy_df):
+    st.subheader("Number of Leases to Target")
+
+    st.dataframe(projected_economic_occupancy_df)
+    st.dataframe(budget_economic_occupancy_df)
+
+
+    this_month_projected = projected_economic_occupancy_df[(projected_economic_occupancy_df['time_granularity'] == 'month') & 
+                                                           (projected_economic_occupancy_df['date'] == datetime(datetime.now().year, datetime.now().month, 1))]
+    st.dataframe(this_month_projected)
+
+
 
 
 
