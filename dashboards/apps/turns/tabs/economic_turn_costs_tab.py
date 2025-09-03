@@ -31,6 +31,9 @@ def economic_turn_costs(turns_df):
         else row['project_estimated_cost'] + row['project_ticket_approved_budgets'], 
         axis=1
     )
+
+    turns_df['project_end_date'] = turns_df['project_end_date'].dt.strftime('%Y-%m-%d')
+    turns_df['last_change_order_date'] = turns_df['last_change_order_date'].dt.strftime('%Y-%m-%d')
     
     economic_turn_costs_df = turns_df[[
         'address', 
