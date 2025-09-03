@@ -1,7 +1,7 @@
 import streamlit as st
 import altair as alt
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tabs.utils import TEAL, PURPLE
 
@@ -43,44 +43,42 @@ def occupancy_metrics(projected_economic_occupancy_df, budget_economic_occupancy
 def economic_occupancy(projected_economic_occupancy_df, budget_economic_occupancy_df):
     st.subheader("Economic Occupancy")
     # 1. Projected Economic Occupancy
-    monthly_projected_economic_occupancy = projected_economic_occupancy_df[projected_economic_occupancy_df['time_granularity'] == 'month'].groupby('date').agg(
+    weekly_projected_economic_occupancy = projected_economic_occupancy_df[projected_economic_occupancy_df['time_granularity'] == 'week'].groupby('date').agg(
         total_gpr_not_vacant=('total_gpr_not_vacant', 'sum'),
         total_gpr=('total_gpr', 'sum')
     ).reset_index()
-    monthly_projected_economic_occupancy['economic_occupancy_projected'] = monthly_projected_economic_occupancy['total_gpr_not_vacant'] * 100 / monthly_projected_economic_occupancy['total_gpr']
+    weekly_projected_economic_occupancy['economic_occupancy_projected'] = weekly_projected_economic_occupancy['total_gpr_not_vacant'] * 100 / weekly_projected_economic_occupancy['total_gpr']
 
     # 2. Budget Economic Occupancy
-    monthly_budget_economic_occupancy = budget_economic_occupancy_df[budget_economic_occupancy_df['time_granularity'] == 'month'].groupby('period_start').agg(
+    weekly_budget_economic_occupancy = budget_economic_occupancy_df[budget_economic_occupancy_df['time_granularity'] == 'week'].groupby('period_start').agg(
         total_gpr_not_vacant=('gross_potential_rent_not_vacant', 'sum'),
         total_gpr=('gross_potential_rent', 'sum')
     ).reset_index()
-    monthly_budget_economic_occupancy['economic_occupancy_budget'] = monthly_budget_economic_occupancy['total_gpr_not_vacant'] * 100 / monthly_budget_economic_occupancy['total_gpr']
+    weekly_budget_economic_occupancy['economic_occupancy_budget'] = weekly_budget_economic_occupancy['total_gpr_not_vacant'] * 100 / weekly_budget_economic_occupancy['total_gpr']
     
     # 3. Combine Projected and Budget Economic Occupancy
-    economic_occupancy = pd.merge(monthly_projected_economic_occupancy, monthly_budget_economic_occupancy, left_on='date', right_on='period_start', how='inner').melt(
+    economic_occupancy = pd.merge(weekly_projected_economic_occupancy, weekly_budget_economic_occupancy, left_on='date', right_on='period_start', how='inner').melt(
         id_vars=['date'],
         value_vars=['economic_occupancy_projected', 'economic_occupancy_budget'],
         var_name='type',
         value_name='value'
     )
-    economic_occupancy['month_str'] = pd.to_datetime(economic_occupancy['date']).dt.strftime('%Y-%m')
+    economic_occupancy['week_str'] = pd.to_datetime(economic_occupancy['date']).dt.strftime('%Y-%m-%d')
     economic_occupancy['type'] = economic_occupancy['type'].map({'economic_occupancy_projected': 'Projected', 'economic_occupancy_budget': 'Target'})
 
-    all_months = pd.date_range(
-        start=(monthly_projected_economic_occupancy['date'].min()),
-        end=monthly_projected_economic_occupancy['date'].max(),
-        freq='MS'
-    )
+    # Filter for the next 12 weeks
+    current_week_start = pd.to_datetime(datetime.now() - timedelta(days=datetime.now().weekday()))
+    end_date = current_week_start + timedelta(weeks=12)
+    economic_occupancy = economic_occupancy[(economic_occupancy['date'] >= current_week_start) & (economic_occupancy['date'] < end_date)]
 
-    min_value = max(economic_occupancy['value'].min() - 10, 0)
-
+    min_economic_occupancy = max(economic_occupancy['value'].min() - 10, 0)
     chart = alt.Chart(economic_occupancy).mark_line(point=True).encode(
-        x=alt.X('month_str:O', title='Month', axis=alt.Axis(labelAngle=0)),
+        x=alt.X('week_str:O', title='Week', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('value:Q', title='Economic Occupancy (%)',
-                scale=alt.Scale(domain=[min_value, 100], padding=10)),
+                scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
         color=alt.Color('type:N', scale=alt.Scale(range=[TEAL, PURPLE])), 
         tooltip=[
-            alt.Tooltip("month_str:O", title='Month'), 
+            alt.Tooltip("week_str:O", title='Week'), 
             alt.Tooltip('type:N', title='Type'), 
             alt.Tooltip('value:Q', title='Value (%)', format='.2f')
         ]
@@ -104,8 +102,42 @@ def upcoming_moves(rental_df):
             continue
         upcoming_moves['month'] = pd.to_datetime(upcoming_moves[type]).dt.strftime('%B %Y')
         upcoming_moves.sort_values(by=type, ascending=True, inplace=True)
-        upcoming_moves.columns = [col.replace('_', ' ').title() for col in upcoming_moves.columns]
-        st.dataframe(upcoming_moves, hide_index=True)
+
+        grouped_moves = upcoming_moves.groupby('month')
+        html_rows = []
+        for month, group in grouped_moves:
+            month_count = group.shape[0]
+            for i, row in group.iterrows():
+                if i == group.index[0]:
+                    html_rows.append(f'''<tr>
+                                            <td rowspan="{month_count}">{month}</td>
+                                            <td>{row['address']}</td>
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            <td>{row[type]}</td>
+                                        </tr>''')
+                else:
+                    html_rows.append(f'''<tr>
+                                            <td>{row['address']}</td>
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            <td>{row[type]}</td>
+                                        </tr>''')
+
+        # Convert the rows to a complete HTML table
+        html_table = f'''<table class="dataframe" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Address</th>
+                                    <th>Fund</th>
+                                    <th>Market</th>
+                                    <th>{types[type]}</th>
+                                </tr>
+                            </thead>
+                            <tbody>{"".join(html_rows)}</tbody>
+                        </table>'''
+        st.markdown(html_table, unsafe_allow_html=True)
 
 
 def num_leases_to_target(projected_economic_occupancy_df, budget_economic_occupancy_df):
@@ -113,7 +145,6 @@ def num_leases_to_target(projected_economic_occupancy_df, budget_economic_occupa
 
     st.dataframe(projected_economic_occupancy_df)
     st.dataframe(budget_economic_occupancy_df)
-
 
     this_month_projected = projected_economic_occupancy_df[(projected_economic_occupancy_df['time_granularity'] == 'month') & 
                                                            (projected_economic_occupancy_df['date'] == datetime(datetime.now().year, datetime.now().month, 1))]
