@@ -50,8 +50,8 @@ with bad_debt_tab:
     bad_debt_month_to_date(filtered_bad_debt_inputs)
     bad_debt_projection(filtered_bad_debt_inputs)
 with evictions_tab:
-    filtered_evictions_data, evictions_selected_fund = evictions_filters(evictions_data)
-    gpr_evictions(gpr_evictions_data)
+    filtered_evictions_data, filtered_gpr_evictions_data, evictions_selected_fund = evictions_filters(evictions_data, gpr_evictions_data)
+    gpr_evictions(filtered_gpr_evictions_data)
     evictions_by_status(filtered_evictions_data)
 with data_tab:
     filtered_bad_debt_inputs, selected_month_year = data_filters(bad_debt_inputs_data)

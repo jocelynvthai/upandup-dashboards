@@ -93,7 +93,7 @@ def economic_turn_costs(turns_df):
                 pinned=True,
             ),
             "Drilldown": st.column_config.LinkColumn(
-                display_text='↪',
+                display_text=":material/link:",
                 pinned=True
             )
         },

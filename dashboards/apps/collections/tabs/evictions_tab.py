@@ -4,13 +4,15 @@ import altair as alt
 
 from tabs.utils import fund_filter, TEAL
 
-def evictions_filters(evictions_data):
+def evictions_filters(evictions_data, gpr_evictions_data):
     selected_fund = fund_filter(key='evictions_select_fund', data=evictions_data, include_all=True)
     if selected_fund != 'All':
         filtered_evictions_data = evictions_data[evictions_data['fund'] == selected_fund]
+        filtered_gpr_evictions_data = gpr_evictions_data[gpr_evictions_data['fund'] == selected_fund]
     else:
         filtered_evictions_data = evictions_data.copy()
-    return filtered_evictions_data, selected_fund
+        filtered_gpr_evictions_data = gpr_evictions_data.copy()
+    return filtered_evictions_data, filtered_gpr_evictions_data, selected_fund
 
 
 def gpr_evictions(filtered_evictions_data):
@@ -29,14 +31,14 @@ def gpr_evictions(filtered_evictions_data):
     monthly_gpr_evictions['gpr_in_evictions_percentage'] = monthly_gpr_evictions['gpr_in_evictions'] * 100 / monthly_gpr_evictions['total_gpr']
 
     monthly_gpr_evictions_chart = alt.Chart(monthly_gpr_evictions).mark_line(color=TEAL, point={'color': TEAL}).encode(
-        x='month:T', 
-        y='gpr_in_evictions_percentage:Q', 
+        x=alt.X('month:T', title='Month'),  # Renaming x-axis
+        y=alt.Y('gpr_in_evictions_percentage:Q', title='GPR in Evictions (%)'),  # Renaming y-axis
         tooltip=[
             alt.Tooltip('month:T', title='Month', format='%b %Y'),
             alt.Tooltip('gpr_in_evictions:Q', title='GPR in Evictions', format='$,.0f'),
             alt.Tooltip('total_gpr:Q', title='Total GPR', format='$,.0f'),
             alt.Tooltip('gpr_in_evictions_percentage:Q', title='GPR in Evictions Percentage', format='.1%')
-        ] 
+        ]
     ).properties(
         title='GPR in Evictions Percentage Over Time'
     )
@@ -106,7 +108,7 @@ def evictions_by_status(filtered_evictions_data):
             }
             return colors.get(val.lower(), '')
         styled_df = display_df.sort_values(by='Updated At', ascending=False).reset_index(drop=True).style.applymap(color_status, subset=['Status'])
-        st.dataframe(styled_df, 
+        st.dataframe(styled_df,
                      column_config={
                         'rental_link': st.column_config.LinkColumn(
                             label='Rental', 

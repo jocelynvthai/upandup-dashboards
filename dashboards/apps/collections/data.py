@@ -124,6 +124,7 @@ def gpr_evictions_data(_credentials):
         SELECT 
             dpt._date AS month, 
             dpt.property_id,
+            dpt.fund, 
             dpt.pg_occupancy_status, 
             CAST(noiy.gross_potential_rent_L1M AS FLOAT64) AS gpr, 
             dr.id AS rental_id,

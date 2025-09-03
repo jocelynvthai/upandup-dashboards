@@ -101,7 +101,7 @@ def individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_sc
                 hide_index=True, 
                 column_config={
                         'Link': st.column_config.LinkColumn(
-                        display_text='↪',
+                        display_text=":material/link:",
                         pinned=True,
                     )
                 }
@@ -136,7 +136,7 @@ def individual_turn_drilldown(filtered_line_items_df):
         hide_index=True,
         column_config={
             'Link': st.column_config.LinkColumn(
-                display_text='↪',
+                display_text=":material/link:",
                 pinned=True,
             ),
             'Amount': st.column_config.NumberColumn(
