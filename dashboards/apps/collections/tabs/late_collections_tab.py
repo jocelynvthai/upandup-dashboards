@@ -34,7 +34,6 @@ def late_collections_curve(collections_curve_data, selected_fund):
 
     chart_df = collections_curve_data[collections_curve_data['fund'] == selected_fund].copy()
 
-    # Melt to long format for Altair
     chart_df = chart_df.melt(
         id_vars=['day_of_month', 'rent_paid_late_this_month', 'rent_succeeded_late_this_month', 'rent_processing_late_this_month'],
         value_vars=[
@@ -98,6 +97,7 @@ def late_collections_curve(collections_curve_data, selected_fund):
     )
     
     st.altair_chart(chart + point_chart)
+
 
 def late_collections_drilldown(bad_debt_inputs_data, selected_fund):
     st.subheader("Late Collections Drilldown")

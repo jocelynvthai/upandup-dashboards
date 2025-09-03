@@ -12,6 +12,7 @@ def bad_debt_over_time_filters(bad_debt_inputs):
     filtered_bad_debt_inputs['bad_debt'] = (filtered_bad_debt_inputs['unpaid_rent_this_month'] - 
                                             filtered_bad_debt_inputs['unpaid_rent_covered_by_wallet'] - 
                                             filtered_bad_debt_inputs['bom_bad_debt_recovered_by_late_collections'])
+    filtered_bad_debt_inputs['bom_rent_balance'] = filtered_bad_debt_inputs.get('bom_rent_balance', 0).clip(lower=0)
     return filtered_bad_debt_inputs, selected_fund
 
 
@@ -26,7 +27,7 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
     )
     bad_debt_fund['bad_debt_ratio_percent'] = bad_debt_fund['bad_debt'] * 100 / bad_debt_fund['rent_charged']
 
-    # Set 'month' to the 15th of each month for centering
+    # # Set 'month' to the 15th of each month for centering
     bad_debt_fund['month'] = (
         pd.to_datetime(bad_debt_fund['month'])
         .dt.to_period('M')
@@ -103,7 +104,6 @@ def bad_debt_month_to_date(filtered_bad_debt_inputs):
 
 
 
-
 def bad_debt_projection(filtered_bad_debt_inputs):
     st.subheader("Bad Debt Projection")
     
@@ -114,14 +114,13 @@ def bad_debt_projection(filtered_bad_debt_inputs):
     today_ocr = bad_debt['ontime_rent_collections'].sum() / bad_debt['rent_charged'].sum()
     today_lcr = 0 if bad_debt['bom_rent_balance'].sum() == 0 else bad_debt['late_rent_collections'].sum() / bad_debt['bom_rent_balance'].sum()
 
-
     if today_ocr == 1 and bad_debt['bom_bad_debt_rent'].sum() == 0:
         st.write("100% collected this month and no BOM bad debt!")
     elif not np.isnan(today_ocr) and not np.isnan(today_lcr) and today_ocr != 1 and today_lcr != 1:
         col_new, col_ocr = st.columns([0.5, 1])
         with col_ocr:
             selected_ocr = st.slider("Expected Ontime Collections Rate (OCR) %", 
-                                    min_value=today_ocr*100, 
+                                    min_value=float(today_ocr*100),
                                     max_value=100.0, 
                                     value=max(96.0, today_ocr*100), 
                                     step=0.5, 
@@ -133,7 +132,7 @@ def bad_debt_projection(filtered_bad_debt_inputs):
         with col_lcr:
             selected_lcr = st.slider(
                 "Expected Late Collections Rate (LCR) %",
-                min_value=today_lcr * 100,
+                min_value=float(today_lcr * 100),
                 max_value=100.0,
                 value=max(25.0, today_lcr*100),
                 step=0.5,
