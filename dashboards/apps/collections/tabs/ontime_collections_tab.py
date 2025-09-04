@@ -15,7 +15,7 @@ def ontime_collections_curve_filters(collections_curve_data):
         (collections_curve_data['day_of_month'] == yesterday.day)
     ].iloc[0]
     with col_month:
-        st.metric("Collections Metrics as of", f"{yesterday.strftime('%B %d, %Y')}")
+        st.metric("Ontime Collections Metrics as of", f"{yesterday.strftime('%B %d, %Y')}")
     with col_rent_charged:
         st.metric("Rent Charged", f"${datapoint['rent_charged_this_month']:,.0f}")
     with col_today_succeeded:
