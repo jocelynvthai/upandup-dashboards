@@ -27,7 +27,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Data Retrieval
-credentials = service_account.Credentials.from_service_account_info(get_service_account_info(local=True))
+credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 bad_debt_inputs_data = get_bad_debt_inputs_data(credentials)
 collections_curve_data = get_collections_curve_data(credentials)
 evictions_data = get_evictions_data(credentials)
