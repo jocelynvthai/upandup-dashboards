@@ -55,7 +55,7 @@ def late_collections_curve(collections_curve_data, selected_fund):
         'late_collections_rate_l12m': 'Last 12 Months'
     })
     chart_df = chart_df[(
-        ((chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing'])) & (chart_df['day_of_month'] <= datetime.today().day)) |
+        ((chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing'])) & (chart_df['day_of_month'] < datetime.today().day)) |
         (~chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing']))
     )]
 

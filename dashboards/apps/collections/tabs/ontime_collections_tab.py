@@ -53,9 +53,10 @@ def ontime_collections_curve(collections_curve_data, selected_fund):
         'ontime_collections_rate_l12m': 'Last 12 Months'
     })
     chart_df = chart_df[(
-        ((chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing'])) & (chart_df['day_of_month'] <= datetime.today().day)) |
+        ((chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing'])) & (chart_df['day_of_month'] < datetime.today().day)) |
         (~chart_df['curve'].isin(['This Month Succeeded', 'This Month Succeeded + Processing']))
     )]
+    chart_min = chart_df['ratio'].min() - 0.05
 
     chart = alt.Chart(chart_df).mark_line().encode(
         x=alt.X('day_of_month:O', title='Day of Month'),
@@ -63,7 +64,7 @@ def ontime_collections_curve(collections_curve_data, selected_fund):
             'ratio:Q',
             title='Collections Rate',
             axis=alt.Axis(format='%'),
-            scale=alt.Scale(domain=[0.5, 1])
+            scale=alt.Scale(domain=[chart_min, 1])
         ),
         color=alt.Color(
             'curve:N',
