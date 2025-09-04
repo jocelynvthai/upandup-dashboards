@@ -152,13 +152,13 @@ def num_leases_to_target(economic_occupancy_df):
     hole_col, vacant_homes_col, recoverable_gpr_col, leases_needed_col = st.columns(4)
     with hole_col:
         hole = deadline_row['hole'].iloc[0]
-        st.metric("Hole", f"{hole:,.2f}")
+        st.metric("Hole", f"${hole:,.2f}")
     with vacant_homes_col:
         vacant_homes = deadline_row['num_properties'].iloc[0] - deadline_row['num_properties_occupied'].iloc[0]
-        st.metric("Vacant Homes", f"{vacant_homes:,.2f}")
+        st.metric("Vacant Homes", f"{vacant_homes:,.0f}")
     with recoverable_gpr_col:
         recoverable_gpr_per_home_per_day = (deadline_row['total_gpr'].iloc[0] - deadline_row['total_gpr_occupied'].iloc[0]) / (deadline_row['num_properties'].iloc[0] - deadline_row['num_properties_occupied'].iloc[0])
-        st.metric("Recoverable GPR per Home per Day", f"{recoverable_gpr_per_home_per_day:,.2f}")
+        st.metric("Recoverable GPR per Home per Day", f"${recoverable_gpr_per_home_per_day:,.2f}")
     with leases_needed_col:
         leases_needed = hole / recoverable_gpr_per_home_per_day
         st.metric("Leases Needed", f"{leases_needed:,.0f}")
