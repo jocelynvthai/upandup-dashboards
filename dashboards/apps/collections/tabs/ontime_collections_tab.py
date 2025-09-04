@@ -1,23 +1,27 @@
 import streamlit as st
 import altair as alt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tabs.utils import date_month_filter, fund_filter, color_scale, dash_scale
 
 
 def ontime_collections_curve_filters(collections_curve_data):
     selected_fund = fund_filter(key='ontime_collections_curve_select_fund', data=collections_curve_data)
-    col_month, col_rent_charged, col_today_paid, col_today_succeeded, col_today_l1m, col_today_l3m, col_today_l12m = st.columns([2, 1, 1, 1, 1, 1, 1])
+    col_month, col_rent_charged, col_today_succeeded, col_today_paid, col_today_l1m, col_today_l3m, col_today_l12m = st.columns([2, 1, 1, 1, 1, 1, 1])
 
-    datapoint = collections_curve_data[(collections_curve_data['fund'] == selected_fund) & (collections_curve_data['day_of_month'] == datetime.now().day)].iloc[0]
+    yesterday = datetime.now() - timedelta(days=1)
+    datapoint = collections_curve_data[
+        (collections_curve_data['fund'] == selected_fund) &
+        (collections_curve_data['day_of_month'] == yesterday.day)
+    ].iloc[0]
     with col_month:
-        st.metric(f"{datetime.now().strftime('%Y')}", f"{datetime.now().strftime('%B %d')}")
+        st.metric("Ontime Collections Metrics as of", f"{yesterday.strftime('%B %d, %Y')}")
     with col_rent_charged:
         st.metric("Rent Charged", f"${datapoint['rent_charged_this_month']:,.0f}")
-    with col_today_paid:
-        st.metric(f"Paid (Succeeded + Processing)", f"{datapoint['ontime_collections_rate_this_month'] * 100:.2f}%")
     with col_today_succeeded:
         st.metric(f"Paid (Succeeded)", f"{datapoint['ontime_collections_rate_succeeded_this_month'] * 100:.2f}%")
+    with col_today_paid:
+        st.metric(f"Paid (Succeeded + Processing)", f"{datapoint['ontime_collections_rate_this_month'] * 100:.2f}%")
     with col_today_l1m:
         st.metric(f"Last Month Paid", f"{datapoint['ontime_collections_rate_last_month'] * 100:.2f}%")
     with col_today_l3m:

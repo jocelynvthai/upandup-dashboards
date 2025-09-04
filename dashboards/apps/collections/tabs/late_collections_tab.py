@@ -1,24 +1,28 @@
 import streamlit as st
 import altair as alt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tabs.utils import date_month_filter, fund_filter, color_scale, dash_scale
 
 def late_collections_curve_filters(collections_curve_data):
     selected_fund = fund_filter(key='late_collections_curve_select_fund', data=collections_curve_data)
-    col_month, col_num_rentals_in_evictions, col_bom_rent_balance, col_today_paid, col_today_succeeded, col_today_l1m, col_today_l3m, col_today_l12m = st.columns(8)
+    col_month, col_bom_rent_balance, col_num_rentals_in_evictions, col_today_succeeded, col_today_paid, col_today_l1m, col_today_l3m, col_today_l12m = st.columns([2, 1, 1, 1, 1, 1, 1, 1])
 
-    datapoint = collections_curve_data[(collections_curve_data['fund'] == selected_fund) & (collections_curve_data['day_of_month'] == datetime.now().day)].iloc[0]
+    yesterday = datetime.now() - timedelta(days=1)
+    datapoint = collections_curve_data[
+        (collections_curve_data['fund'] == selected_fund) &
+        (collections_curve_data['day_of_month'] == yesterday.day)
+    ].iloc[0]
     with col_month:
-        st.metric(f"{datetime.now().strftime('%Y')}", f"{datetime.now().strftime('%B')}")
-    with col_bom_rent_balance:
-        st.metric("BOM AR", f"${datapoint['bom_rent_balance_this_month']:,.0f}")
+        st.metric("Late Collections Metrics as of", f"{yesterday.strftime('%B %d, %Y')}")
     with col_num_rentals_in_evictions:
-        st.metric("Eviction/Total 🏠 with AR", f"{datapoint['homes_with_bom_rent_balance_in_evictions_this_month']:,} / {datapoint['homes_with_bom_rent_balance_this_month']:,}")
-    with col_today_paid:
-        st.metric("Paid (Succeeded + Processing)", f"{datapoint['late_collections_rate_this_month'] * 100:.2f}%")
+        st.metric("\# Evictions / Total 🏠 with A/R", f"{datapoint['homes_with_bom_rent_balance_in_evictions_this_month']:,} / {datapoint['homes_with_bom_rent_balance_this_month']:,}")
+    with col_bom_rent_balance:
+        st.metric("BoM A/R", f"${datapoint['bom_rent_balance_this_month']:,.0f}")
     with col_today_succeeded:
         st.metric("Paid (Succeeded)", f"{datapoint['late_collections_rate_succeeded_this_month'] * 100:.2f}%")
+    with col_today_paid:
+        st.metric("Paid (Succeeded + Processing)", f"{datapoint['late_collections_rate_this_month'] * 100:.2f}%")
     with col_today_l1m:
         st.metric("Last Month Paid", f"{datapoint['late_collections_rate_last_month'] * 100:.2f}%")
     with col_today_l3m:
