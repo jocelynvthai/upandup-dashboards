@@ -3,8 +3,9 @@ import altair as alt
 import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
-from tabs.utils import GRAY, TEAL, PURPLE
+from tabs.utils import generate_new_economic_occupancy_df, economic_occupancy_chart, GRAY, TEAL, PURPLE
 
 
 TODAY = datetime.now().date()
@@ -12,7 +13,7 @@ TODAY = datetime.now().date()
 def occupancy_filters(economic_occupancy_df, rental_df):
     col_fund, col_market = st.columns(2)
 
-    filtered_economic_occupancy_df = economic_occupancy_df.copy()
+    filtered_economic_occupancy_df = economic_occupancy_df.copy().sort_values(by='date', ascending=False)
     filtered_rental_df = rental_df.copy()
     with col_fund:
         selected_fund = st.selectbox("Select a fund", ['All'] + sorted(list(economic_occupancy_df['fund'].unique())))
@@ -28,6 +29,7 @@ def occupancy_filters(economic_occupancy_df, rental_df):
 
 
 def occupancy_metrics(economic_occupancy_df):
+    st.subheader("Today's Occupancy Metrics")
     economic_occupancy_col, physical_occupancy_col = st.columns(2)
     today_occupancy = economic_occupancy_df[economic_occupancy_df['date'] == datetime.now()]
     with economic_occupancy_col:
@@ -41,7 +43,7 @@ def occupancy_metrics(economic_occupancy_df):
 
 
 def economic_occupancy(economic_occupancy_df):
-    st.subheader("Economic Occupancy")
+    st.subheader("Projected Economic Occupancy")
 
     time_granularity_col, date_range_col = st.columns(2)
     with time_granularity_col:
@@ -66,48 +68,28 @@ def economic_occupancy(economic_occupancy_df):
     economic_occupancy_selected = economic_occupancy_df[(economic_occupancy_df['time_granularity'] == selected_time_granularity) &
                                                         (economic_occupancy_df['date'] >= start) &
                                                         (economic_occupancy_df['date'] < end)
-    ].groupby('date').agg(
+    ]
+    economic_occupancy_selected = economic_occupancy_selected.groupby('date').agg(
         total_gpr=('total_gpr', 'sum'), 
         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
         total_gpr_occupied=('total_gpr_occupied', 'sum'), 
         total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
     ).reset_index()
+
     economic_occupancy_selected['economic_occupancy_potentially_occupied'] = economic_occupancy_selected['total_gpr_potentially_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_occupied'] = economic_occupancy_selected['total_gpr_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_occupied_budget'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
-    
-    economic_occupancy_chart = economic_occupancy_selected.melt(
-        id_vars=['date'],
-        value_vars=['economic_occupancy_potentially_occupied', 'economic_occupancy_occupied', 'economic_occupancy_occupied_budget'],
-        var_name='type',
-        value_name='value'
-    )
- 
-    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['date']).dt.strftime('%Y-%m-%d')
-    economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(
-        {'economic_occupancy_potentially_occupied': 'Projected Potentially Occupied', 
-        'economic_occupancy_occupied': 'Projected Occupied', 
-        'economic_occupancy_occupied_budget': 'Target'})
 
-    # set lower bound of y-axis
-    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 10, 0)
-    chart = alt.Chart(economic_occupancy_chart).mark_line(point=True).encode(
-        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()}', axis=alt.Axis(labelAngle=0)),
-        y=alt.Y('value:Q', title='Economic Occupancy (%)',
-                scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
-        color=alt.Color('type:N', scale=alt.Scale(range=[TEAL, PURPLE, GRAY])), 
-        tooltip=[
-            alt.Tooltip("time_str:O", title='Week'), 
-            alt.Tooltip('type:N', title='Type'), 
-            alt.Tooltip('value:Q', title='Value (%)', format='.2f')
-        ]
+    economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_occupied_budget', ['economic_occupancy_potentially_occupied', 'economic_occupancy_occupied'], selected_time_granularity)
+    st.markdown(
+        '<div style="text-align: right;"><em>Potentially Occupied assumes that all current leases will be renewed, whereas Occupied assumes that all current leases will move out.</em></div>',
+        unsafe_allow_html=True
     )
 
-    st.altair_chart(chart)
 
 
 def num_leases_to_target(economic_occupancy_df):
-    st.subheader("Number of Leases to Target")
+    st.subheader("Number of Leases to Target (Option 1)")
     deadline_col, deadline_date_col = st.columns([6, 1])
     with deadline_col:
         deadline_options = {
@@ -165,6 +147,55 @@ def num_leases_to_target(economic_occupancy_df):
 
     st.write('**Recovery Days Table:**')
     st.dataframe(day_economic_occupancy)
+
+
+def num_leases_to_target_2(economic_occupancy_df):
+    st.subheader("Number of Leases to Target (Option 2)")
+
+    day_economic_occupancy = economic_occupancy_df[(economic_occupancy_df['time_granularity'] == 'day') &
+                                                    (economic_occupancy_df['date'] >= pd.to_datetime('2025-08-01'))
+    ].groupby('date').agg(
+        num_properties=('num_properties', 'sum'),
+        num_properties_potentially_occupied=('num_properties_potentially_occupied', 'sum'),
+        num_properties_occupied=('num_properties_occupied', 'sum'),
+        total_gpr=('total_gpr', 'sum'),
+        total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
+        total_gpr_occupied=('total_gpr_occupied', 'sum'),
+        total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+    ).reset_index()
+    day_economic_occupancy['total_gpr_per_property'] = day_economic_occupancy['total_gpr'] / day_economic_occupancy['num_properties']
+
+    # Select a deadline and a number of leases
+    deadline_col, num_leases_col, optimal_num_leases_col = st.columns([2, 2, 1])
+    with deadline_col:
+        selected_deadline = st.date_input("Select a deadline", 
+                                        value=TODAY + relativedelta(weeks=1, weekday=6), 
+                                        min_value=TODAY + relativedelta(days=1),
+                                        max_value=max(economic_occupancy_df['date']),
+                                        help="The date all leases need to be signed by",
+                                        key="num_leases_to_target_2_deadline")
+        deadline_row = day_economic_occupancy[day_economic_occupancy['date'] == selected_deadline]
+        num_vacant_homes = deadline_row['num_properties'].iloc[0] - deadline_row['num_properties_occupied'].iloc[0]
+    with num_leases_col:
+        selected_num_leases = st.slider("Select # of leases", min_value=1, max_value=num_vacant_homes, value=1, help="The number of leases that need to be signed")
+
+    signed_leases, lease_distribution = generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases)
+    optimal_num_leases = 0
+    optimal_diff = float('inf')
+    for i in range(1, num_vacant_homes):
+        signed_leases_i, lease_distribution_i = generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, i)
+        diff = (signed_leases_i['economic_occupancy_budget'] - signed_leases_i['economic_occupancy_new_projected']).sum()
+        if diff < optimal_diff:
+            optimal_diff = diff
+            optimal_num_leases = i
+    # with optimal_num_leases_col:
+    #     st.metric("Optimal # of Leases", f"{optimal_num_leases:,.0f}")
+
+    st.write(f'**Assumption 1: Each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime('%Y-%m-%d')}). See below.**')
+    st.dataframe(lease_distribution, hide_index=True)
+    st.write('**Assumption 2: Each lease signed has a length of 365 days.**')
+    st.write('**Assumption 3: Move in, aka GPR recovery, occurs 8 days after the lease signed date.**')
+    economic_occupancy_chart(signed_leases[signed_leases['date'] <= TODAY + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
 
 
 

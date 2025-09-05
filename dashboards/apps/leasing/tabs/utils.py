@@ -72,7 +72,6 @@ def filters(df, tab_name, community_filter=False):
     return filtered_df, selected_time_granularity
 
 
-
 def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, time_metric):
     first_stage_column = f"total_num_{first_stage.lower().replace(' ', '_')}"
     second_stage_column = f"total_num_{second_stage.lower().replace(' ', '_')}"
@@ -320,3 +319,76 @@ def create_funnel_chart_old(grouped_df, funnel_stages, chart_type="application")
     # Combine main chart with legend - main chart will expand, legend stays fixed
     chart = alt.hconcat(main_chart, legend, spacing=10)
     st.altair_chart(chart, use_container_width=True) 
+
+
+def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases):
+    today = datetime.now().date()
+    # Generate a uniform lease signed distribution between TODAY and selected_deadline
+    num_days = (selected_deadline - today).days + 1
+    interval = num_days / selected_num_leases
+    lease_signed_dates = [today + timedelta(days=round(i*interval)) for i in range(selected_num_leases)]
+
+    lease_distribution = pd.DataFrame({
+        'date': lease_signed_dates,
+        'leases': [1] * (selected_num_leases),
+    }).groupby('date').agg(
+        num_leases_signed=('leases', 'sum')
+    ).reset_index()
+
+    # Set the recovery start to be 3 days after the lease signed date
+    signed_leases = day_economic_occupancy.merge(lease_distribution, left_on='date', right_on='date', how='left').fillna(0)
+    signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(8, fill_value=0)
+
+    signed_leases['recovery_leases'] = 0
+    for idx, row in signed_leases.iterrows():
+        if row['recovery_leases_start'] > 0:
+            start_idx = idx
+            end_idx = min(idx + 365, len(signed_leases))  # cap at dataframe length
+            signed_leases.loc[start_idx:end_idx-1, 'recovery_leases'] += row['recovery_leases_start']
+
+    signed_leases['recovery_gpr'] = signed_leases['total_gpr_per_property'] * signed_leases['recovery_leases']
+    signed_leases['economic_occupancy_budget'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
+    signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
+    signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
+
+    return signed_leases, lease_distribution
+
+
+
+def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, selected_time_granularity):
+    economic_occupancy_chart = economic_occupancy_df.melt(
+        id_vars=['date'],
+        value_vars=[budget_col] + series_cols,
+        var_name='type',
+        value_name='value'
+    )
+
+    type_mappings = {}
+    for type in economic_occupancy_chart['type'].unique():
+        type_mappings[type] = type.replace('economic_occupancy_', '').replace('_', ' ').title()
+ 
+    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['date']).dt.strftime('%Y-%m-%d')
+    economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(type_mappings) 
+    
+    # set lower bound of y-axis
+    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 10, 0)
+    chart = alt.Chart(economic_occupancy_chart).mark_line(point=True).encode(
+        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()}', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('value:Q', title='Economic Occupancy (%)',
+                scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
+        color=alt.Color(
+            'type:N', 
+            scale=alt.Scale(
+                domain=type_mappings.values(), 
+                range=[GRAY, TEAL] if len(series_cols) == 1 else [GRAY, TEAL, PURPLE]
+            )
+        ), 
+        tooltip=[
+            alt.Tooltip("time_str:O", title=selected_time_granularity.title()), 
+            alt.Tooltip('type:N', title='Type'), 
+            alt.Tooltip('value:Q', title='Value (%)', format='.2f')
+        ]
+    )
+
+    st.altair_chart(chart)
+    
