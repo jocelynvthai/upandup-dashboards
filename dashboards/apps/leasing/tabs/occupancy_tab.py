@@ -2,10 +2,10 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta, MO
 from datetime import timedelta
 
-from tabs.utils import generate_new_economic_occupancy_df, economic_occupancy_chart, GRAY, TEAL, PURPLE
+from tabs.utils import generate_new_economic_occupancy_df, economic_occupancy_chart, GRAY, TEAL, DARK_TEAL, PURPLE
 
 
 TODAY = datetime.now().date()
@@ -220,10 +220,19 @@ def num_leases_to_target_3(economic_occupancy_df):
         week_economic_occupancy['economic_occupancy_best_case'] = week_economic_occupancy['total_gpr_potentially_occupied'] / week_economic_occupancy['total_gpr']
         week_economic_occupancy['economic_occupancy_worst_case'] = week_economic_occupancy['total_gpr_occupied'] / week_economic_occupancy['total_gpr']
         week_economic_occupancy['economic_occupancy_budget'] = week_economic_occupancy['total_gpr_occupied_budget'] / week_economic_occupancy['total_gpr']
+        
+
 
         # 1. Chosen deadline week's target Economic Occupancy
         # Define the "deadline week", which will default to the week after next (can make this user-configurable later)
-        deadline_week_start = TODAY + relativedelta(weeks=1, days=1, weekday=0)
+        SUNDAY = TODAY - relativedelta(days=1)
+        selected_deadline_week = st.selectbox("Select a deadline week", ['This week', 'Next week', 'Next next week'], index=1)
+        if selected_deadline_week == 'This week':
+            deadline_week_start = TODAY + relativedelta(weekday=MO(-1))
+        elif selected_deadline_week == 'Next week':
+            deadline_week_start = TODAY + relativedelta(weeks=1, weekday=MO(-1))
+        elif selected_deadline_week == 'Next next week':
+            deadline_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
         deadline_week_end = deadline_week_start + relativedelta(days=6)
         deadline_week_formatted = f"{deadline_week_start.strftime('%b %d')} - {deadline_week_end.strftime('%b %d')}"
         deadline_row = week_economic_occupancy[week_economic_occupancy['date'] == deadline_week_start].iloc[0]
@@ -265,14 +274,39 @@ def num_leases_to_target_3(economic_occupancy_df):
             new_num_leases_needed = new_gpr_needed_to_hit_budget / gpr_per_new_lease
 
             catch_up_gpr_arr.append(catch_up_gpr)
-            leases_needed_week_arr.append(new_num_leases_needed)
+            leases_needed_week_arr.append(round(new_num_leases_needed, 1))
             catch_up_leases_signed_arr.append(catch_up_leases_signed_arr[-1] + new_num_leases_needed)
 
         target_leases['catch_up_leases_signed'] = catch_up_leases_signed_arr[:-1]
         target_leases['catch_up_gpr'] = catch_up_gpr_arr
-        target_leases['leases_needed_week'] = leases_needed_week_arr
-        
-        st.dataframe(target_leases)
+        target_leases['signed_leases_needed'] = leases_needed_week_arr
+        target_leases['is_deadline_week'] = target_leases['date'] == deadline_week_start
+
+        target_leases_per_week_chart = alt.Chart(target_leases).mark_bar(color=TEAL, point={'color': TEAL}).encode(
+            x=alt.X('date', title='Week'),
+            y=alt.Y('signed_leases_needed', title='# Signed Leases'), 
+            color=alt.condition(
+                alt.datum.is_deadline_week,
+                alt.value(TEAL), 
+                alt.value(DARK_TEAL)  
+            ),
+            tooltip=[
+                alt.Tooltip('date', title='Week Start'),
+                alt.Tooltip('signed_leases_needed', title='# Signed Leases Needed')
+            ]
+        ).properties(
+            title="# Signed Leases per Week to Maintain 95% Economic Occupancy",
+            width=600,
+            height=400
+        )
+        target_leases_per_week_text = target_leases_per_week_chart.mark_text(
+            align='center',
+            baseline='bottom',
+            dy=-5
+        ).encode(
+            text='signed_leases_needed:Q'
+        )
+        st.altair_chart(target_leases_per_week_chart + target_leases_per_week_text, use_container_width=True)
 
 
 def upcoming_moves(rental_df): 
@@ -284,50 +318,49 @@ def upcoming_moves(rental_df):
         formal_type = types[type].replace(' Date', '')
         st.subheader(f"Upcoming {formal_type}s")
 
-        with st.container(border=True):
-            upcoming_moves = rental_df[rental_df[type] > datetime.now()][['address', 'fund', 'market', type]].sort_values(by=type, ascending=True)
-            if upcoming_moves.empty:
-                st.badge(f"No upcoming {formal_type}s!", color="violet")
-                continue
-            upcoming_moves['month'] = pd.to_datetime(upcoming_moves[type]).dt.strftime('%B %Y')
-            upcoming_moves.sort_values(by=type, ascending=True, inplace=True)
+        upcoming_moves = rental_df[rental_df[type] > datetime.now()][['address', 'fund', 'market', type]].sort_values(by=type, ascending=True)
+        if upcoming_moves.empty:
+            st.badge(f"No upcoming {formal_type}s!", color="violet")
+            continue
+        upcoming_moves['month'] = pd.to_datetime(upcoming_moves[type]).dt.strftime('%B %Y')
+        upcoming_moves.sort_values(by=type, ascending=True, inplace=True)
 
-            grouped_moves = upcoming_moves.groupby('month')
-            html_rows = []
-            sorted_months = sorted(grouped_moves.groups.keys(), key=lambda x: pd.to_datetime(x, format='%B %Y'))
-            for month in sorted_months:
-                group = grouped_moves.get_group(month)
-                month_count = group.shape[0]
-                for i, row in group.iterrows():
-                    if i == group.index[0]:
-                        html_rows.append(f'''<tr>
-                                                <td rowspan="{month_count}">{month}</td>
-                                                <td>{row['address']}</td>
-                                                <td>{row['fund']}</td>
-                                                <td>{row['market']}</td>
-                                                <td>{row[type]}</td>
-                                            </tr>''')
-                    else:
-                        html_rows.append(f'''<tr>
-                                                <td>{row['address']}</td>
-                                                <td>{row['fund']}</td>
-                                                <td>{row['market']}</td>
-                                                <td>{row[type]}</td>
-                                            </tr>''')
+        grouped_moves = upcoming_moves.groupby('month')
+        html_rows = []
+        sorted_months = sorted(grouped_moves.groups.keys(), key=lambda x: pd.to_datetime(x, format='%B %Y'))
+        for month in sorted_months:
+            group = grouped_moves.get_group(month)
+            month_count = group.shape[0]
+            for i, row in group.iterrows():
+                if i == group.index[0]:
+                    html_rows.append(f'''<tr>
+                                            <td rowspan="{month_count}">{month}</td>
+                                            <td>{row['address']}</td>
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            <td>{row[type]}</td>
+                                        </tr>''')
+                else:
+                    html_rows.append(f'''<tr>
+                                            <td>{row['address']}</td>
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            <td>{row[type]}</td>
+                                        </tr>''')
 
-            # Convert the rows to a complete HTML table
-            html_table = f'''<table class="dataframe" style="width: 100%;">
-                                <thead>
-                                    <tr>
-                                        <th>Month</th>
-                                        <th>Address</th>
-                                        <th>Fund</th>
-                                        <th>Market</th>
-                                        <th>{types[type]}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>{"".join(html_rows)}</tbody>
-                            </table>'''
-            st.markdown(html_table, unsafe_allow_html=True)
+        # Convert the rows to a complete HTML table
+        html_table = f'''<table class="dataframe" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Address</th>
+                                    <th>Fund</th>
+                                    <th>Market</th>
+                                    <th>{types[type]}</th>
+                                </tr>
+                            </thead>
+                            <tbody>{"".join(html_rows)}</tbody>
+                        </table>'''
+        st.markdown(html_table, unsafe_allow_html=True)
 
 
