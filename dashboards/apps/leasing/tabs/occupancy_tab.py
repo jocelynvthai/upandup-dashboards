@@ -191,7 +191,7 @@ def num_leases_to_target_2(economic_occupancy_df):
     # with optimal_num_leases_col:
     #     st.metric("Optimal # of Leases", f"{optimal_num_leases:,.0f}")
 
-    st.write(f'**Assumption 1: Each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime('%Y-%m-%d')}). See below.**')
+    st.write(f'**Assumption 1: Each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime("Y-%m-%d")}). See below.**')
     st.dataframe(lease_distribution, hide_index=True)
     st.write('**Assumption 2: Each lease signed has a length of 365 days.**')
     st.write('**Assumption 3: Move in, aka GPR recovery, occurs 8 days after the lease signed date.**')
