@@ -21,7 +21,7 @@ from tabs.inquiries_tab import inquiries_grouped, num_inquiries, inquiries_fille
 from tabs.tours_tab import tours_grouped, tour_metrics, num_tours_by_source, num_tours_by_farthest_funnel_stage, homes_with_zero_tours
 from tabs.leasing_funnel_tab import leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
-from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, num_leases_to_target_2, upcoming_moves
+from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, num_leases_to_target_2, num_leases_to_target_3, upcoming_moves
 from tabs.vacancy_curve_tab import vacancy_curve_filters, vacancy_curve
 from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, leased_homes_stats, turn_times
 
@@ -85,6 +85,7 @@ with occupancy_tab:
     economic_occupancy(filtered_economic_occupancy_df)
     num_leases_to_target(filtered_economic_occupancy_df)
     num_leases_to_target_2(filtered_economic_occupancy_df)
+    num_leases_to_target_3(filtered_economic_occupancy_df)
     upcoming_moves(filtered_rental_df)
 with vacancy_curve_tab:
     filtered_vacancy_curve_df, selected_vacancy = vacancy_curve_filters(distinct_vacancies_df, vacancy_curve_df)

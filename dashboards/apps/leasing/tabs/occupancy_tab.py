@@ -9,6 +9,7 @@ from tabs.utils import generate_new_economic_occupancy_df, economic_occupancy_ch
 
 
 TODAY = datetime.now().date()
+MONDAY = TODAY - relativedelta(days=TODAY.weekday())
 
 def occupancy_filters(economic_occupancy_df, rental_df):
     col_fund, col_market = st.columns(2)
@@ -197,7 +198,55 @@ def num_leases_to_target_2(economic_occupancy_df):
     st.write('**Assumption 3: Move in, aka GPR recovery, occurs 8 days after the lease signed date.**')
     economic_occupancy_chart(signed_leases[signed_leases['date'] <= TODAY + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
 
+def num_leases_to_target_3(economic_occupancy_df):
+    st.subheader("Number of Leases to Target (Option 3)")
+    week_economic_occupancy = economic_occupancy_df[
+        (economic_occupancy_df['time_granularity'] == 'week') &
+        (economic_occupancy_df['date'] >= MONDAY)
+    ]
+    week_economic_occupancy = week_economic_occupancy.groupby('date').agg(
+        num_properties=('num_properties', 'sum'),
+        num_properties_potentially_occupied=('num_properties_potentially_occupied', 'sum'),
+        num_properties_occupied=('num_properties_occupied', 'sum'),
+        total_gpr=('total_gpr', 'sum'),
+        total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
+        total_gpr_occupied=('total_gpr_occupied', 'sum'),
+        total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+    ).reset_index()
+    week_economic_occupancy['economic_occupancy_best_case'] = week_economic_occupancy['total_gpr_potentially_occupied'] / week_economic_occupancy['total_gpr']
+    week_economic_occupancy['economic_occupancy_worst_case'] = week_economic_occupancy['total_gpr_occupied'] / week_economic_occupancy['total_gpr']
+    week_economic_occupancy['economic_occupancy_budget'] = week_economic_occupancy['total_gpr_occupied_budget'] / week_economic_occupancy['total_gpr']
 
+    # Define the "deadline week", which will default to the week after next (can make this user-configurable later)
+    deadline_week_start = TODAY + relativedelta(weeks=1, days=1, weekday=0)
+    deadline_week_end = deadline_week_start + relativedelta(days=6)
+    deadline_week_formatted = f"{deadline_week_start.strftime('%b %d')} - {deadline_week_end.strftime('%b %d')}"
+    deadline_row = week_economic_occupancy[week_economic_occupancy['date'] == deadline_week_start].iloc[0]
+
+    # Compute the rent gained during the deadline week for one new lease
+    total_gpr_vacant_homes = deadline_row['total_gpr'] - deadline_row['total_gpr_occupied']
+    num_vacant_homes = deadline_row['num_properties'] - deadline_row['num_properties_occupied']
+    gpr_per_new_lease = total_gpr_vacant_homes / num_vacant_homes
+    # Use this to determine the number of new leases needed to hit budget
+    gpr_needed_to_hit_budget = max(deadline_row['total_gpr_occupied_budget'] - deadline_row['total_gpr_occupied'], 0)
+    num_new_leases_needed = gpr_needed_to_hit_budget / gpr_per_new_lease
+
+    metrics_container = st.container(border=True)
+    with metrics_container:
+        st.markdown(f"##### Deadline Week: {deadline_week_formatted}")
+        deadline_worst_case_col, deadline_best_case_col= st.columns(2)
+        with deadline_worst_case_col:
+            st.metric(f"Worst-Case Economic Occupancy as of Deadline Week", f"{deadline_row['economic_occupancy_worst_case']:.2%}")
+        with deadline_best_case_col:
+            st.metric(f"Best-Case Economic Occupancy as of Deadline Week", f"{deadline_row['economic_occupancy_best_case']:.2%}")
+        st.metric(f"Budgeted Economic Occupancy as of Deadline Week", f"{deadline_row['economic_occupancy_budget']:.2%}")
+        st.divider()
+        gpr_to_hit_budget_col, rent_per_new_lease_col = st.columns(2)
+        with gpr_to_hit_budget_col:
+            st.metric(f"Additional Rent Needed to hit Budgeted Economic Occupancy as of Deadline Week", f"${gpr_needed_to_hit_budget:.2f}")
+        with rent_per_new_lease_col:
+            st.metric(f"Rent Gained per New Lease during Deadline Week", f"${gpr_per_new_lease:.2f}")
+        st.metric(f"\# New Leases to hit Budgeted Economic Occupancy", f"{num_new_leases_needed:.2f}")
 
 def upcoming_moves(rental_df): 
     types = {
