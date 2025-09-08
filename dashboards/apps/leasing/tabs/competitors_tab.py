@@ -58,7 +58,6 @@ def metrics():
     ''', unsafe_allow_html=True)
 
 
-
 def clearance_rates(filtered_leasing_period_df, start_date, end_date):
     st.subheader("Clearance Rates")
     prelease_df = filtered_leasing_period_df[filtered_leasing_period_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
@@ -78,7 +77,6 @@ def clearance_rates(filtered_leasing_period_df, start_date, end_date):
         st.metric("Pre-lease Clearance Rate", f"{prelease_clearance_rate:.2f}%", help="% of pre-lease homes (Notice Unrented, Vacant Unrented Not Ready) rented in period range")
     with col_rent_ready_clearance_rate:
         st.metric("Rent Ready Clearance Rate", f"{rent_ready_clearance_rate:.2f}%", help="% of rent ready homes (Vacant Unrented Ready) rented in period range")
-
 
 
 def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, start_date, end_date, color_scale):
