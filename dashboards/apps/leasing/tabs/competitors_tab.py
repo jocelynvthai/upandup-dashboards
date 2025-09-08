@@ -94,6 +94,28 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
         homes_rented_type_df = homes_rented_df[homes_rented_df['last_status'].isin(['Notice Unrented', 'Vacant Unrented Not Ready'])]
     elif selected_lease_type == 'Rent Ready':
         homes_rented_type_df = homes_rented_df[homes_rented_df['last_status'].isin(['Vacant Unrented Ready'])]
+    
+
+    # Leased Homes by Day of Week
+    homes_rented_type_df['lease_signed_day_of_week'] = pd.to_datetime(homes_rented_type_df['last_lease_signed']).dt.day_name()
+    lease_signed_dow_perc = round(homes_rented_type_df['lease_signed_day_of_week'].value_counts(normalize=True) * 100, 2).reset_index()
+    lease_signed_dow_perc.columns = ['Day of Week', 'Percentage']
+    lease_signed_dow_perc_chart = alt.Chart(lease_signed_dow_perc).mark_bar(color=TEAL).encode(
+        x=alt.X('Day of Week', sort=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
+        y=alt.Y('Percentage', title='% of Signed Leases')
+    ).properties(
+        title="% of Signed Leases by Day of Week",
+        width=600,
+        height=400
+    )
+    lease_signed_dow_perc_text = lease_signed_dow_perc_chart.mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5
+    ).encode(
+        text='Percentage:Q'
+    )
+    st.altair_chart(lease_signed_dow_perc_chart + lease_signed_dow_perc_text, use_container_width=True)
 
 
     # Rent Change Chart
@@ -211,6 +233,7 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
         ('Median Days on Market', 'Rent Ready')
     ])
     st.dataframe(stats_df, use_container_width=True)
+
 
 
 def turn_times(filtered_leasing_period_df, color_scale):
