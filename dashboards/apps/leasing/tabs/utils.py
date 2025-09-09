@@ -370,7 +370,7 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
     ).add_selection(
         selection
     )
-    st.altair_chart(chart)
+    return chart
 
 
 def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases):

@@ -99,7 +99,8 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
     lease_signed_dow_perc = round(homes_rented_type_df['lease_signed_day_of_week'].value_counts(normalize=True) * 100, 2).reset_index()
     lease_signed_dow_perc.columns = ['Day of Week', 'Percentage']
     lease_signed_dow_perc_chart = alt.Chart(lease_signed_dow_perc).mark_bar(color=TEAL).encode(
-        x=alt.X('Day of Week', sort=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
+        x=alt.X('Day of Week', sort=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                axis=alt.Axis(labelAngle=0)), 
         y=alt.Y('Percentage', title='% of Signed Leases')
     ).properties(
         title="% of Signed Leases by Day of Week",

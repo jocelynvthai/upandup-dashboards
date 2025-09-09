@@ -83,7 +83,8 @@ def economic_occupancy(economic_occupancy_df):
     economic_occupancy_selected['economic_occupancy_worst_case'] = economic_occupancy_selected['total_gpr_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_budget'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
 
-    economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_budget', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
+    projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_budget', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
+    st.altair_chart(projected_eo_chart)
 
 
 def num_leases_to_target(economic_occupancy_df):
@@ -115,24 +116,32 @@ def num_leases_to_target(economic_occupancy_df):
     # 1. Chosen deadline week's target Economic Occupancy
     # Define the "deadline week", which will default to the week after next (can make this user-configurable later)
     SUNDAY = TODAY - relativedelta(days=1)
-    selected_deadline_week = st.selectbox("Select a deadline week", ['This week', 'Next week', 'Next next week'], index=1)
-    if selected_deadline_week == 'This week':
-        deadline_week_start = TODAY + relativedelta(weekday=MO(-1))
-    elif selected_deadline_week == 'Next week':
-        deadline_week_start = TODAY + relativedelta(weeks=1, weekday=MO(-1))
-    elif selected_deadline_week == 'Next next week':
-        deadline_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
-    deadline_week_end = deadline_week_start + relativedelta(days=6)
-    deadline_week_formatted = f"{deadline_week_start.strftime('%b %d')} - {deadline_week_end.strftime('%b %d')}"
-    deadline_row = week_economic_occupancy[week_economic_occupancy['date'] == deadline_week_start].iloc[0]
+    deadline_col, weeks_ahead_col = st.columns(2)
+    with deadline_col:
+        selected_deadline_week = st.selectbox("Select a deadline week", ['This week', 'Next week', 'Next next week'], index=1)
+        # get start and end date of the deadline week
+        if selected_deadline_week == 'This week':
+            deadline_week_start = TODAY + relativedelta(weekday=MO(-1))
+        elif selected_deadline_week == 'Next week':
+            deadline_week_start = TODAY + relativedelta(weeks=1, weekday=MO(-1))
+        elif selected_deadline_week == 'Next next week':
+            deadline_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
+        deadline_week_end = deadline_week_start + relativedelta(days=6)
+        deadline_week_formatted = f"{deadline_week_start.strftime('%b %d')} - {deadline_week_end.strftime('%b %d')}"
+        deadline_row = week_economic_occupancy[week_economic_occupancy['date'] == deadline_week_start].iloc[0]
+    with weeks_ahead_col:
+        max_weeks_ahead = int((max(week_economic_occupancy['date']) - deadline_week_start).days / 7)
+        selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12)
+
     # Compute the rent gained during the deadline week for one new lease
     total_gpr_vacant_homes = deadline_row['total_gpr'] - deadline_row['total_gpr_occupied']
     num_vacant_homes = deadline_row['num_properties'] - deadline_row['num_properties_occupied']
     gpr_per_new_lease = total_gpr_vacant_homes / num_vacant_homes
-    # Use this to determine the number of new leases needed to hit budget
+    # Determine the number of new leases needed to hit budget
     gpr_needed_to_hit_budget = max(deadline_row['total_gpr_occupied_budget'] - deadline_row['total_gpr_occupied'], 0)
     num_new_leases_needed = gpr_needed_to_hit_budget / gpr_per_new_lease
-    # Display the results
+
+    # Deadline week metrics
     deadline_week_col, budgeted_eo_col, best_case_eo_col, worst_case_eo_col = st.columns([0.75, 1, 1, 1])
     with deadline_week_col:
         st.metric(f"Deadline Week", f"{deadline_week_start.strftime('%m/%d')} - {deadline_week_end.strftime('%m/%d')}")
@@ -162,7 +171,7 @@ def num_leases_to_target(economic_occupancy_df):
         new_num_leases_needed = new_gpr_needed_to_hit_budget / gpr_per_new_lease
 
         catch_up_gpr_arr.append(catch_up_gpr)
-        leases_needed_week_arr.append(round(new_num_leases_needed, 1))
+        leases_needed_week_arr.append(round(new_num_leases_needed, 2))
         catch_up_leases_signed_arr.append(catch_up_leases_signed_arr[-1] + new_num_leases_needed)
 
     target_leases['catch_up_leases_signed'] = catch_up_leases_signed_arr[:-1]
@@ -170,8 +179,9 @@ def num_leases_to_target(economic_occupancy_df):
     target_leases['signed_leases_needed'] = leases_needed_week_arr
     target_leases['is_deadline_week'] = target_leases['date'] == deadline_week_start
 
-    target_leases_per_week_chart = alt.Chart(target_leases).mark_bar(color=TEAL, point={'color': TEAL}).encode(
-        x=alt.X('date', title='Week'),
+    target_leases['date_str'] = pd.to_datetime(target_leases['date']).dt.strftime('%Y-%m-%d')
+    target_leases_per_week_chart = alt.Chart(target_leases[target_leases['date'] <= deadline_week_start + relativedelta(weeks=selected_weeks_ahead)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
+        x=alt.X('date_str', title='Week', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('signed_leases_needed', title='# Signed Leases'), 
         color=alt.condition(
             alt.datum.is_deadline_week,
@@ -179,7 +189,7 @@ def num_leases_to_target(economic_occupancy_df):
             alt.value(DARK_TEAL)  
         ),
         tooltip=[
-            alt.Tooltip('date', title='Week Start'),
+            alt.Tooltip('date_str', title='Week Start'),
             alt.Tooltip('signed_leases_needed', title='# Signed Leases Needed')
         ]
     ).properties(
@@ -242,7 +252,15 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     st.write(f'**Assumption 1:** each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime("%Y-%m-%d")}).')
     st.write('**Assumption 2:** each lease signed has a length of 365 days.')
     st.write('**Assumption 3:** move in, aka GPR recovery, occurs 8 days after the lease signed date.')
-    economic_occupancy_chart(signed_leases[signed_leases['date'] <= selected_deadline + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
+    
+
+    eight_days_from_today = (TODAY + timedelta(days=8)).strftime('%Y-%m-%d')
+    move_in_line = alt.Chart(pd.DataFrame({'date_str': [eight_days_from_today]})).mark_rule(color='red').encode(
+        x='date_str:O',
+        tooltip=alt.Tooltip(value=f'({eight_days_from_today}): Earliest move in/rent recovery begins 8 days from today (first lease signed). ')
+    )
+    new_projected_eo_chart = economic_occupancy_chart(signed_leases[signed_leases['date'] <= selected_deadline + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
+    st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line), use_container_width=True)
 
 
 
