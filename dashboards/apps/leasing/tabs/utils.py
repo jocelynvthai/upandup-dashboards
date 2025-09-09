@@ -16,6 +16,65 @@ LIGHT_RED = "#ffcdd2"
 RED = "#f44336"
 ORANGE = "#ffa500"
 
+def subheader_with_help(text: str, help_text: str):
+        st.markdown(
+            f"""
+            <style>
+            .subheader-with-help {{
+                display: flex;
+                align-items: center;
+                gap: 0px; 
+            }}
+            .st-help-icon {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 18px;
+                height: 18px;
+                background-color: rgb(239, 240, 241);
+                color: rgb(68,68,68);
+                border-radius: 50%;
+                font-size: 12px;
+                cursor: help;
+                position: relative;
+            }}
+            .st-help-text {{
+                visibility: hidden;
+                opacity: 0;
+                min-width: max-content;
+                max-width: 60vw;
+                background: white;
+                color: #111;
+                border: 1px solid #e6e6e6;
+                border-radius: 4px;
+                padding: 6px 8px;
+                font-size: 13px;
+                line-height: 1.3;
+                position: absolute;
+                top: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                white-space: normal;
+                word-wrap: break-word;
+            }}
+            .st-help-icon:hover .st-help-text {{
+                visibility: visible;
+                opacity: 1;
+            }}
+            </style>
+
+            <div class="subheader-with-help">
+            <h3>{text}</h3>
+            <span class="st-help-icon">ℹ
+                <span class="st-help-text">{help_text}</span>
+            </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
 
 def help_icon(help_text: str, align: str = "center"):
     # align: "center" | "left" | "right"

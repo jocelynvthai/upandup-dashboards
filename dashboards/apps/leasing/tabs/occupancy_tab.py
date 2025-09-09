@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta, MO
 from datetime import timedelta
 
-from tabs.utils import GRAY, TEAL, DARK_TEAL, PURPLE, help_icon, economic_occupancy_chart, generate_new_economic_occupancy_df
+from tabs.utils import GRAY, TEAL, DARK_TEAL, PURPLE, economic_occupancy_chart, generate_new_economic_occupancy_df
 
 
 TODAY = datetime.now().date()
@@ -43,13 +43,10 @@ def occupancy_metrics(economic_occupancy_df):
 
 
 def economic_occupancy(economic_occupancy_df):
-    subheader_col, help_col = st.columns([0.98, 0.02])
-    with subheader_col:
-        st.subheader("Projected Economic Occupancy")
-    with help_col:  
-        st.markdown("</div>", unsafe_allow_html=True)
-        help_icon("Best case assumes that all current leases will be renewed. <br> \
-                   Worst case assumes that all current leases will move out.", align="right")
+    st.subheader(
+        "Projected Economic Occupancy",
+        help = "Best case assumes that all current leases will be renewed.  Worst case assumes that all current leases will move out."
+    )
 
     time_granularity_col, date_range_col = st.columns(2)
     with time_granularity_col:
@@ -90,16 +87,12 @@ def economic_occupancy(economic_occupancy_df):
 
 
 def num_leases_to_target(economic_occupancy_df):
-    st.markdown(
-        """
-        <h3 style="margin-bottom:0;">
-            # Leases to Target
-            <span style="font-size:0.75em; ">
-                (to maintain 95% Economic Occupancy)
-            </span>
-        </h3>
-        """,
-        unsafe_allow_html=True,
+    st.subheader(
+        'Leases to Target',
+        help=(
+            "To maintain 95% Economic Occupancy, each week's target assumes the target was hit for prior weeks.\n"
+            "e.g. Week 4's target assumes Weeks 1–3's targets were hit."
+        )
     )
 
     week_economic_occupancy = economic_occupancy_df[
@@ -177,11 +170,6 @@ def num_leases_to_target(economic_occupancy_df):
     target_leases['signed_leases_needed'] = leases_needed_week_arr
     target_leases['is_deadline_week'] = target_leases['date'] == deadline_week_start
 
-    _, help_col = st.columns([0.98, 0.02])
-    with help_col:  
-        help_icon("Each week's target assumes the target was hit for prior weeks. <br><br> \
-                   e.g. Week 4's target assumes Weeks 1-3's targets were hit.", align="right")
-
     target_leases_per_week_chart = alt.Chart(target_leases).mark_bar(color=TEAL, point={'color': TEAL}).encode(
         x=alt.X('date', title='Week'),
         y=alt.Y('signed_leases_needed', title='# Signed Leases'), 
@@ -209,8 +197,10 @@ def num_leases_to_target(economic_occupancy_df):
 
 
 def new_projected_economic_occupancy(economic_occupancy_df):
-    st.subheader("Projected Economic Occupancy Based on Target")
-    st.write("*Based on a specified deadline for x number of leases to be signed, what is the projected economic occupancy?*")
+    st.subheader(
+        "Projected Economic Occupancy Based on Target",
+        help = "Based on a specified deadline for x number of leases to be signed, what is the projected economic occupancy?"
+    )
 
     day_economic_occupancy = economic_occupancy_df[(economic_occupancy_df['time_granularity'] == 'day') &
                                                     (economic_occupancy_df['date'] >= TODAY)
