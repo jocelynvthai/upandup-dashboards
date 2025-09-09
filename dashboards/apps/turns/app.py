@@ -33,16 +33,21 @@ line_items_df = line_items_data(credentials)
 
 # Application
 st.title("Turns Dashboard")
-summary_tab, individual_turn_drilldown_tab, economic_turn_costs_tab = st.tabs(["Summary", "Individual Turn Drilldown", "Economic Turn Costs",])
-with summary_tab:
+params = st.query_params
+selected_tab = st.pills('TABS', options=["Summary", "Individual Turn Drilldown", "Economic Turn Costs"], 
+                        default='Individual Turn Drilldown' if params.get('address') and params.get('move_out_date') else 'Summary',
+                        selection_mode = "single", 
+                        label_visibility="hidden"
+)
+if selected_tab == "Summary":
     turn_cost_over_time(turns_df)
-with individual_turn_drilldown_tab:
+if selected_tab == "Individual Turn Drilldown":
     selected_turn_arr, filtered_construction_scopes_df, filtered_line_items_df = drilldown_filters(turns_df, construction_scopes_df, line_items_df)
     individual_turn_timeline(selected_turn_arr)
     individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_scopes_df, filtered_line_items_df, tickets_df)
     individual_turn_drilldown(filtered_line_items_df)
     invoices_by_vendor(filtered_line_items_df)
-with economic_turn_costs_tab:
+if selected_tab == "Economic Turn Costs":
     filtered_turns_df = economic_turn_costs_filters(turns_df)
     economic_turn_costs(filtered_turns_df)
 

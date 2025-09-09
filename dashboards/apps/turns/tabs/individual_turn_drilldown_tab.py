@@ -41,7 +41,7 @@ def drilldown_filters(turns_df, construction_scopes_df, line_items_df):
 
 
 def individual_turn_timeline(selected_turn_arr):
-    st.subheader("Timeline")
+    st.subheader("Timeline", anchor="timeline")
 
     nat_dates = []  # NaT dates
     items = [] # display only non-NaT dates
