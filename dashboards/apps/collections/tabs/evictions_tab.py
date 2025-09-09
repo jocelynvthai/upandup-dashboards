@@ -28,11 +28,11 @@ def gpr_evictions(filtered_evictions_data):
         total_gpr=('gpr', 'sum'),
         gpr_in_evictions=('gpr', lambda x: x[filtered_evictions_data_status['in_evictions']].sum())
     ).reset_index()
-    monthly_gpr_evictions['gpr_in_evictions_percentage'] = monthly_gpr_evictions['gpr_in_evictions'] * 100 / monthly_gpr_evictions['total_gpr']
+    monthly_gpr_evictions['gpr_in_evictions_percentage'] = monthly_gpr_evictions['gpr_in_evictions'] / monthly_gpr_evictions['total_gpr']
 
     monthly_gpr_evictions_chart = alt.Chart(monthly_gpr_evictions).mark_line(color=TEAL, point={'color': TEAL}).encode(
-        x=alt.X('month:T', title='Month'),  # Renaming x-axis
-        y=alt.Y('gpr_in_evictions_percentage:Q', title='GPR in Evictions (%)'),  # Renaming y-axis
+        x=alt.X('month:T', title='Month'), # Renaming x-axis
+        y=alt.Y('gpr_in_evictions_percentage:Q', title='GPR in Evictions (%)', axis=alt.Axis(format='.1%')), # Renaming y-axis
         tooltip=[
             alt.Tooltip('month:T', title='Month', format='%b %Y'),
             alt.Tooltip('gpr_in_evictions:Q', title='GPR in Evictions', format='$,.0f'),
