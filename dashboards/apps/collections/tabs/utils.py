@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 TEAL = "#15b8a6" 
+DARK_TEAL = "#0E8074"
 
 def date_month_filter(key):
     current_date = datetime.now()

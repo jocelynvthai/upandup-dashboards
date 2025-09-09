@@ -1,6 +1,6 @@
 import streamlit as st
 import altair as alt
-from tabs.utils import LIGHT_GRAY, GRAY, LIGHT_TEAL, TEAL, LIGHT_PURPLE, PURPLE, DARK_PURPLE
+from tabs.utils import LIGHT_GRAY, GRAY, LIGHT_TEAL, TEAL, DARK_TEAL, LIGHT_PURPLE, PURPLE, DARK_PURPLE
 
 
 def tours_grouped(filtered_tours_df):
@@ -213,7 +213,8 @@ def homes_with_zero_tours(grouped_tours_df):
     text = alt.Chart(grouped_tours_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5
+        dy=-5, 
+        color=DARK_TEAL
     ).encode(
         x=alt.X('yearmonthdate(date):O'),
         y=alt.Y('num_homes_with_zero_tours:Q'),

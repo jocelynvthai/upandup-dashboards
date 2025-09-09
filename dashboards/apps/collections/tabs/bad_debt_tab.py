@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from tabs.utils import fund_filter
+from tabs.utils import fund_filter, TEAL, DARK_TEAL
 
 def bad_debt_over_time_filters(bad_debt_inputs):
     selected_fund = fund_filter(key='bad_debt_over_time_select_fund', data=bad_debt_inputs)
@@ -44,7 +44,7 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
     
     bad_debt_fund['month_str'] = bad_debt_fund['month'].dt.strftime('%Y-%m')
     latest_month = bad_debt_fund['month_str'].max()
-    chart = alt.Chart(bad_debt_fund).mark_bar(size=40, color='#15b8a6').encode(
+    chart = alt.Chart(bad_debt_fund).mark_bar(size=40, color=TEAL).encode(
         x=alt.X(
             'month:T',
             title='Month',
@@ -58,8 +58,8 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
         y=alt.Y('bad_debt_ratio_percent:Q', title='Bad Debt Ratio (%)'),
         color=alt.condition(
             alt.datum.month_str == latest_month,
-            alt.value('#15b8a6'), 
-            alt.value('#0E8074')  
+            alt.value(TEAL), 
+            alt.value(DARK_TEAL)  
         ),
         tooltip=[
             alt.Tooltip('month:T', title='Month', format='%b %Y'),
