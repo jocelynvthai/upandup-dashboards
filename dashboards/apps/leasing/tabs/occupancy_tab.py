@@ -148,16 +148,16 @@ def num_leases_to_target(economic_occupancy_df):
     with budgeted_eo_col:
         st.metric(f"Budgeted Economic Occupancy", f"{deadline_row['economic_occupancy_budget']:.2%}")
     with best_case_eo_col:
-        st.metric(f"Best-Case Economic Occupancy", f"{deadline_row['economic_occupancy_best_case']:.2%}")
+        st.metric(f"Best Case Economic Occupancy", f"{deadline_row['economic_occupancy_best_case']:.2%}")
     with worst_case_eo_col:
-        st.metric(f"Worst-Case Economic Occupancy", f"{deadline_row['economic_occupancy_worst_case']:.2%}")
+        st.metric(f"Worst Case Economic Occupancy", f"{deadline_row['economic_occupancy_worst_case']:.2%}")
     _, additional_rent_needed_col, rent_per_new_lease_col, num_new_leases_needed_col = st.columns([0.75, 1, 1, 1])
     with additional_rent_needed_col:
         st.metric(f"+$_ to hit Budgeted Economic Occupancy", f"${gpr_needed_to_hit_budget:.2f}")
     with rent_per_new_lease_col:
         st.metric(f"Avg Rent Gained per Signed Lease", f"${gpr_per_new_lease:.2f}")
     with num_new_leases_needed_col:
-        st.metric(f"\# Signed Leases to hit Budgeted Economic Occupancy", f"{num_new_leases_needed:.2f}")
+        st.metric(f"\# Leases to Sign to hit Budgeted Economic Occupancy", f"{num_new_leases_needed:.2f}")
 
     # 2. Following weeks' target Economic Occupancy
     target_leases = week_economic_occupancy[week_economic_occupancy['date'] >= deadline_week_start]
@@ -182,7 +182,7 @@ def num_leases_to_target(economic_occupancy_df):
     target_leases['date_str'] = pd.to_datetime(target_leases['date']).dt.strftime('%Y-%m-%d')
     target_leases_per_week_chart = alt.Chart(target_leases[target_leases['date'] <= deadline_week_start + relativedelta(weeks=selected_weeks_ahead)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
         x=alt.X('date_str', title='Week', axis=alt.Axis(labelAngle=0)),
-        y=alt.Y('signed_leases_needed', title='# Signed Leases'), 
+        y=alt.Y('signed_leases_needed', title='# Leases to Sign'), 
         color=alt.condition(
             alt.datum.is_deadline_week,
             alt.value(TEAL), 
@@ -190,7 +190,7 @@ def num_leases_to_target(economic_occupancy_df):
         ),
         tooltip=[
             alt.Tooltip('date_str', title='Week Start'),
-            alt.Tooltip('signed_leases_needed', title='# Signed Leases Needed')
+            alt.Tooltip('signed_leases_needed', title='# Leases to Sign')
         ]
     ).properties(
         width=600,
@@ -237,7 +237,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         deadline_row = day_economic_occupancy[day_economic_occupancy['date'] == selected_deadline]
         num_vacant_homes = deadline_row['num_properties'].iloc[0] - deadline_row['num_properties_occupied'].iloc[0]
     with num_leases_col:
-        selected_num_leases = st.slider("Select # of leases", min_value=1, max_value=num_vacant_homes, value=1, help="The number of leases that need to be signed")
+        selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=1, help="The number of leases that need to be signed")
 
     signed_leases, lease_distribution = generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases)
     optimal_num_leases = 0
