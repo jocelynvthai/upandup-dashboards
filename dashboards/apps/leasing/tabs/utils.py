@@ -17,6 +17,84 @@ RED = "#f44336"
 ORANGE = "#ffa500"
 
 
+def help_icon(help_text: str, align: str = "center"):
+    # align: "center" | "left" | "right"
+    align_class = {
+        "center": "align-center",
+        "left": "align-left",
+        "right": "align-right"
+    }.get(align, "align-center")
+
+    st.markdown(
+        f"""
+        <style>
+        .st-help-icon {{
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          background-color: rgb(239, 240, 241);
+          color: rgb(68,68,68);
+          border-radius: 50%;
+          font-size: 12px;
+          cursor: help;
+          position: relative;
+        }}
+        .st-help-text {{
+          visibility: hidden;
+          opacity: 0;
+          min-width: max-content;
+          max-width: 60vw;
+          background: white;
+          color: #111;
+          border: 1px solid #e6e6e6;
+          border-radius: 4px;
+          padding: 6px 8px;
+          font-size: 13px;
+          line-height: 1.3;
+          position: absolute;
+          top: 24px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 9999;
+          white-space: normal;
+          word-wrap: break-word;
+        }}
+
+        /* Default: center */
+        .st-help-icon.align-center .st-help-text {{
+          left: 50%;
+          transform: translateX(-50%);
+        }}
+
+        /* Left aligned: tooltip left edge aligns with icon left */
+        .st-help-icon.align-left .st-help-text {{
+          left: 0;
+          transform: none;
+        }}
+
+        /* Right aligned: tooltip right edge aligns with icon right */
+        .st-help-icon.align-right .st-help-text {{
+          right: 0;
+          left: auto;
+          transform: none;
+        }}
+
+        /* show on hover */
+        .st-help-icon:hover .st-help-text {{
+          visibility: visible;
+          opacity: 1;
+        }}
+        </style>
+
+        <span class="st-help-icon {align_class}">ℹ
+          <span class="st-help-text">{help_text}</span>
+        </span>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def filters(df, tab_name, community_filter=False):
     if community_filter:
         col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(5)
@@ -121,7 +199,8 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
     text = alt.Chart(grouped_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5
+        dy=-5, 
+        color=DARK_TEAL
     ).encode(
         x=alt.X('date:T'),
         y=alt.Y(f"{second_stage_column}:Q"),
@@ -321,6 +400,50 @@ def create_funnel_chart_old(grouped_df, funnel_stages, chart_type="application")
     st.altair_chart(chart, use_container_width=True) 
 
 
+def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, selected_time_granularity):
+    economic_occupancy_chart = economic_occupancy_df.melt(
+        id_vars=['date'],
+        value_vars=[budget_col] + series_cols,
+        var_name='type',
+        value_name='value'
+    )
+
+    type_mappings = {}
+    for type in economic_occupancy_chart['type'].unique():
+        type_mappings[type] = type.replace('economic_occupancy_', '').replace('_', ' ').title()
+    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['date']).dt.strftime('%Y-%m-%d')
+    economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(type_mappings) 
+    
+    # set lower bound of y-axis
+    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 10, 0)
+
+    # Define a selection that will be used to interact with the legend
+    selection = alt.selection_single(fields=['type'], bind='legend')
+    chart = alt.Chart(economic_occupancy_chart).mark_line(point=True).encode(
+        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()}', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y('value:Q', title='Economic Occupancy (%)',
+                scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
+        color=alt.Color(
+            'type:N',
+            scale=alt.Scale(
+                domain=type_mappings.values(),
+                range=[GRAY, TEAL] if len(series_cols) == 1 else [GRAY, TEAL, PURPLE]
+            ),
+            legend=alt.Legend(title="Type", symbolType='circle')
+        ),
+        tooltip=[
+            alt.Tooltip("time_str:O", title=selected_time_granularity.title()),
+            alt.Tooltip('type:N', title='Type'),
+            alt.Tooltip('value:Q', title='Value (%)', format='.2f')
+        ],
+        opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
+    ).add_selection(
+        selection
+    )
+    st.altair_chart(chart)
+
+
+
 def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases):
     today = datetime.now().date()
     # Generate a uniform lease signed distribution between TODAY and selected_deadline
@@ -353,43 +476,4 @@ def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline
     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
     return signed_leases, lease_distribution
-
-
-
-def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, selected_time_granularity):
-    economic_occupancy_chart = economic_occupancy_df.melt(
-        id_vars=['date'],
-        value_vars=[budget_col] + series_cols,
-        var_name='type',
-        value_name='value'
-    )
-
-    type_mappings = {}
-    for type in economic_occupancy_chart['type'].unique():
-        type_mappings[type] = type.replace('economic_occupancy_', '').replace('_', ' ').title()
- 
-    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['date']).dt.strftime('%Y-%m-%d')
-    economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(type_mappings) 
-    
-    # set lower bound of y-axis
-    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 10, 0)
-    chart = alt.Chart(economic_occupancy_chart).mark_line(point=True).encode(
-        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()}', axis=alt.Axis(labelAngle=0)),
-        y=alt.Y('value:Q', title='Economic Occupancy (%)',
-                scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
-        color=alt.Color(
-            'type:N', 
-            scale=alt.Scale(
-                domain=type_mappings.values(), 
-                range=[GRAY, TEAL] if len(series_cols) == 1 else [GRAY, TEAL, PURPLE]
-            )
-        ), 
-        tooltip=[
-            alt.Tooltip("time_str:O", title=selected_time_granularity.title()), 
-            alt.Tooltip('type:N', title='Type'), 
-            alt.Tooltip('value:Q', title='Value (%)', format='.2f')
-        ]
-    )
-
-    st.altair_chart(chart)
     

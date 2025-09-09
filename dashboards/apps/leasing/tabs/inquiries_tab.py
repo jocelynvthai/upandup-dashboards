@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from tabs.utils import LIGHT_GRAY, GRAY, TEAL, PURPLE
+from tabs.utils import LIGHT_GRAY, GRAY, TEAL, DARK_TEAL, PURPLE
 
 
 def inquiries_grouped(filtered_inquiries_df):
@@ -230,7 +230,6 @@ def homes_with_zero_inquiries(grouped_inquiries_df):
     # Metrics
     st.metric("% of Homes with Zero Inquiries", f"{grouped_inquiries_df['perc_homes_with_zero_inquiries'].mean() * 100:.2f}%")
 
-
     # First bar chart - Number of homes listed
     first_bars = alt.Chart(grouped_inquiries_df).mark_bar(color=LIGHT_GRAY).encode(
         x=alt.X('yearmonthdate(date):O', title='Date', axis=alt.Axis(format='%Y-%m-%d', labelAngle=-90)),
@@ -267,7 +266,8 @@ def homes_with_zero_inquiries(grouped_inquiries_df):
     text = alt.Chart(grouped_inquiries_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5
+        dy=-5, 
+        color=DARK_TEAL
     ).encode(
         x=alt.X('yearmonthdate(date):O'),
         y=alt.Y('num_homes_with_zero_inquiries:Q'),

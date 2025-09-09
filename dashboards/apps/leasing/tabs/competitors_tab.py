@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
 
-from tabs.utils import TEAL
+from tabs.utils import TEAL, DARK_TEAL
 
 
 def competitors_filters(leasing_df):
@@ -109,7 +109,8 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
     lease_signed_dow_perc_text = lease_signed_dow_perc_chart.mark_text(
         align='center',
         baseline='bottom',
-        dy=-5
+        dy=-5, 
+        color=DARK_TEAL
     ).encode(
         text='Percentage:Q'
     )
