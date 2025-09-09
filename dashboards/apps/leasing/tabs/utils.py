@@ -212,7 +212,6 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
         )
     )
     
-    st.dataframe(grouped_df.copy())
     line = alt.Chart(grouped_df).mark_line(
         point={'color': PURPLE},
         color=PURPLE
@@ -313,7 +312,6 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
         selection
     )
     st.altair_chart(chart)
-
 
 
 def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases):
