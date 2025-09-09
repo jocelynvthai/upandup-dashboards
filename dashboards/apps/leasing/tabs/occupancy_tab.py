@@ -44,7 +44,7 @@ def occupancy_metrics(economic_occupancy_df):
 
 def economic_occupancy(economic_occupancy_df):
     st.subheader(
-        "Projected Economic Occupancy",
+        "Projected Economic Occupancy (Current)",
         help = "Best case assumes that all current leases will be renewed.  Worst case assumes that all current leases will move out."
     )
 
@@ -208,7 +208,7 @@ def num_leases_to_target(economic_occupancy_df):
 
 def new_projected_economic_occupancy(economic_occupancy_df):
     st.subheader(
-        "Projected Economic Occupancy Based on Target",
+        "Projected Economic Occupancy (Based on Target)",
         help = "Based on a specified deadline for x number of leases to be signed, what is the projected economic occupancy?"
     )
 

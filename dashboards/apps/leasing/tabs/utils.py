@@ -369,6 +369,9 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
         opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
     ).add_selection(
         selection
+    ).properties(
+        width=600,
+        height=400
     )
     return chart
 
