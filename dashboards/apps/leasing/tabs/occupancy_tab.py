@@ -249,7 +249,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
             optimal_diff = diff
             optimal_num_leases = i
 
-    st.write(f'**Assumption 1:** each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime("%Y-%m-%d")}). See below.')
+    st.write(f'**Assumption 1:** each lease signed (up to the number of leases selected) is evenly distributed from today to the selected deadline ({selected_deadline.strftime("%Y-%m-%d")}).')
     st.write('**Assumption 2:** each lease signed has a length of 365 days.')
     st.write('**Assumption 3:** move in, aka GPR recovery, occurs 8 days after the lease signed date.')
     economic_occupancy_chart(signed_leases[signed_leases['date'] <= selected_deadline + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
