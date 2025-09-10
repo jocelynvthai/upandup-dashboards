@@ -101,7 +101,7 @@ def num_leases_to_target(economic_occupancy_df):
     st.subheader(
         'Leases to Target',
         help=(
-            "To maintain the budgeted economic occupancy, each week's target assumes the target was hit for prior weeks.\n"
+            "To maintain the economic occupancy budget, each week's target assumes the target was hit for all prior weeks.\n"
             "e.g. Week 4's target assumes Weeks 1–3's targets were hit."
         )
     )
