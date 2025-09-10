@@ -345,7 +345,7 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
     economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(type_mappings) 
     
     # set lower bound of y-axis
-    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 10, 0)
+    min_economic_occupancy = max(economic_occupancy_chart['value'].min() - 5, 0)
 
     # Define a selection that will be used to interact with the legend
     selection = alt.selection_single(fields=['type'], bind='legend')
