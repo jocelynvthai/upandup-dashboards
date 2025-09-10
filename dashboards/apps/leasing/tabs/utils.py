@@ -392,7 +392,7 @@ def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline
 
     # Set the recovery start to be 3 days after the lease signed date
     signed_leases = day_economic_occupancy.merge(lease_distribution, left_on='date', right_on='date', how='left').fillna(0)
-    signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(8, fill_value=0)
+    signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(14, fill_value=0)
 
 
     signed_leases['recovery_leases'] = 0

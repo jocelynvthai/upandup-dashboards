@@ -92,6 +92,8 @@ def economic_occupancy(economic_occupancy_df):
     economic_occupancy_selected['economic_occupancy_worst_case'] = economic_occupancy_selected['total_gpr_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_budget'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
 
+    # View week ends in dashboard
+    economic_occupancy_selected['date'] = economic_occupancy_selected['date'].apply(lambda x: (pd.to_datetime(x) + relativedelta(days=6)))
     projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_budget', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
     st.altair_chart(projected_eo_chart)
 
@@ -99,7 +101,7 @@ def economic_occupancy(economic_occupancy_df):
 
 def num_leases_to_target(economic_occupancy_df):
     st.subheader(
-        'Leases to Target',
+        'Leases to Target This Week',
         help=(
             "To maintain the economic occupancy budget, each week's target assumes the target was hit for all prior weeks.\n"
             "e.g. Week 4's target assumes Weeks 1–3's targets were hit."
@@ -123,23 +125,15 @@ def num_leases_to_target(economic_occupancy_df):
     week_economic_occupancy['economic_occupancy_worst_case'] = week_economic_occupancy['total_gpr_occupied'] / week_economic_occupancy['total_gpr']
     week_economic_occupancy['economic_occupancy_budget'] = week_economic_occupancy['total_gpr_occupied_budget'] / week_economic_occupancy['total_gpr']
     
-    # 1. Chosen target week's Economic Occupancy
-    SUNDAY = TODAY - relativedelta(days=1)
-    target_week_col, target_col, num_leases_to_sign_col, weeks_ahead_col = st.columns([1, 2, .5, 2.5])
-    with target_col:
-        selected_target_week = st.selectbox("Select a target week", ['This week', 'Next week', 'Next next week'], index=1)
-        # get start and end date of the target week
-        if selected_target_week == 'This week':
-            target_week_start = TODAY + relativedelta(weekday=MO(-1))
-        elif selected_target_week == 'Next week':
-            target_week_start = TODAY + relativedelta(weeks=1, weekday=MO(-1))
-        elif selected_target_week == 'Next next week':
-            target_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
-        target_week_end = target_week_start + relativedelta(days=6)
-        target_week_formatted = f"{target_week_start.strftime('%b %d')} - {target_week_end.strftime('%b %d')}"
-        targets_df = week_economic_occupancy[week_economic_occupancy['date'] == target_week_start]
+    # 1. Track economic occupancy of 2 weeks from target week (assumes move in is 14 days after lease signed)
+    target_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
+    target_week_end = target_week_start + relativedelta(days=6)
+    target_week_formatted = f"{target_week_start.strftime('%b %d')} - {target_week_end.strftime('%b %d')}"
+    targets_df = week_economic_occupancy[week_economic_occupancy['date'] == target_week_start]
+
+    target_week_col, num_leases_to_sign_col, weeks_ahead_col = st.columns([1.25, .75, 3.75])
     with target_week_col:
-        st.metric(f"Target Week", f"{target_week_start.strftime('%m/%d')} - {target_week_end.strftime('%m/%d')}")
+        st.metric(f"Target Week", f"{(target_week_start-relativedelta(weeks=2)).strftime('%m/%d')} - {(target_week_end-relativedelta(weeks=2)).strftime('%m/%d')}")
     with weeks_ahead_col:
         max_weeks_ahead = int((max(week_economic_occupancy['date']) - target_week_start).days / 7)
         selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12)
@@ -228,7 +222,7 @@ def num_leases_to_target(economic_occupancy_df):
     
     selection = alt.selection_single(fields=['fund'], bind='legend')
     target_leases_per_week_chart = alt.Chart(target_leases_df[target_leases_df['date'] <= target_week_start + relativedelta(weeks=selected_weeks_ahead)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
-        x=alt.X('week_start', title='Week Start', axis=alt.Axis(labelAngle=0)),
+        x=alt.X('week_end', title='Week End', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('signed_leases_needed', title='# Leases to Sign'), 
         color=alt.condition(
             alt.datum.is_target_week, 
@@ -241,7 +235,7 @@ def num_leases_to_target(economic_occupancy_df):
         ), 
         tooltip=[
             alt.Tooltip('fund', title='Fund'),
-            alt.Tooltip('week_start', title='Week Start'),
+            alt.Tooltip('week_end', title='Week End'),
             alt.Tooltip('week_end', title='Week End'),
             alt.Tooltip('signed_leases_needed', title='# Leases to Sign')
         ], 
@@ -301,14 +295,6 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=1, help="The number of leases that need to be signed")
 
     signed_leases, lease_distribution = generate_new_economic_occupancy_df(day_economic_occupancy, selected_target_day, selected_num_leases)
-    optimal_num_leases = 0
-    optimal_diff = float('inf')
-    for i in range(1, num_vacant_homes):
-        signed_leases_i, lease_distribution_i = generate_new_economic_occupancy_df(day_economic_occupancy, selected_target_day, i)
-        diff = (signed_leases_i['economic_occupancy_budget'] - signed_leases_i['economic_occupancy_new_projected']).sum()
-        if diff < optimal_diff:
-            optimal_diff = diff
-            optimal_num_leases = i
 
     st.write(f'**Assumption 1:** each lease signed (up to the number of leases selected) is evenly distributed from today to the target day ({selected_target_day.strftime("%Y-%m-%d")}).')
     with st.expander("View the signed leases distribution"):
@@ -321,13 +307,13 @@ def new_projected_economic_occupancy(economic_occupancy_df):
             hide_index=True
         )
     st.write('**Assumption 2:** each lease signed has a length of 365 days.')
-    st.write('**Assumption 3:** move in, aka GPR recovery, occurs 8 days after the lease signed date.')
+    st.write('**Assumption 3:** move in, aka GPR recovery, occurs 14 days after the lease signed date.')
     
 
-    eight_days_from_today = (TODAY + timedelta(days=8)).strftime('%Y-%m-%d')
-    move_in_line = alt.Chart(pd.DataFrame({'date_str': [eight_days_from_today]})).mark_rule(color='red').encode(
+    fourteern_days_from_today = (TODAY + timedelta(days=14)).strftime('%Y-%m-%d')
+    move_in_line = alt.Chart(pd.DataFrame({'date_str': [fourteern_days_from_today]})).mark_rule(color='red').encode(
         x='date_str:O',
-        tooltip=alt.Tooltip(value=f'({eight_days_from_today}): Earliest move in/rent recovery begins 8 days from today (first lease signed). ')
+        tooltip=alt.Tooltip(value=f'({fourteern_days_from_today}): Earliest move in/rent recovery begins 14 days from today (first lease signed). ')
     )
     new_projected_eo_chart = economic_occupancy_chart(signed_leases[signed_leases['date'] <= selected_target_day + relativedelta(weeks=3)], 'economic_occupancy_budget', ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 'day')
     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line), use_container_width=True)
