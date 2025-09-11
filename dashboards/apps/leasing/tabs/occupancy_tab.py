@@ -151,7 +151,7 @@ def num_leases_to_target(economic_occupancy_df):
     # 1. Target week metrics
     targets_display_df = targets_df[['fund', 'economic_occupancy_budget', 'economic_occupancy_best_case', 'economic_occupancy_worst_case', 'gpr_needed_to_hit_budget', 'weekly_gpr_per_new_lease', 'num_new_leases_needed']]
 
-    with st.expander("View fund metrics"):
+    with st.expander("View target week's metrics"):
         targets_display_df = targets_display_df
         st.data_editor(
             targets_display_df, 
