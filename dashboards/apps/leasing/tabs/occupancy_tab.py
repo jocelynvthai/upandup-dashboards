@@ -72,7 +72,7 @@ def economic_occupancy(economic_occupancy_df):
 
     time_granularity_col, date_range_col = st.columns(2)
     with time_granularity_col:
-        selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], index=1)
+        selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], index=0)
     with date_range_col:
         last_date = economic_occupancy_df['period_end'].max()
         if selected_time_granularity == 'day':
@@ -301,6 +301,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         target_week_start = TODAY + relativedelta(weekday=MO(-1))
         target_week_end = target_week_start + relativedelta(days=6)
         st.metric(f"Target Week End", f"{target_week_start.strftime('%m/%d')} - {target_week_end.strftime('%m/%d')}")
+        occupancy_week_end = (target_week_end + relativedelta(days=14)).strftime('%Y-%m-%d')
         target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == target_week_end]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
     with num_leases_col:
@@ -320,7 +321,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
     st.write(f'**Assumption 1:** All leases are signed on the target week end ({target_week_end.strftime("%Y-%m-%d")}).')
-    st.write(f'**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({(target_week_end+relativedelta(days=14)).strftime("%Y-%m-%d")}).')
+    st.write(f'**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({occupancy_week_end}).')
     
     
     new_projected_eo_chart = economic_occupancy_chart(
@@ -330,14 +331,12 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         'week'
     )
 
-    # Calculate the date two weeks after target_week_start
-    occupancy_week_start = (target_week_start + relativedelta(weeks=2)).strftime('%Y-%m-%d')
-    move_in_line = alt.Chart(pd.DataFrame({'date_str': [occupancy_week_start]})
+    move_in_line = alt.Chart(pd.DataFrame({'date_str': [occupancy_week_end]})
     ).mark_rule(
         color='red'
     ).encode(
         x='date_str:O', 
-        tooltip=alt.Tooltip(value=f'Move in/rent recovery begins: {occupancy_week_start}')
+        tooltip=alt.Tooltip(value=f'Move in/rent recovery begins: {occupancy_week_end}')
     )
 
     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
