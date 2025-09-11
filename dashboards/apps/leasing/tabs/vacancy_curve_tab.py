@@ -45,6 +45,25 @@ def vacancy_curve(filtered_vacancy_curve_df):
         alt.datum.is_internally_listed == True
     )
 
+    # EXAMPLE HOW BACKGROUND REGION
+    # start_move_in = (TODAY + timedelta(days=14)).strftime('%Y-%m-%d')
+    # end_move_in = (TODAY+relativedelta(weekday=6)+timedelta(days=14)).strftime('%Y-%m-%d')
+    # move_in_region = alt.Chart(
+    #     pd.DataFrame({
+    #         'start': [start_move_in],
+    #         'end': [end_move_in]
+    #     })
+    # ).mark_rect(opacity=0.1, color='gray').encode(
+    #     x='start:O',
+    #     x2='end:O',
+    #     tooltip=alt.Tooltip(
+    #         value=f'New signed leases move-in period: {start_move_in} → {end_move_in}.'
+    #     )
+    # )
+
+
+
+
     # prepare data for metrics over vacancy line charts
     chart_data_melted = pd.melt(
         filtered_vacancy_curve_df, 

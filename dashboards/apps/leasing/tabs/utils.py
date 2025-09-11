@@ -1,6 +1,7 @@
 import altair as alt
 import streamlit as st
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta, MO
 import pandas as pd
 import numpy as np
 
@@ -15,6 +16,7 @@ DARK_PURPLE = "#512da8"
 LIGHT_RED = "#ffcdd2"
 RED = "#f44336"
 ORANGE = "#ffa500"
+
 
 def subheader_with_help(text: str, help_text: str):
         st.markdown(
@@ -74,6 +76,7 @@ def subheader_with_help(text: str, help_text: str):
             """,
             unsafe_allow_html=True,
         )
+
 
 
 def help_icon(help_text: str, align: str = "center"):
@@ -154,6 +157,7 @@ def help_icon(help_text: str, align: str = "center"):
     )
 
 
+
 def filters(df, tab_name, community_filter=False):
     if community_filter:
         col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(5)
@@ -207,6 +211,7 @@ def filters(df, tab_name, community_filter=False):
                 filtered_df = filtered_df[filtered_df['community'] == selected_community]
 
     return filtered_df, selected_time_granularity
+
 
 
 def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, time_metric):
@@ -330,9 +335,10 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
     st.altair_chart(chart, use_container_width=True) 
 
 
+
 def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, selected_time_granularity):
     economic_occupancy_chart = economic_occupancy_df.melt(
-        id_vars=['date'],
+        id_vars=['period_end'],
         value_vars=[budget_col] + series_cols,
         var_name='type',
         value_name='value'
@@ -341,7 +347,7 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
     type_mappings = {}
     for type in economic_occupancy_chart['type'].unique():
         type_mappings[type] = type.replace('economic_occupancy_', '').replace('_', ' ').title()
-    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['date']).dt.strftime('%Y-%m-%d')
+    economic_occupancy_chart['time_str'] = pd.to_datetime(economic_occupancy_chart['period_end']).dt.strftime('%Y-%m-%d')
     economic_occupancy_chart['type'] = economic_occupancy_chart['type'].map(type_mappings) 
     
     # set lower bound of y-axis
@@ -376,36 +382,50 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
     return chart
 
 
-def generate_new_economic_occupancy_df(day_economic_occupancy, selected_deadline, selected_num_leases):
-    today = datetime.now().date()
-    # Generate a uniform lease signed distribution between TODAY and selected_deadline
-    num_days = (selected_deadline - today).days + 1
-    interval = num_days / selected_num_leases
-    lease_signed_dates = [today + timedelta(days=round(i*interval)) for i in range(selected_num_leases)]
 
-    lease_distribution = pd.DataFrame({
-        'date': lease_signed_dates,
-        'leases': [1] * (selected_num_leases),
-    }).groupby('date').agg(
-        num_leases_signed=('leases', 'sum')
-    ).reset_index()
+# def generate_new_economic_occupancy_df_day(day_economic_occupancy, selected_deadline, selected_num_leases):
+#     today = datetime.now().date()
+#     # Generate a uniform lease signed distribution between TODAY and selected_deadline
+#     num_days = (selected_deadline - today).days + 1
+#     interval = num_days / selected_num_leases
+#     lease_signed_dates = [today + timedelta(days=i*interval) for i in range(selected_num_leases)]
 
-    # Set the recovery start to be 3 days after the lease signed date
-    signed_leases = day_economic_occupancy.merge(lease_distribution, left_on='date', right_on='date', how='left').fillna(0)
-    signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(14, fill_value=0)
+#     lease_distribution = pd.DataFrame({
+#         'date': lease_signed_dates,
+#         'leases': [1] * (selected_num_leases),
+#     }).groupby('date').agg(
+#         num_leases_signed=('leases', 'sum')
+#     ).reset_index()
+
+#     # Set the recovery start to be 14 days after the lease signed date
+#     signed_leases = day_economic_occupancy.merge(lease_distribution, left_on='date', right_on='date', how='left').fillna(0)
+#     signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(14, fill_value=0)
 
 
-    signed_leases['recovery_leases'] = 0
-    for idx, row in signed_leases.iterrows():
-        if row['recovery_leases_start'] > 0:
-            start_idx = idx
-            end_idx = min(idx + 365, len(signed_leases))  # cap at dataframe length
-            signed_leases.loc[start_idx:end_idx-1, 'recovery_leases'] += row['recovery_leases_start']
+#     signed_leases['recovery_leases'] = 0
+#     for idx, row in signed_leases.iterrows():
+#         if row['recovery_leases_start'] > 0:
+#             start_idx = idx
+#             end_idx = min(idx + 365, len(signed_leases))  # cap at dataframe length
+#             signed_leases.loc[start_idx:end_idx-1, 'recovery_leases'] += row['recovery_leases_start']
 
-    signed_leases['recovery_gpr'] = signed_leases['total_gpr_per_property'] * signed_leases['recovery_leases']
-    signed_leases['economic_occupancy_budget'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
-    signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
-    signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
-    return signed_leases, lease_distribution
+#     signed_leases['total_gpr_per_new_lease'] = (signed_leases['total_gpr']-signed_leases['total_gpr_occupied']) / (signed_leases['num_properties']-signed_leases['num_properties_occupied'])
+#     signed_leases['recovery_gpr'] = signed_leases['total_gpr_per_new_lease'] * signed_leases['recovery_leases']
+#     signed_leases['economic_occupancy_budget'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
+#     signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
+#     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
+    
+#     # TESTING
+#     from dateutil.relativedelta import relativedelta, MO 
+#     signed_leases['week_end'] = signed_leases['date'].apply(lambda x: (pd.to_datetime(x) + relativedelta(weekday=MO(-1)) + relativedelta(days=6)))
+#     week_test = signed_leases.groupby('week_end').agg(
+#         total_gpr=('total_gpr', 'sum'),
+#         total_gpr_occupied=('total_gpr_occupied', 'sum'),
+#         total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+#     ).reset_index()
+#     week_test['eo'] = week_test['total_gpr_occupied'] / week_test['total_gpr']
+#     week_test['eo_budget'] = week_test['total_gpr_occupied_budget'] / week_test['total_gpr']
+
+#     return signed_leases, lease_distribution
     
