@@ -108,6 +108,9 @@ def num_leases_to_target(economic_occupancy_df):
         )
     )
 
+    if 'num_new_leases_needed' not in st.session_state:
+        st.session_state['num_new_leases_needed'] = 0
+
     week_economic_occupancy = economic_occupancy_df[
         (economic_occupancy_df['time_granularity'] == 'week') &
         (economic_occupancy_df['date'] >= TODAY - relativedelta(days=TODAY.weekday()))
@@ -145,8 +148,9 @@ def num_leases_to_target(economic_occupancy_df):
     # Determine the number of new leases needed to hit budget
     targets_df['gpr_needed_to_hit_budget'] = (targets_df['total_gpr_occupied_budget'] - targets_df['total_gpr_occupied']).clip(lower=0)
     targets_df['num_new_leases_needed']= targets_df['gpr_needed_to_hit_budget'] / targets_df['weekly_gpr_per_new_lease']
+    st.session_state['num_new_leases_needed'] = targets_df['num_new_leases_needed'].sum()
     with num_leases_to_sign_col:
-        st.metric(f"\# Leases to Sign", f"{targets_df['num_new_leases_needed'].sum():.2f}")
+        st.metric(f"\# Leases to Sign", f"{st.session_state['num_new_leases_needed']:.2f}")
 
     # 1. Target week metrics
     targets_display_df = targets_df[['fund', 'economic_occupancy_budget', 'economic_occupancy_best_case', 'economic_occupancy_worst_case', 'gpr_needed_to_hit_budget', 'weekly_gpr_per_new_lease', 'num_new_leases_needed']]
@@ -284,7 +288,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     target_col, num_leases_col = st.columns([2, 2])
     with target_col:
         selected_target_day = st.date_input("Select a target day", 
-                                        value=TODAY + relativedelta(weeks=1, weekday=6), 
+                                        value=TODAY + relativedelta(weekday=MO(-1)) + relativedelta(days=6), 
                                         min_value=TODAY + relativedelta(days=1),
                                         max_value=max(economic_occupancy_df['date']),
                                         help="The date all leases need to be signed by",
@@ -292,7 +296,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         target_row = day_economic_occupancy[day_economic_occupancy['date'] == selected_target_day]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
     with num_leases_col:
-        selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=1, help="The number of leases that need to be signed")
+        selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed']), help="The number of leases that need to be signed")
 
     signed_leases, lease_distribution = generate_new_economic_occupancy_df(day_economic_occupancy, selected_target_day, selected_num_leases)
 
@@ -391,134 +395,6 @@ def upcoming_moves(rental_df):
                             <tbody>{"".join(html_rows)}</tbody>
                         </table>'''
         st.markdown(html_table, unsafe_allow_html=True)
-
-
-
-    
-
-
-
-# def num_leases_to_target_old(economic_occupancy_df):
-    
-#     st.subheader(
-#         'Leases to Target',
-#         help=(
-#             "To maintain 95% Economic Occupancy, each week's target assumes the target was hit for prior weeks.\n"
-#             "e.g. Week 4's target assumes Weeks 1–3's targets were hit."
-#         )
-#     )
-    # selected_fund = st.selectbox("Select a fund", ['All'] + sorted(list(economic_occupancy_df['fund'].unique())), key="num_leases_to_target_old_fund")
-    # if selected_fund != 'All':
-    #     economic_occupancy_df = economic_occupancy_df[economic_occupancy_df['fund'] == selected_fund]
-
-    # week_economic_occupancy = economic_occupancy_df[
-    #     (economic_occupancy_df['time_granularity'] == 'week') &
-    #     (economic_occupancy_df['date'] >= TODAY - relativedelta(days=TODAY.weekday()))
-    # ]
-    # week_economic_occupancy = week_economic_occupancy.groupby('date').agg(
-    #     num_properties=('num_properties', 'sum'),
-    #     num_properties_potentially_occupied=('num_properties_potentially_occupied', 'sum'),
-    #     num_properties_occupied=('num_properties_occupied', 'sum'),
-    #     total_gpr=('total_gpr', 'sum'),
-    #     total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
-    #     total_gpr_occupied=('total_gpr_occupied', 'sum'),
-    #     total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
-    # ).reset_index()
-    # week_economic_occupancy['economic_occupancy_best_case'] = week_economic_occupancy['total_gpr_potentially_occupied'] / week_economic_occupancy['total_gpr']
-    # week_economic_occupancy['economic_occupancy_worst_case'] = week_economic_occupancy['total_gpr_occupied'] / week_economic_occupancy['total_gpr']
-    # week_economic_occupancy['economic_occupancy_budget'] = week_economic_occupancy['total_gpr_occupied_budget'] / week_economic_occupancy['total_gpr']
-    
-    # # 1. Chosen deadline week's target Economic Occupancy
-    # # Define the "deadline week", which will default to the week after next (can make this user-configurable later)
-    # SUNDAY = TODAY - relativedelta(days=1)
-    # deadline_col, weeks_ahead_col = st.columns(2)
-    # with deadline_col:
-    #     selected_deadline_week = st.selectbox("Select a deadline week", ['This week', 'Next week', 'Next next week'], index=1)
-    #     # get start and end date of the deadline week
-    #     if selected_deadline_week == 'This week':
-    #         deadline_week_start = TODAY + relativedelta(weekday=MO(-1))
-    #     elif selected_deadline_week == 'Next week':
-    #         deadline_week_start = TODAY + relativedelta(weeks=1, weekday=MO(-1))
-    #     elif selected_deadline_week == 'Next next week':
-    #         deadline_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
-    #     deadline_week_end = deadline_week_start + relativedelta(days=6)
-    #     deadline_week_formatted = f"{deadline_week_start.strftime('%b %d')} - {deadline_week_end.strftime('%b %d')}"
-    #     deadline_row = week_economic_occupancy[week_economic_occupancy['date'] == deadline_week_start].iloc[0]
-    # with weeks_ahead_col:
-    #     max_weeks_ahead = int((max(week_economic_occupancy['date']) - deadline_week_start).days / 7)
-    #     selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12, key="num_leases_to_target_old")
-
-    # # Compute the rent gained during the deadline week for one new lease
-    # total_gpr_vacant_homes = deadline_row['total_gpr'] - deadline_row['total_gpr_occupied']
-    # num_vacant_homes = deadline_row['num_properties'] - deadline_row['num_properties_occupied']
-    # gpr_per_new_lease = total_gpr_vacant_homes / num_vacant_homes
-    # # Determine the number of new leases needed to hit budget
-    # gpr_needed_to_hit_budget = max(deadline_row['total_gpr_occupied_budget'] - deadline_row['total_gpr_occupied'], 0)
-    # num_new_leases_needed = gpr_needed_to_hit_budget / gpr_per_new_lease
-
-    # # Deadline week metrics
-    # deadline_week_col, budgeted_eo_col, best_case_eo_col, worst_case_eo_col = st.columns([0.75, 1, 1, 1])
-    # with deadline_week_col:
-    #     st.metric(f"Deadline Week", f"{deadline_week_start.strftime('%m/%d')} - {deadline_week_end.strftime('%m/%d')}")
-    # with budgeted_eo_col:
-    #     st.metric(f"Budgeted Economic Occupancy", f"{deadline_row['economic_occupancy_budget']:.2%}")
-    # with best_case_eo_col:
-    #     st.metric(f"Best Case Economic Occupancy", f"{deadline_row['economic_occupancy_best_case']:.2%}")
-    # with worst_case_eo_col:
-    #     st.metric(f"Worst Case Economic Occupancy", f"{deadline_row['economic_occupancy_worst_case']:.2%}")
-    # _, additional_rent_needed_col, rent_per_new_lease_col, num_new_leases_needed_col = st.columns([0.75, 1, 1, 1])
-    # with additional_rent_needed_col:
-    #     st.metric(f"+$_ to hit Budgeted Economic Occupancy", f"${gpr_needed_to_hit_budget:.2f}")
-    # with rent_per_new_lease_col:
-    #     st.metric(f"Avg Rent Gained per Signed Lease", f"${gpr_per_new_lease:.2f}")
-    # with num_new_leases_needed_col:
-    #     st.metric(f"\# Leases to Sign to hit Budgeted Economic Occupancy", f"{num_new_leases_needed:.2f}")
-
-    # # 2. Following weeks' target Economic Occupancy
-    # target_leases = week_economic_occupancy[week_economic_occupancy['date'] >= deadline_week_start]
-    # catch_up_leases_signed_arr = [0]
-    # leases_needed_week_arr = []
-    # catch_up_gpr_arr = []
-    # for index, row in target_leases.iterrows():
-    #     catch_up_leases = catch_up_leases_signed_arr[-1]
-    #     catch_up_gpr = row['total_gpr_occupied'] + (catch_up_leases * gpr_per_new_lease)
-    #     new_gpr_needed_to_hit_budget = max(row['total_gpr_occupied_budget'] - catch_up_gpr, 0)
-    #     new_num_leases_needed = new_gpr_needed_to_hit_budget / gpr_per_new_lease
-
-    #     catch_up_gpr_arr.append(catch_up_gpr)
-    #     leases_needed_week_arr.append(round(new_num_leases_needed, 2))
-    #     catch_up_leases_signed_arr.append(catch_up_leases_signed_arr[-1] + new_num_leases_needed)
-
-    # target_leases['catch_up_leases_signed'] = catch_up_leases_signed_arr[:-1]
-    # target_leases['catch_up_gpr'] = catch_up_gpr_arr
-    # target_leases['signed_leases_needed'] = leases_needed_week_arr
-    # target_leases['is_deadline_week'] = target_leases['date'] == deadline_week_start
-
-    # target_leases['date_str'] = pd.to_datetime(target_leases['date']).dt.strftime('%Y-%m-%d')
-    # target_leases_per_week_chart = alt.Chart(target_leases[target_leases['date'] <= deadline_week_start + relativedelta(weeks=selected_weeks_ahead)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
-    #     x=alt.X('date_str', title='Week', axis=alt.Axis(labelAngle=0)),
-    #     y=alt.Y('signed_leases_needed', title='# Leases to Sign'), 
-    #     color=alt.condition(
-    #         alt.datum.is_deadline_week,
-    #         alt.value(TEAL), 
-    #         alt.value(DARK_TEAL)  
-    #     ),
-    #     tooltip=[
-    #         alt.Tooltip('date_str', title='Week Start'),
-    #         alt.Tooltip('signed_leases_needed', title='# Leases to Sign')
-    #     ]
-    # ).properties(
-    #     width=600,
-    #     height=400
-    # )
-    # target_leases_per_week_text = target_leases_per_week_chart.mark_text(
-    #     align='center',
-    #     baseline='bottom',
-    #     dy=-5
-    # ).encode(
-    #     text='signed_leases_needed:Q'
-    # )
-    # st.altair_chart(target_leases_per_week_chart + target_leases_per_week_text, use_container_width=True)
 
 
 
