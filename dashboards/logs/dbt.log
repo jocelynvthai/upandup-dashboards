@@ -79,3 +79,30 @@ parsing.
 [0m11:57:54.965753 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x106fda450>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x106f294f0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1070491c0>]}
 [0m11:57:54.965871 [debug] [MainThread]: Flushing usage events
 [0m11:57:55.059907 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m13:55:31.333963 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1040f51f0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1049b5730>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1049b5340>]}
+
+
+============================== 13:55:31.336801 | 678a83b0-86e6-4810-84b2-71225c890ba0 ==============================
+[0m13:55:31.336801 [info ] [MainThread]: Running with dbt=1.10.4
+[0m13:55:31.337049 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'write_json': 'True', 'log_cache_events': 'False', 'partial_parse': 'True', 'cache_selected_only': 'False', 'profiles_dir': '/Users/jocelyn/.dbt', 'fail_fast': 'False', 'debug': 'False', 'log_path': 'logs', 'version_check': 'True', 'warn_error': 'None', 'use_colors': 'True', 'use_experimental_parser': 'False', 'no_print': 'None', 'quiet': 'False', 'empty': 'False', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'introspect': 'True', 'static_parser': 'True', 'invocation_command': 'dbt run --models +budget_economic_occupancy', 'target_path': 'None', 'log_format': 'default', 'send_anonymous_usage_stats': 'True'}
+[0m13:55:31.337261 [warn ] [MainThread]: [[33mWARNING[0m]: Deprecated functionality
+Usage of `--models`, `--model`, and `-m` is deprecated in favor of `--select` or
+`-s`.
+[0m13:55:31.337410 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'deprecation', 'label': '678a83b0-86e6-4810-84b2-71225c890ba0', 'property_': 'warn', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1049b7020>]}
+[0m13:55:31.337645 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/jocelyn/github/upandup-dashboards/dashboards/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m13:55:31.337846 [warn ] [MainThread]: [[33mWARNING[0m][DeprecationsSummary]: Deprecated functionality
+Summary of encountered deprecations:
+- ModelParamUsageDeprecation: 1 occurrence
+To see all deprecation instances instead of just the first occurrence of each,
+run command again with the `--show-all-deprecations` flag. You may also need to
+run with `--no-partial-parse` as some deprecations are only encountered during
+parsing.
+[0m13:55:31.343762 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.037231293, "process_in_blocks": "0", "process_kernel_time": 0.121227, "process_mem_max_rss": "109723648", "process_out_blocks": "0", "process_user_time": 0.497508}
+[0m13:55:31.344116 [debug] [MainThread]: Command `dbt run` failed at 13:55:31.344060 after 0.04 seconds
+[0m13:55:31.344308 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1042dbf20>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x104936450>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10115b320>]}
+[0m13:55:31.344464 [debug] [MainThread]: Flushing usage events
+[0m13:55:31.486453 [debug] [MainThread]: An error was encountered while trying to flush usage events
