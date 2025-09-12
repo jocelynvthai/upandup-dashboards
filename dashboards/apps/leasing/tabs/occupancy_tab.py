@@ -12,7 +12,9 @@ from tabs.utils import (
     LIGHT_PURPLE, 
     PURPLE, 
     DARK_PURPLE, 
-    economic_occupancy_chart
+    economic_occupancy_chart, 
+    target_leases_per_week_chart, 
+    target_leases_per_week_text
 )
 
 TODAY = datetime.now().date()
@@ -149,62 +151,61 @@ def num_leases_to_target(economic_occupancy_df):
     # Compute the rent gained per new lease during the occupancy week
     occupancy_df = week_economic_occupancy[week_economic_occupancy['date'] == occupancy_week_start]
     occupancy_df['weekly_gpr_per_new_lease'] = (occupancy_df['total_gpr']-occupancy_df['total_gpr_occupied']) / (occupancy_df['num_properties']-occupancy_df['num_properties_occupied'])
-    occupancy_df['gpr_needed_to_hit_budget'] = (occupancy_df['total_gpr_occupied_budget'] - occupancy_df['total_gpr_occupied']).clip(lower=0)
-    occupancy_df['num_new_leases_needed']= occupancy_df['gpr_needed_to_hit_budget'] / occupancy_df['weekly_gpr_per_new_lease']
-    st.session_state['num_new_leases_needed'] = occupancy_df['num_new_leases_needed'].sum()
+    occupancy_df['gpr_needed_to_hit_budget_worst_case'] = (occupancy_df['total_gpr_occupied_budget'] - occupancy_df['total_gpr_occupied']).clip(lower=0)
+    occupancy_df['gpr_needed_to_hit_budget_best_case'] = (occupancy_df['total_gpr_occupied_budget'] - occupancy_df['total_gpr_potentially_occupied']).clip(lower=0)
+    occupancy_df['num_new_leases_needed_worst_case']= occupancy_df['gpr_needed_to_hit_budget_worst_case'] / occupancy_df['weekly_gpr_per_new_lease']
+    occupancy_df['num_new_leases_needed_best_case']= occupancy_df['gpr_needed_to_hit_budget_best_case'] / occupancy_df['weekly_gpr_per_new_lease']
+    st.session_state['num_new_leases_needed_worst_case'] = occupancy_df['num_new_leases_needed_worst_case'].sum()
+    st.session_state['num_new_leases_needed_best_case'] = occupancy_df['num_new_leases_needed_best_case'].sum()
 
 
     # 2. Target week metrics
-    target_week_col, num_leases_to_sign_col, weeks_ahead_col = st.columns([1.25, .75, 3.75])
+    target_week_col, num_leases_to_sign_worst_case_col, num_leases_to_sign_best_case_col, weeks_ahead_col = st.columns([1.25, 1, 1, 3])
     with target_week_col:
         st.metric(f"Target Week", f"{target_week_start.strftime('%m/%d')} - {target_week_end.strftime('%m/%d')}")
+    with num_leases_to_sign_worst_case_col:
+        st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}")
+    with num_leases_to_sign_best_case_col:
+        st.metric(f"\# Leases to Sign (Best Case)", f"{st.session_state['num_new_leases_needed_best_case']:.2f}")
     with weeks_ahead_col:
         max_weeks_ahead = int((max(week_economic_occupancy['date']) - occupancy_week_start).days / 7) - 1
         selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12)
-    with num_leases_to_sign_col:
-        st.metric(f"\# Leases to Sign", f"{st.session_state['num_new_leases_needed']:.2f}")
     
-    occupancy_display_df = occupancy_df[['fund', 'economic_occupancy_budget', 'economic_occupancy_best_case', 'economic_occupancy_worst_case', 'gpr_needed_to_hit_budget', 'weekly_gpr_per_new_lease', 'num_new_leases_needed']]
+    occupancy_display_df = occupancy_df[['fund', 
+                                         'economic_occupancy_budget', 
+                                         'economic_occupancy_worst_case', 
+                                         'economic_occupancy_best_case', 
+                                         'weekly_gpr_per_new_lease', 
+                                         'gpr_needed_to_hit_budget_worst_case', 
+                                         'gpr_needed_to_hit_budget_best_case', 
+                                         'num_new_leases_needed_worst_case', 
+                                         'num_new_leases_needed_best_case']]
+    # Create MultiIndex columns
+    occupancy_display_df.columns = pd.MultiIndex.from_tuples([
+        ('Fund', ''),  # single-level
+        ('Economic Occupancy', 'Budgeted'),
+        ('Economic Occupancy', 'Worst Case'),
+        ('Economic Occupancy', 'Best Case'),
+        ('Weekly Rent Gained', 'Per Signed Lease'),
+        ('Weekly Rent Needed', 'Worst Case'),
+        ('Weekly Rent Needed', 'Best Case'),
+        ('Leases to Sign', 'Worst Case'),
+        ('Leases to Sign', 'Best Case')
+    ])
+
     with st.expander("View target week's metrics"):
-        occupancy_display_df = occupancy_display_df
-        st.data_editor(
-            occupancy_display_df, 
-            column_config={
-                'num_new_leases_needed': st.column_config.NumberColumn(
-                    label='Leases to Sign',
-                    format='%.2f', 
-                    help='Number of Leases to Sign'
-                ), 
-                'economic_occupancy_budget': st.column_config.NumberColumn(
-                    label='Budgeted EO',
-                    format='percent', 
-
-                    help='Budgeted Economic Occupancy'
-                ), 
-                'economic_occupancy_best_case': st.column_config.NumberColumn(
-                    label='Best Case EO',
-                    format='percent', 
-                    help='Best Case Economic Occupancy'
-                ), 
-                'economic_occupancy_worst_case': st.column_config.NumberColumn(
-                    label='Worst Case EO',
-                    format='percent', 
-                    help='Worst Case Economic Occupancy'
-                ), 
-                'gpr_needed_to_hit_budget': st.column_config.NumberColumn(
-                    label='Weekly Rent Needed',
-                    format='dollar', 
-                    help='Weekly Rent Needed to Hit Budget'
-                ), 
-                'weekly_gpr_per_new_lease': st.column_config.NumberColumn(
-                    label='Avg Weekly Rent Gained per Signed Lease',
-                    format='dollar', 
-                    help='Average Weekly Rent Gained per Signed Lease'
-                )
-            },
-            hide_index=True
+        st.dataframe(
+            occupancy_display_df.style.format({
+                ('Economic Occupancy', 'Budgeted'): "{:.2%}",
+                ('Economic Occupancy', 'Best Case'): "{:.2%}",
+                ('Economic Occupancy', 'Worst Case'): "{:.2%}",
+                ('Weekly Rent Gained', 'Per Signed Lease'): "${:,.2f}",
+                ('Weekly Rent Needed', 'Worst Case'): "${:,.2f}",
+                ('Weekly Rent Needed', 'Best Case'): "${:,.2f}",
+                ('Leases to Sign', 'Worst Case'): "{:.2f}",
+                ('Leases to Sign', 'Best Case'): "{:.2f}"
+            })
         )
-
 
     # 3. Following weeks' target Economic Occupancy
     target_leases = {}
@@ -212,67 +213,70 @@ def num_leases_to_target(economic_occupancy_df):
     for fund in funds:
         weekly_gpr_per_new_lease = occupancy_df[occupancy_df['fund'] == fund]['weekly_gpr_per_new_lease'].iloc[0]
         fund_target_leases = week_economic_occupancy[(week_economic_occupancy['fund'] == fund) & (week_economic_occupancy['date'] >= occupancy_week_start)]
-        recovery_leases_signed_arr = [0]
-        leases_needed_week_arr = []
-        recovery_gpr_arr = []
-        for index, row in fund_target_leases.iterrows():
-            recovery_leases = recovery_leases_signed_arr[-1]
-            recovery_gpr = row['total_gpr_occupied'] + (recovery_leases * weekly_gpr_per_new_lease)
-            new_gpr_needed_to_hit_budget = max(row['total_gpr_occupied_budget'] - recovery_gpr, 0)
-            new_num_leases_needed = new_gpr_needed_to_hit_budget / weekly_gpr_per_new_lease
-            recovery_gpr_arr.append(recovery_gpr)
-            leases_needed_week_arr.append(round(new_num_leases_needed, 2))
-            recovery_leases_signed_arr.append(recovery_leases_signed_arr[-1] + new_num_leases_needed)
-        fund_target_leases['recovery_leases_signed'] = recovery_leases_signed_arr[:-1]
-        fund_target_leases['recovery_gpr'] = recovery_gpr_arr
-        fund_target_leases['signed_leases_needed'] = leases_needed_week_arr
+        for case in ['worst_case', 'best_case']:
+            recovery_leases_signed_arr = [0]
+            leases_needed_week_arr = []
+            recovery_gpr_arr = []
+            for index, row in fund_target_leases.iterrows():
+                recovery_leases = recovery_leases_signed_arr[-1]
+                if case == 'worst_case':
+                    recovery_gpr = row['total_gpr_occupied'] + (recovery_leases * weekly_gpr_per_new_lease)
+                else:
+                    recovery_gpr = row['total_gpr_potentially_occupied'] + (recovery_leases * weekly_gpr_per_new_lease)
+                new_gpr_needed_to_hit_budget = max(row['total_gpr_occupied_budget'] - recovery_gpr, 0)
+                new_num_leases_needed = new_gpr_needed_to_hit_budget / weekly_gpr_per_new_lease
+                recovery_gpr_arr.append(recovery_gpr)
+                leases_needed_week_arr.append(round(new_num_leases_needed, 2))
+                recovery_leases_signed_arr.append(recovery_leases_signed_arr[-1] + new_num_leases_needed)
+            fund_target_leases[f'recovery_leases_signed_{case}'] = recovery_leases_signed_arr[:-1]
+            fund_target_leases[f'recovery_gpr_{case}'] = recovery_gpr_arr
+            fund_target_leases[f'signed_leases_needed_{case}'] = leases_needed_week_arr
         fund_target_leases['is_target_week'] = fund_target_leases['date'] == occupancy_week_start
         target_leases[fund] = fund_target_leases
     # Concatenate all the target leases
     target_leases_df = pd.concat(target_leases.values())
     # week end is the end of the occupancy week (2 weeks from target week)
     target_leases_df['week_end'] = target_leases_df['date'].apply(lambda x: (pd.to_datetime(x)+relativedelta(days=6)-relativedelta(days=14)).strftime('%Y-%m-%d'))
-    target_leases_df = target_leases_df[target_leases_df['signed_leases_needed'] > 0]
-    
-    selection = alt.selection_single(fields=['fund'], bind='legend')
-    target_leases_per_week_chart = alt.Chart(target_leases_df[target_leases_df['date'] <= occupancy_week_start + relativedelta(weeks=selected_weeks_ahead-1)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
-        x=alt.X('week_end', title='Week End', axis=alt.Axis(labelAngle=0)),
-        y=alt.Y('signed_leases_needed', title='# Leases to Sign'), 
-        color=alt.condition(
-            alt.datum.is_target_week, 
-            alt.value(TEAL), 
-            alt.value(DARK_TEAL)
-        ) if len(funds) == 1 else alt.Color(
-            'fund:N', 
-            scale=alt.Scale(range=[TEAL, LIGHT_TEAL, DARK_TEAL, PURPLE, LIGHT_PURPLE, DARK_PURPLE]), 
-            title='Fund'
-        ), 
-        tooltip=[
-            alt.Tooltip('fund', title='Fund'),
-            alt.Tooltip('week_end', title='Week End'),
-            alt.Tooltip('week_end', title='Week End'),
-            alt.Tooltip('signed_leases_needed', title='# Leases to Sign')
-        ], 
-        opacity=alt.condition(selection, alt.value(1), alt.value(0.1))
-    ).add_selection(
-        selection
-    ).properties(
-        width=600,
-        height=400
-    )
+    target_leases_df['worst_case'] = 'Worst (current leases all move out)'
+    target_leases_df['best_case'] = 'Best (current leases all renewed)'
 
-    if len(funds) > 1:
-        st.altair_chart(target_leases_per_week_chart, use_container_width=True)
-    else:
-        target_leases_per_week_text = target_leases_per_week_chart.mark_text(
-            align='center',
-            baseline='bottom',
-            dy=-5
-        ).encode(
-            text='signed_leases_needed:Q'
+        # 4. Custom legend (outside chart)
+    st.markdown("### Legend")
+    legend_items = [
+        ("Best Case", TEAL),
+        ("Worst Case", PURPLE)
+    ]
+
+
+    selection = alt.selection_single(fields=['fund'], bind='legend')
+    if len(funds) == 1:
+        best_case_chart = target_leases_per_week_chart(target_leases_df, selection, 'best_case', occupancy_week_start, selected_weeks_ahead, funds)
+        worst_case_chart = target_leases_per_week_chart(target_leases_df, selection, 'worst_case', occupancy_week_start, selected_weeks_ahead, funds)
+        worst_case_text = target_leases_per_week_text('worst_case', worst_case_chart)
+        best_case_text = target_leases_per_week_text('best_case', best_case_chart)
+        worst = alt.layer(worst_case_chart, worst_case_text, 
+                          best_case_chart, best_case_text)
+        # 4. Compact custom legend
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: flex-end; gap: 16px; font-size: 12px; align-items: center; margin-top: 4px;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: {LIGHT_TEAL}; margin-right: 4px;"></div>
+                    <span>Best Case</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background-color: {DARK_TEAL}; margin-right: 4px;"></div>
+                    <span>Worst Case</span>
+                </div>
+            </div>
+            """, 
+            unsafe_allow_html=True
         )
-        st.altair_chart(target_leases_per_week_chart + target_leases_per_week_text, use_container_width=True)
-    
+        st.altair_chart(worst, use_container_width=True)
+        
+    else:
+        st.altair_chart(target_leases_per_week_chart(target_leases_df, selection, 'worst_case', occupancy_week_start, selected_weeks_ahead, funds), use_container_width=True)
+        
 
 
 def new_projected_economic_occupancy(economic_occupancy_df):
@@ -341,79 +345,6 @@ def new_projected_economic_occupancy(economic_occupancy_df):
 
     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
 
-
-
-# def new_projected_economic_occupancy_day(economic_occupancy_df):
-#     st.subheader(
-#         "Projected Economic Occupancy (Based on Target)",
-#         help = "Based on a specified target day for x number of leases to be signed, what is the projected economic occupancy?"
-#     )
-
-#     day_economic_occupancy = economic_occupancy_df[(economic_occupancy_df['time_granularity'] == 'day') &
-#                                                     (economic_occupancy_df['date'] >= TODAY)
-#     ].groupby('date').agg(
-#         num_properties=('num_properties', 'sum'),
-#         num_properties_potentially_occupied=('num_properties_potentially_occupied', 'sum'),
-#         num_properties_occupied=('num_properties_occupied', 'sum'),
-#         total_gpr=('total_gpr', 'sum'),
-#         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
-#         total_gpr_occupied=('total_gpr_occupied', 'sum'),
-#         total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
-#     ).reset_index()
-
-#     # Select a target week and a number of leases
-#     target_col, num_leases_col = st.columns([2, 2])
-#     with target_col:
-#         selected_target_day = st.date_input("Select a target day", 
-#                                         value=TODAY + relativedelta(weekday=MO(-1)) + relativedelta(days=6), 
-#                                         min_value=TODAY + relativedelta(days=1),
-#                                         max_value=max(economic_occupancy_df['date']),
-#                                         help="The date all leases need to be signed by",
-#                                         key="num_leases_to_target")
-#         target_row = day_economic_occupancy[day_economic_occupancy['date'] == selected_target_day]
-#         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
-#     with num_leases_col:
-#         selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed']), help="The number of leases that need to be signed")
-
-#     signed_leases, lease_distribution = generate_new_economic_occupancy_df(day_economic_occupancy, selected_target_day, selected_num_leases)
-
-#     st.write(f'**Assumption 1:** each lease signed (up to the number of leases selected) is evenly distributed from today to the target day ({TODAY.strftime("%Y-%m-%d")} → {selected_target_day.strftime("%Y-%m-%d")}).')
-#     with st.expander("View the signed leases distribution"):
-#         st.data_editor(
-#             lease_distribution,
-#             column_config={
-#                 'date': st.column_config.DateColumn(label='Date'),
-#                 'num_leases_signed': st.column_config.NumberColumn(label='# Leases Signed')
-#             }, 
-#             hide_index=True
-#         )
-#     st.write('**Assumption 2:** move in, aka GPR recovery, occurs 14 days after the lease signed date.')
-    
-
-#     # Move-In Region
-#     start_move_in = (TODAY + timedelta(days=14)).strftime('%Y-%m-%d')
-#     end_move_in = (TODAY+relativedelta(weekday=6)+timedelta(days=14)).strftime('%Y-%m-%d')
-#     move_in_region = alt.Chart(
-#         pd.DataFrame({
-#             'start': [start_move_in],
-#             'end': [end_move_in]
-#         })
-#     ).mark_rect(opacity=0.1, color='gray').encode(
-#         x='start:O',
-#         x2='end:O',
-#         tooltip=alt.Tooltip(
-#             value=f'New signed leases move-in period: {start_move_in} → {end_move_in}.'
-#         )
-#     )
-
-#     new_projected_eo_chart = economic_occupancy_chart(
-#         signed_leases[signed_leases['date'] <= selected_target_day + relativedelta(weeks=3)], 
-#         'economic_occupancy_budget', 
-#         ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 
-#         'day'
-#     )
-
-#     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_region).resolve_scale(x='independent'), use_container_width=True)
 
 
 

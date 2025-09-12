@@ -356,7 +356,7 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
     # Define a selection that will be used to interact with the legend
     selection = alt.selection_single(fields=['type'], bind='legend')
     chart = alt.Chart(economic_occupancy_chart).mark_line(point=True).encode(
-        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()}', axis=alt.Axis(labelAngle=0)),
+        x=alt.X('time_str:O', title=f'{selected_time_granularity.title()} End', axis=alt.Axis(labelAngle=0)),
         y=alt.Y('value:Q', title='Economic Occupancy (%)',
                 scale=alt.Scale(domain=[min_economic_occupancy, 100], padding=10)),
         color=alt.Color(
@@ -380,6 +380,43 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
         height=400
     )
     return chart
+
+    
+
+def target_leases_per_week_chart(target_leases_df, selection, case, occupancy_week_start, selected_weeks_ahead, funds):
+    target_leases_per_week_chart = alt.Chart(target_leases_df[target_leases_df['date'] <= occupancy_week_start + relativedelta(weeks=selected_weeks_ahead-1)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
+        x=alt.X('week_end', title='Week End', axis=alt.Axis(labelAngle=0)),
+        y=alt.Y(f'signed_leases_needed_{case}', title='# Leases to Sign'), 
+        color=alt.value(LIGHT_TEAL if case == 'best_case' else DARK_TEAL
+        ) if len(funds) == 1 else alt.Color(
+            'fund:N', 
+            scale=alt.Scale(range=[TEAL, LIGHT_TEAL, DARK_TEAL, PURPLE, LIGHT_PURPLE, DARK_PURPLE]), 
+            title='Fund'
+        ), 
+        tooltip=[
+            alt.Tooltip(f'{case}', title='Case'), 
+            alt.Tooltip('fund', title='Fund'),
+            alt.Tooltip('week_end', title='Week End'),
+            alt.Tooltip(f'signed_leases_needed_{case}', title='# Leases to Sign')
+        ], 
+        opacity=alt.condition(selection, alt.value(1), alt.value(0.1))
+    ).add_selection(
+        selection
+    ).properties(
+        width=600,
+        height=400
+    )
+    return target_leases_per_week_chart
+
+
+def target_leases_per_week_text(case, chart):
+    return chart.mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5
+    ).encode(
+        text=f'signed_leases_needed_{case}:Q'
+    )
 
 
 
