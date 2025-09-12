@@ -290,12 +290,12 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         num_properties=('num_properties', 'sum'),
         num_properties_potentially_occupied=('num_properties_potentially_occupied', 'sum'),
         num_properties_occupied=('num_properties_occupied', 'sum'),
+        num_properties_pending_renewal=('num_properties_pending_renewal', 'sum'),
         total_gpr=('total_gpr', 'sum'),
         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
         total_gpr_occupied=('total_gpr_occupied', 'sum'),
         total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
     ).reset_index()
-
 
     # Select a target week and a number of leases
     target_col, num_leases_col = st.columns([1, 4])
@@ -323,9 +323,9 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     st.write(f'**Assumption 1:** All leases are signed on the target week end ({st.session_state['target_week_end'].strftime("%Y-%m-%d")}).')
     st.write(f'**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({occupancy_week_end}).')
     
-    
+    chart_signed_leases = signed_leases[signed_leases['period_end'] <= st.session_state['target_week_end'] + relativedelta(weeks=8)]
     new_projected_eo_chart = economic_occupancy_chart(
-        signed_leases[signed_leases['period_end'] <= st.session_state['target_week_end'] + relativedelta(weeks=8)], 
+        chart_signed_leases, 
         'economic_occupancy_budget', 
         ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 
         'week'
@@ -339,7 +339,30 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         tooltip=alt.Tooltip(value=f'Move in/rent recovery begins: {occupancy_week_end}')
     )
 
-    st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
+
+    chart_signed_leases['time_str'] = pd.to_datetime(chart_signed_leases['period_end']).dt.strftime('%Y-%m-%d')
+    pending_renewal_line = alt.Chart(chart_signed_leases).mark_line(
+        color='green'
+    ).encode(
+        x='time_str:O', 
+        y='num_properties_pending_renewal:Q'
+
+    )
+
+    st.write(':orange[Orange text is the number of properties pending renewals (no move out date set and lease ending within 30 days)]')
+    # Create a text chart to display the number of properties pending renewal
+    pending_renewal_text = alt.Chart(chart_signed_leases).mark_text(
+        align='center',
+        baseline='top',
+        dy=160, 
+        color='orange'
+    ).encode(
+        x='time_str:O', 
+        text=alt.Text('num_properties_pending_renewal:Q', format='0')
+    )
+
+    # Layer the text chart on top of your existing chart
+    st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line + pending_renewal_text).resolve_scale(x='independent'), use_container_width=True)
 
 
 
