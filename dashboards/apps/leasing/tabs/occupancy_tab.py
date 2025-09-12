@@ -143,10 +143,15 @@ def num_leases_to_target(economic_occupancy_df):
 
     # 1. Data Preparation
     # Target Week is current week
-    target_week_start = TODAY + relativedelta(weekday=MO(-1))
-    target_week_end = target_week_start + relativedelta(days=6)
+    selected_target_week = st.selectbox("Select a target week", ['Current Week', 'Next Week'], index=0)
+    if selected_target_week == 'Current Week':
+        st.session_state['target_week_start'] = TODAY + relativedelta(weekday=MO(-1))
+        st.session_state['target_week_end'] = st.session_state['target_week_start'] + relativedelta(days=6)
+    else:
+        st.session_state['target_week_start'] = TODAY + relativedelta(weekday=MO(-1)) + relativedelta(days=7)
+        st.session_state['target_week_end'] = st.session_state['target_week_start'] + relativedelta(days=6)
     # Occupancy Week is 2 weeks from target week
-    occupancy_week_start = TODAY + relativedelta(weeks=2, weekday=MO(-1))
+    occupancy_week_start = st.session_state['target_week_start'] + relativedelta(days=14)
     occupancy_week_end = occupancy_week_start + relativedelta(days=6)
     # Compute the rent gained per new lease during the occupancy week
     occupancy_df = week_economic_occupancy[week_economic_occupancy['date'] == occupancy_week_start]
@@ -162,7 +167,7 @@ def num_leases_to_target(economic_occupancy_df):
     # 2. Target week metrics
     target_week_col, num_leases_to_sign_worst_case_col, num_leases_to_sign_best_case_col, weeks_ahead_col = st.columns([1.25, 1, 1, 3])
     with target_week_col:
-        st.metric(f"Target Week", f"{target_week_start.strftime('%m/%d')} - {target_week_end.strftime('%m/%d')}")
+        st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
     with num_leases_to_sign_worst_case_col:
         st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}")
     with num_leases_to_sign_best_case_col:
@@ -295,11 +300,9 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     # Select a target week and a number of leases
     target_col, num_leases_col = st.columns([1, 4])
     with target_col:
-        target_week_start = TODAY + relativedelta(weekday=MO(-1))
-        target_week_end = target_week_start + relativedelta(days=6)
-        st.metric(f"Target Week End", f"{target_week_start.strftime('%m/%d')} - {target_week_end.strftime('%m/%d')}")
-        occupancy_week_end = (target_week_end + relativedelta(days=14)).strftime('%Y-%m-%d')
-        target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == target_week_end]
+        st.metric(f"Target Week End", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
+        occupancy_week_end = (st.session_state['target_week_end'] + relativedelta(days=14)).strftime('%Y-%m-%d')
+        target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == st.session_state['target_week_end']]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
     with num_leases_col:
         selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed']), help="The number of leases that need to be signed")
@@ -307,7 +310,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     signed_leases = week_economic_occupancy.copy()
     signed_leases['new_leases'] = signed_leases['period_end'].apply(lambda x: 
         selected_num_leases 
-        if x >= target_week_end + relativedelta(days=14) 
+        if x >= st.session_state['target_week_end'] + relativedelta(days=14) 
         else 0
     )
 
@@ -317,12 +320,12 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
-    st.write(f'**Assumption 1:** All leases are signed on the target week end ({target_week_end.strftime("%Y-%m-%d")}).')
+    st.write(f'**Assumption 1:** All leases are signed on the target week end ({st.session_state['target_week_end'].strftime("%Y-%m-%d")}).')
     st.write(f'**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({occupancy_week_end}).')
     
     
     new_projected_eo_chart = economic_occupancy_chart(
-        signed_leases[signed_leases['period_end'] <= target_week_end + relativedelta(weeks=8)], 
+        signed_leases[signed_leases['period_end'] <= st.session_state['target_week_end'] + relativedelta(weeks=8)], 
         'economic_occupancy_budget', 
         ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 
         'week'
