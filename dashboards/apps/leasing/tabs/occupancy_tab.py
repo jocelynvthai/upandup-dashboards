@@ -240,13 +240,6 @@ def num_leases_to_target(economic_occupancy_df):
     target_leases_df['worst_case'] = 'Worst (current leases all move out)'
     target_leases_df['best_case'] = 'Best (current leases all renewed)'
 
-        # 4. Custom legend (outside chart)
-    st.markdown("### Legend")
-    legend_items = [
-        ("Best Case", TEAL),
-        ("Worst Case", PURPLE)
-    ]
-
 
     selection = alt.selection_single(fields=['fund'], bind='legend')
     if len(funds) == 1:
@@ -344,7 +337,6 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     )
 
     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
-
 
 
 
