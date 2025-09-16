@@ -263,7 +263,7 @@ def create_funnel_chart(grouped_df, funnel_stages, first_stage, second_stage, ti
     text = alt.Chart(grouped_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5, 
+        dy=-2, 
         color=DARK_TEAL
     ).encode(
         x=alt.X('date:T'),
@@ -370,7 +370,7 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
         tooltip=[
             alt.Tooltip("time_str:O", title=selected_time_granularity.title()),
             alt.Tooltip('type:N', title='Type'),
-            alt.Tooltip('value:Q', title='Value (%)', format='.2f')
+            alt.Tooltip('value:Q', title='Value (%)', format='.2f'), 
         ],
         opacity=alt.condition(selection, alt.value(1), alt.value(0.2))
     ).add_selection(
@@ -383,8 +383,8 @@ def economic_occupancy_chart(economic_occupancy_df, budget_col, series_cols, sel
 
     
 
-def target_leases_per_week_chart(target_leases_df, selection, case, occupancy_week_start, selected_weeks_ahead, funds):
-    target_leases_per_week_chart = alt.Chart(target_leases_df[target_leases_df['date'] <= occupancy_week_start + relativedelta(weeks=selected_weeks_ahead-1)]).mark_bar(color=TEAL, point={'color': TEAL}).encode(
+def target_leases_per_week_chart(target_leases_df, selection, case, funds):
+    return alt.Chart(target_leases_df).mark_bar(color=TEAL, point={'color': TEAL}).encode(
         x=alt.X('week_end', title='Week End', axis=alt.Axis(labelAngle=0)),
         y=alt.Y(f'signed_leases_needed_{case}', title='# Leases to Sign'), 
         color=alt.value(LIGHT_TEAL if case == 'best_case' else DARK_TEAL
@@ -406,17 +406,34 @@ def target_leases_per_week_chart(target_leases_df, selection, case, occupancy_we
         width=600,
         height=400
     )
-    return target_leases_per_week_chart
 
 
-def target_leases_per_week_text(case, chart):
-    return chart.mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-5
-    ).encode(
-        text=f'signed_leases_needed_{case}:Q'
-    )
+def target_leases_per_week_text(target_leases_df, chart, case, funds):
+    if len(funds) != 1:
+        total_leases = (
+            target_leases_df
+            .groupby('week_end')
+            .agg(total_signed_leases_needed=(f'signed_leases_needed_{case}', 'sum'))
+            .reset_index()
+        )
+        return alt.Chart(total_leases).mark_text(
+            align='center',
+            baseline='bottom',
+            dy=-2,
+            color=DARK_TEAL
+        ).encode(
+            x='week_end',
+            y=f'total_signed_leases_needed',
+            text=f'total_signed_leases_needed'
+        ) 
+    else: 
+        return chart.mark_text(
+            align='center',
+            baseline='bottom',
+            dy=-2
+        ).encode(
+            text=f'signed_leases_needed_{case}:Q'
+        )
 
 
 

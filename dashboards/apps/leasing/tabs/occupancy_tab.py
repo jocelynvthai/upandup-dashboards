@@ -122,9 +122,6 @@ def num_leases_to_target(economic_occupancy_df):
         )
     )
 
-    if 'num_new_leases_needed' not in st.session_state:
-        st.session_state['num_new_leases_needed'] = 0
-
     week_economic_occupancy = economic_occupancy_df[
         (economic_occupancy_df['time_granularity'] == 'week') &
         (economic_occupancy_df['date'] >= TODAY - relativedelta(days=TODAY.weekday()))
@@ -245,16 +242,15 @@ def num_leases_to_target(economic_occupancy_df):
     target_leases_df['worst_case'] = 'Worst (current leases all move out)'
     target_leases_df['best_case'] = 'Best (current leases all renewed)'
 
-
+    filtered_target_leases_df = target_leases_df[target_leases_df['date'] <= occupancy_week_start + relativedelta(weeks=selected_weeks_ahead-1)]
     selection = alt.selection_single(fields=['fund'], bind='legend')
     if len(funds) == 1:
-        best_case_chart = target_leases_per_week_chart(target_leases_df, selection, 'best_case', occupancy_week_start, selected_weeks_ahead, funds)
-        worst_case_chart = target_leases_per_week_chart(target_leases_df, selection, 'worst_case', occupancy_week_start, selected_weeks_ahead, funds)
-        worst_case_text = target_leases_per_week_text('worst_case', worst_case_chart)
-        best_case_text = target_leases_per_week_text('best_case', best_case_chart)
-        worst = alt.layer(worst_case_chart, worst_case_text, 
+        best_case_chart = target_leases_per_week_chart(filtered_target_leases_df, selection, 'best_case', funds)
+        worst_case_chart = target_leases_per_week_chart(filtered_target_leases_df, selection, 'worst_case', funds)
+        worst_case_text = target_leases_per_week_text(filtered_target_leases_df, worst_case_chart, 'worst_case', funds)
+        best_case_text = target_leases_per_week_text(filtered_target_leases_df, best_case_chart, 'best_case', funds)
+        target_leases_chart = alt.layer(worst_case_chart, worst_case_text, 
                           best_case_chart, best_case_text)
-        # 4. Compact custom legend
         st.markdown(
             f"""
             <div style="display: flex; justify-content: flex-end; gap: 16px; font-size: 12px; align-items: center; margin-top: 4px;">
@@ -270,10 +266,12 @@ def num_leases_to_target(economic_occupancy_df):
             """, 
             unsafe_allow_html=True
         )
-        st.altair_chart(worst, use_container_width=True)
-        
+        st.altair_chart(target_leases_chart, use_container_width=True)
     else:
-        st.altair_chart(target_leases_per_week_chart(target_leases_df, selection, 'worst_case', occupancy_week_start, selected_weeks_ahead, funds), use_container_width=True)
+        chart = target_leases_per_week_chart(filtered_target_leases_df, selection, 'worst_case', funds)
+        text = target_leases_per_week_text(filtered_target_leases_df, chart, 'worst_case', funds)
+        target_leases_chart = alt.layer(chart, text)
+        st.altair_chart(target_leases_chart, use_container_width=True)
         
 
 
@@ -305,7 +303,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == st.session_state['target_week_end']]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
     with num_leases_col:
-        selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed']), help="The number of leases that need to be signed")
+        selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed_worst_case']), help="The number of leases that need to be signed")
 
     signed_leases = week_economic_occupancy.copy()
     signed_leases['new_leases'] = signed_leases['period_end'].apply(lambda x: 
@@ -323,6 +321,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     st.write(f"**Assumption 1:** All leases are signed on the target week end ({st.session_state['target_week_end'].strftime('%Y-%m-%d')}).")
     st.write(f"**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({occupancy_week_end}).")
     
+    # 1. Projected Economic Occupancy Chart
     chart_signed_leases = signed_leases[signed_leases['period_end'] <= st.session_state['target_week_end'] + relativedelta(weeks=8)]
     new_projected_eo_chart = economic_occupancy_chart(
         chart_signed_leases, 
@@ -330,7 +329,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 
         'week'
     )
-
+    # 2. Move in Line
     move_in_line = alt.Chart(pd.DataFrame({'date_str': [occupancy_week_end]})
     ).mark_rule(
         color='red'
@@ -339,30 +338,12 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         tooltip=alt.Tooltip(value=f'Move in/rent recovery begins: {occupancy_week_end}')
     )
 
+    # 3. Pending Renewals
+    pivoted_chart_signed_leases = chart_signed_leases.set_index('period_end')[['num_properties_pending_renewal']].T
+    with st.expander("View pending renewals (# active leases ending within 30 days with no move out date set)"):
+        st.dataframe(pivoted_chart_signed_leases, hide_index=True)
 
-    chart_signed_leases['time_str'] = pd.to_datetime(chart_signed_leases['period_end']).dt.strftime('%Y-%m-%d')
-    pending_renewal_line = alt.Chart(chart_signed_leases).mark_line(
-        color='green'
-    ).encode(
-        x='time_str:O', 
-        y='num_properties_pending_renewal:Q'
-
-    )
-
-    st.write(':orange[Orange text is the number of properties pending renewals (no move out date set and lease ending within 30 days)]')
-    # Create a text chart to display the number of properties pending renewal
-    pending_renewal_text = alt.Chart(chart_signed_leases).mark_text(
-        align='center',
-        baseline='top',
-        dy=160, 
-        color='orange'
-    ).encode(
-        x='time_str:O', 
-        text=alt.Text('num_properties_pending_renewal:Q', format='0')
-    )
-
-    # Layer the text chart on top of your existing chart
-    st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line + pending_renewal_text).resolve_scale(x='independent'), use_container_width=True)
+    st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
 
 
 

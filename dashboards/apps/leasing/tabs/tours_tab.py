@@ -213,7 +213,7 @@ def homes_with_zero_tours(grouped_tours_df):
     text = alt.Chart(grouped_tours_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5, 
+        dy=-2, 
         color=DARK_TEAL
     ).encode(
         x=alt.X('yearmonthdate(date):O'),

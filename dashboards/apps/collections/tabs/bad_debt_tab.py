@@ -73,7 +73,7 @@ def bad_debt_over_time(filtered_bad_debt_inputs):
     labels = chart.mark_text(
         align='center',
         baseline='bottom',
-        dy=-5
+        dy=-2
     ).encode(
         text=alt.Text('bad_debt_ratio_percent:Q', format='.2f')
     )

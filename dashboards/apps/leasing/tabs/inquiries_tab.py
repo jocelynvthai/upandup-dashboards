@@ -266,7 +266,7 @@ def homes_with_zero_inquiries(grouped_inquiries_df):
     text = alt.Chart(grouped_inquiries_df).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5, 
+        dy=-2, 
         color=DARK_TEAL
     ).encode(
         x=alt.X('yearmonthdate(date):O'),

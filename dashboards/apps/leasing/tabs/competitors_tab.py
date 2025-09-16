@@ -110,7 +110,7 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
     lease_signed_dow_perc_text = lease_signed_dow_perc_chart.mark_text(
         align='center',
         baseline='bottom',
-        dy=-5, 
+        dy=-2, 
         color=DARK_TEAL
     ).encode(
         text='Percentage:Q'
