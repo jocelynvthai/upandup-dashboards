@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
 import streamlit as st
 from google.oauth2 import service_account
 
-from data import get_service_account_info, turns_data, construction_scopes_data, tickets_data, line_items_data
+# Add the dashboards directory to Python path so we can import utils.credentials
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from utils.credentials import get_service_account_info
+
+from data import turns_data, construction_scopes_data, tickets_data, line_items_data
 from tabs.summary_tab import turn_cost_over_time
 from tabs.individual_turn_drilldown_tab import drilldown_filters, individual_turn_timeline, individual_turn_budget_breakdown, individual_turn_drilldown, invoices_by_vendor
 from tabs.economic_turn_costs_tab import economic_turn_costs_filters, economic_turn_costs
