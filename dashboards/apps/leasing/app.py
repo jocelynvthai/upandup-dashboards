@@ -1,23 +1,18 @@
-import sys
-from pathlib import Path
 import streamlit as st
 from google.oauth2 import service_account
 
-# Add the dashboards directory to Python path so we can import utils.credentials
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from utils.credentials import get_service_account_info
-
 from data import (
-    leasing_scraper_data, 
-    leasing_scraper_rent_changes_data, 
-    rental_applications_data, 
-    raw_inquiries_data, 
-    leasing_funnel_data, 
-    inquiries_data, 
-    tours_data, 
-    vacancy_curve_data, 
-    distinct_vacancies_data, 
-    economic_occupancy_data, 
+    get_service_account_info,
+    leasing_scraper_data,
+    leasing_scraper_rent_changes_data,
+    rental_applications_data,
+    raw_inquiries_data,
+    leasing_funnel_data,
+    inquiries_data,
+    tours_data,
+    vacancy_curve_data,
+    distinct_vacancies_data,
+    economic_occupancy_data,
     rental_data
 )
 from tabs.utils import filters
