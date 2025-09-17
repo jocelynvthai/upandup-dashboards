@@ -8,9 +8,8 @@ WORKDIR /app
 COPY requirements.txt .
 COPY .streamlit/ ./.streamlit/
 
-# Copy the collections app's code and the utils directory
+# Copy only the collections app's code
 COPY apps/collections/ .
-COPY utils/ ./utils/
 
 # Install dependencies
 RUN pip install -r requirements.txt

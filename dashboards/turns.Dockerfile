@@ -8,9 +8,8 @@ WORKDIR /app
 COPY requirements.txt .
 COPY .streamlit/ ./.streamlit/
 
-# Copy the turns app's code and the utils directory
+# Copy only the turns app's code
 COPY apps/turns/ .
-COPY utils/ ./utils/
 
 # Install dependencies
 RUN pip install -r requirements.txt
