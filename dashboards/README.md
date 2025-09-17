@@ -88,15 +88,13 @@ Option 1:
   poetry shell
   ```
 
-````
-
 - Run the app in the poetry shell
 
   ```bash
   streamlit run apps/your_dashboard_name/app.py
   ```
 
-  Option 2:
+Option 2:
 
 - Without poetry shell
   ```bash
@@ -108,22 +106,9 @@ The app will open automatically in your default web browser. By default, Streaml
 - Local URL: http://localhost:8501
 - Network URL: http://192.168.x.x:8501
 
-## Deployment to Streamlit Cloud
-
-1. Create a Streamlit Cloud account at [streamlit.io](https://streamlit.io)
-2. Deploy your app:
-   - Click "Create app" in the Streamlit Cloud dashboard (top right corner)
-   - Choose "Deploy a public app from GitHub"
-   - Select your repository and branch
-   - Set the main file path: `apps/your_dashboard_name/app.py`
-   - Click "Deploy"
-3. Configure secrets in Streamlit Cloud:
-   - In your deployed app, click the three dots (⋮) menu
-   - Select "Settings"
-   - Navigate to "Secrets"
-   - Paste your secrets in TOML format:
-
 ## Deployment with Google Cloud Run
+
+This only needs to be done once, when you create a new app and do the initial deployment. This sets up an workflow to redeploy the app to Google Cloud Run every time a commit is pushed to the repo.
 
 1. Create a Docker file with name `your_dashboard_name.Dockerfile` in the root with the following contents:
 
@@ -161,4 +146,3 @@ The app will open automatically in your default web browser. By default, Streaml
    d. Create Volume and Volume Mounts if app requires credential secrets (ex. google cloud service account to access BigQuery)
 
    e. Create
-````
