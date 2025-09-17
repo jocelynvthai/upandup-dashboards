@@ -7,10 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def get_service_account_info(local=None):
-    if local is None:
-        local = os.getenv('ENV') == 'local'
-
+def get_service_account_info():
+    local = os.getenv('ENV') == 'local'
     if local:
         service_account_info = st.secrets["gcp_service_account"]
     else: 
