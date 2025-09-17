@@ -8,8 +8,9 @@ WORKDIR /app
 COPY requirements.txt .
 COPY .streamlit/ ./.streamlit/
 
-# Copy only the leasing app's code
+# Copy the leasing app's code and the utils directory
 COPY apps/leasing/ .
+COPY utils/ ./utils/
 
 # Install dependencies
 RUN pip install -r requirements.txt
