@@ -50,8 +50,8 @@ def metrics():
         <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px;">
         <strong>actual_vacated</strong>: when status changes from 'Notice Unrented' to 'Vacant Unrented Not Ready'<br>
         <strong>actual_available</strong>: when status changes from 'Vacant Unrented Not Ready' to 'Vacant Unrented Ready'<br>
-        <strong>latest_lease_signed</strong>: day after the last pull date, if there is 1+ days since home has appeared in pull<br>
-        <strong>total_leases_signed</strong> = 1 (if latest_lease_signed exists) + # leases signed that didn't go through (number of gaps ranging 4-14 days)<br>
+        <strong>latest_lease_signed</strong>: day after the last pull date, if there are 14+ days since home has appeared in pull<br>
+        <strong>total_leases_signed</strong> = 1 (if latest_lease_signed exists) + # leases signed that didn't go through (number of gaps ranging 14-30 days)<br>
         <strong>actual_turn_time</strong> = days between actual_vacated and actual_available<br>
         <strong>home_rented_days_on_market</strong> = days between lease_signed and actual_available (estimated available_on if actual_available does not exist)
         </div>
