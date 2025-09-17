@@ -35,6 +35,10 @@ A collection of Streamlit dashboards for Up & Up, built with Python and Streamli
      auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
      client_x509_cert_url = "your-cert-url"
      ```
+   - Make sure you have a `.env` file containing the line
+     ```
+     ENV=local
+     ```
 
 ## Project Structure
 
@@ -42,6 +46,7 @@ A collection of Streamlit dashboards for Up & Up, built with Python and Streamli
 ├── poetry.lock
 ├── pyproject.toml
 ├── requirements.txt
+├── .env  <- set ENV=local here
 ├── .streamlit
     ├── config.toml
     └── secrets.toml  <- add BigQuery secret here

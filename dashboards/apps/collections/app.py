@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
 import streamlit as st
 from google.oauth2 import service_account
 
-from data import get_service_account_info, get_bad_debt_inputs_data, get_collections_curve_data, get_evictions_data, gpr_evictions_data
+# Add the dashboards directory to Python path so we can import utils.credentials
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from utils.credentials import get_service_account_info
+
+from data import get_bad_debt_inputs_data, get_collections_curve_data, get_evictions_data, gpr_evictions_data
 from tabs.data_tab import data_filters, late_collections_over_ar, ar_over_gpr
 from tabs.ontime_collections_tab import ontime_collections_curve_filters, ontime_collections_curve, ontime_collections_drilldown
 from tabs.late_collections_tab import late_collections_curve_filters, late_collections_curve, late_collections_drilldown
