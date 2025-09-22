@@ -84,16 +84,11 @@ def individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_sc
                 width=200,
                 help=f"[Hudson Project ↪](https://hudson.upandup.co/construction/projects/{row['project_id']})"
             )
-            if selected_turn_arr['fund'] != 'Homevest Real Estate Partners IV - Limestone, L.P.':
-                st.metric('Ticket Approved Budgets', 
-                    f"${0 if pd.isna(row['ticket_approved_budgets']) else row['ticket_approved_budgets']:,.2f}", 
-                    width=200,
-                    help='Sum of the approved budgets of all tickets associated with this project'
-                )
 
+        st.markdown("**Associated Latchel Tickets**")
         display_df = tickets_df[tickets_df['project_id'] == row['project_id']]
         display_df['link'] = display_df['slug'].apply(lambda slug: f"https://app.latchel.com/admin/work-order/{slug}")
-        display_df = display_df[['external_source', 'link', 'title', 'category', 'vendor_name', 'description', 'approved_budgets', 'status', 'tracking_status']]
+        display_df = display_df[['link', 'title', 'category', 'vendor_name', 'description', 'approved_budgets', 'status', 'tracking_status']]
         display_df.columns = [col.replace('_', ' ').title() for col in display_df.columns]
         if not display_df.empty:
             st.dataframe(
@@ -112,9 +107,8 @@ def individual_turn_budget_breakdown(selected_turn_arr, filtered_construction_sc
             st.divider()
 
 
-
 def individual_turn_drilldown(filtered_line_items_df):
-    st.subheader("Line Items")
+    st.subheader("Invoices (Buildium)")
     output_df = filtered_line_items_df[[
         'date',
         'vendor_contact_name',
