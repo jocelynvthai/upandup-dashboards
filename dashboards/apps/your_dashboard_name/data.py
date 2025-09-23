@@ -8,8 +8,7 @@ load_dotenv()
 
 
 def get_service_account_info():
-    local = os.getenv('ENV') == 'local'
-    if local:
+    if os.getenv('ENV') == 'local':
         service_account_info = st.secrets["gcp_service_account"]
     else: 
         with open('/gcp_service_account/GCLOUD_SERVICE_ACCOUNT', 'r') as f:

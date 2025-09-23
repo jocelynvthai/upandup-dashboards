@@ -117,8 +117,9 @@ def num_leases_to_target(economic_occupancy_df):
     st.subheader(
         'Leases to Target This Week',
         help=(
-            "To maintain the economic occupancy budget, each week's target assumes the target was hit for all prior weeks.\n"
-            "e.g. Week 4's target assumes Weeks 1–3's targets were hit."
+            "To maintain the economic occupancy budget:\n"
+            "- Each target week's number of leases to sign is based on its corresponding occupancy week's economic occupancy gap, which is 2 weeks from the target week.\n"
+            "- Each week's target assumes the target was hit for all prior weeks. e.g. Week 4's target assumes Weeks 1–3's targets were hit."
         )
     )
 
@@ -162,9 +163,14 @@ def num_leases_to_target(economic_occupancy_df):
 
 
     # 2. Target week metrics
-    target_week_col, num_leases_to_sign_worst_case_col, num_leases_to_sign_best_case_col, weeks_ahead_col = st.columns([1.25, 1, 1, 3])
+    target_week_col, occupancy_week_col, num_leases_to_sign_worst_case_col, num_leases_to_sign_best_case_col, weeks_ahead_col = st.columns(5)
     with target_week_col:
-        st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
+        st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}", 
+                  help="The week we need to sign leases by. Move in/rent recovery occurs 14 days after lease signing, \
+                        so the target number of leases to sign this week is based on the economic occupancy gap 2 weeks from now (Occupancy Week).")
+    with occupancy_week_col:
+        st.metric(f"Occupancy Week", f"{occupancy_week_start.strftime('%m/%d')} - {occupancy_week_end.strftime('%m/%d')}", 
+                  help="The week the signed leases will move in/rent recovery begins.")
     with num_leases_to_sign_worst_case_col:
         st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}")
     with num_leases_to_sign_best_case_col:
@@ -206,7 +212,8 @@ def num_leases_to_target(economic_occupancy_df):
                 ('Weekly Rent Needed', 'Best Case'): "${:,.2f}",
                 ('Leases to Sign', 'Worst Case'): "{:.2f}",
                 ('Leases to Sign', 'Best Case'): "{:.2f}"
-            })
+            }), 
+            hide_index=True
         )
 
     # 3. Following weeks' target Economic Occupancy
@@ -298,7 +305,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     # Select a target week and a number of leases
     target_col, num_leases_col = st.columns([1, 4])
     with target_col:
-        st.metric(f"Target Week End", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
+        st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
         occupancy_week_end = (st.session_state['target_week_end'] + relativedelta(days=14)).strftime('%Y-%m-%d')
         target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == st.session_state['target_week_end']]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
@@ -318,7 +325,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
-    st.write(f"**Assumption 1:** All leases are signed on the target week end ({st.session_state['target_week_end'].strftime('%Y-%m-%d')}).")
+    st.write(f"**Assumption 1:** All leases are signed by the target week end ({st.session_state['target_week_end'].strftime('%Y-%m-%d')}).")
     st.write(f"**Assumption 2:** Move in, aka GPR recovery, occurs 14 days after the lease signed date ({occupancy_week_end}).")
     
     # 1. Projected Economic Occupancy Chart
