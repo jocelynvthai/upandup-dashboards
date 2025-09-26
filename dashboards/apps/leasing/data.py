@@ -25,10 +25,19 @@ def leasing_scraper_data(_credentials):
 
 
 @st.cache_data
-def leasing_scraper_rent_changes_data(_credentials):
+def leasing_scraper_individual_rent_changes_data(_credentials):
     query = """
         SELECT *
-        FROM `homevest-data.dbt_prod_tin.leasing_scraper_rent_changes`
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_individual_rent_changes`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+@st.cache_data
+def leasing_scraper_weekly_rent_changes_data(_credentials):
+    query = """
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_weekly_rent_changes`
     """
     return pd.read_gbq(query, credentials=_credentials)
 

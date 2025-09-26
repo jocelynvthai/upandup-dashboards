@@ -6,9 +6,10 @@ from datetime import datetime, timedelta
 from tabs.utils import TEAL, DARK_TEAL
 
 
-def competitors_filters(leasing_df):
+def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df):
     col_date_range, col_market, col_competitor = st.columns(3)
     filtered_leasing_period_df = leasing_df.copy()
+    filtered_leasing_rent_weekly_rent_changes_df = leasing_rent_weekly_rent_changes_df.copy()
 
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
@@ -21,6 +22,8 @@ def competitors_filters(leasing_df):
             start_date, end_date = date_range[0], date_range[1]
             filtered_leasing_period_df = filtered_leasing_period_df[(filtered_leasing_period_df['first_pull_date'] <= end_date) & 
                                                         (filtered_leasing_period_df['last_pull_date'] >= (start_date - timedelta(days=1)))]
+            filtered_leasing_rent_weekly_rent_changes_df = filtered_leasing_rent_weekly_rent_changes_df[(filtered_leasing_rent_weekly_rent_changes_df['week_start'] <= end_date) & 
+                                                                                                            (filtered_leasing_rent_weekly_rent_changes_df['week_end'] >= start_date)]
     with col_market:
         selected_market = st.selectbox("Select a market", 
                                 options=['All'] + sorted(leasing_df['market_name'].unique()), 
@@ -29,6 +32,7 @@ def competitors_filters(leasing_df):
         color_scale = alt.Scale(scheme='tealblues')  
         if selected_market != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['market_name'] == selected_market]
+            filtered_leasing_rent_weekly_rent_changes_df = filtered_leasing_rent_weekly_rent_changes_df[filtered_leasing_rent_weekly_rent_changes_df['market_name'] == selected_market]
             color_scale = alt.Scale(range=[TEAL]) 
     
     with col_competitor:
@@ -38,10 +42,12 @@ def competitors_filters(leasing_df):
                                 key='competitors_competitor')
         if selected_competitor != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['source'] == selected_competitor]
+            filtered_leasing_rent_weekly_rent_changes_df = filtered_leasing_rent_weekly_rent_changes_df[filtered_leasing_rent_weekly_rent_changes_df['source'] == selected_competitor]
 
     
     
-    return filtered_leasing_period_df, start_date, end_date, color_scale
+    return filtered_leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, start_date, end_date, color_scale
+
 
 
 def metrics():
@@ -56,6 +62,7 @@ def metrics():
         <strong>home_rented_days_on_market</strong> = days between lease_signed and actual_available (estimated available_on if actual_available does not exist)
         </div>
     ''', unsafe_allow_html=True)
+
 
 
 def clearance_rates(filtered_leasing_period_df, start_date, end_date):
@@ -79,8 +86,9 @@ def clearance_rates(filtered_leasing_period_df, start_date, end_date):
         st.metric("Rent Ready Clearance Rate", f"{rent_ready_clearance_rate:.2f}%", help="% of rent ready homes (Vacant Unrented Ready) rented in period range")
 
 
-def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, start_date, end_date, color_scale):
-    st.subheader("Leased Homes Stats")
+
+def leased_homes_stats(filtered_leasing_period_df, leasing_rent_individual_rent_changes_df, start_date, end_date, color_scale):
+    st.subheader("Leased Homes Stats", help="All homes that were leased in the period range. ")
     homes_rented_df = filtered_leasing_period_df[(filtered_leasing_period_df['last_lease_signed'] >= start_date) & (filtered_leasing_period_df['last_lease_signed'] <= end_date)]
     homes_rented_df['rent_change_overall'] = homes_rented_df['last_rent'] - homes_rented_df['first_rent']
 
@@ -113,9 +121,13 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
         dy=-2, 
         color=DARK_TEAL
     ).encode(
-        text='Percentage:Q'
+        text=alt.Text('Percentage:Q', format=".2f")
+    ).transform_calculate(
+        label=alt.datum.Percentage + '%' 
+    ).encode(
+        text='label:N'
     )
-    st.altair_chart(lease_signed_dow_perc_chart + lease_signed_dow_perc_text, use_container_width=True)
+    st.altair_chart(lease_signed_dow_perc_chart + lease_signed_dow_perc_text, use_container_width=True,)
 
 
     # Rent Change Chart
@@ -146,7 +158,7 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
 
 
     # Individual Rent Changes Chart
-    filtered_leasing_rent_changes_df = leasing_rent_changes_df.merge(
+    filtered_leasing_rent_changes_df = leasing_rent_individual_rent_changes_df.merge(
         homes_rented_type_df, on='property_id', how='inner'
     )
     filtered_leasing_rent_changes_df = filtered_leasing_rent_changes_df[
@@ -166,7 +178,7 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
     ).properties(
         title=alt.Title(
             text='Individual Rent Δ', 
-            subtitle='Change in rent vs # days the home has been listed'
+            subtitle='Each point represents a change in rent for a home leased in the period range vs how many days the home has been listed'
         ),
         height=800
     )
@@ -186,7 +198,10 @@ def leased_homes_stats(leasing_rent_changes_df, filtered_leasing_period_df, star
             alt.Tooltip('last_lease_signed', title='Lease Signed')
         ]
     ).properties(
-        title='Days on Market'
+        title=alt.Title(
+            text='Days on Market', 
+            subtitle='Each point represents how many days a home was on market before it was leased'
+        )
     )
     st.altair_chart(dom_chart + zero_line, use_container_width=True)
 
@@ -263,6 +278,49 @@ def turn_times(filtered_leasing_period_df, color_scale):
     st.dataframe(stats_df, use_container_width=True)
 
 
+
+
+def weekly_rent_changes(leasing_rent_weekly_rent_changes_df):
+    st.subheader("Weekly Rent Changes")
+    average_rent_change_df = (
+        leasing_rent_weekly_rent_changes_df
+        .groupby(['week_start', 'week_end'])
+        .agg(
+            num_properties=('num_properties', 'sum'),
+            num_properties_with_rent_changes=('num_properties_with_rent_changes', 'sum'), 
+            total_rent_change=('total_rent_change', 'sum'))
+        .reset_index()
+        .assign(average_rent_change=lambda d: d['total_rent_change'] / d['num_properties_with_rent_changes'])
+    )
+
+    average_rent_change_df['week_end_str'] = pd.to_datetime(average_rent_change_df['week_end']).dt.strftime('%Y-%m-%d')
+    average_rent_change_chart = alt.Chart(average_rent_change_df).mark_bar(color=TEAL).encode(
+        x=alt.X('week_end_str:O', title='Week End'),
+        y=alt.Y('average_rent_change:Q', title='Average Rent Δ per Property'),
+        tooltip=[
+            alt.Tooltip('week_end:T', title='Week End'),
+            alt.Tooltip('num_properties_with_rent_changes:Q', title='# Properties with Rent Δs'),
+            alt.Tooltip('num_properties:Q', title='Number of Properties'), 
+            alt.Tooltip('average_rent_change:Q', title='Average Rent Δ', format='$.2f')
+        ]
+    ).properties(
+        title=alt.Title(
+            text='Average Rent Δ per Property', 
+            subtitle='The average rent change per property in the week'
+        ), 
+        width=600,
+        height=400
+    )
+    average_rent_change_text = average_rent_change_chart.mark_text(
+        align='center',
+        baseline='top',
+        dy=2, 
+        color=DARK_TEAL
+    ).encode(
+        text=alt.Text('average_rent_change:Q', format="$.2f")
+    )
+
+    st.altair_chart(average_rent_change_chart + average_rent_change_text, use_container_width=True)
 
 
 

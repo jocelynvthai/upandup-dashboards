@@ -4,7 +4,8 @@ from google.oauth2 import service_account
 from data import (
     get_service_account_info,
     leasing_scraper_data,
-    leasing_scraper_rent_changes_data,
+    leasing_scraper_individual_rent_changes_data,
+    leasing_scraper_weekly_rent_changes_data,
     rental_applications_data,
     raw_inquiries_data,
     leasing_funnel_data,
@@ -23,7 +24,7 @@ from tabs.leasing_funnel_tab import leasing_funnel_grouped, leasing_funnel_summa
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
 from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, new_projected_economic_occupancy, upcoming_moves
 from tabs.vacancy_curve_tab import vacancy_curve_filters, vacancy_curve
-from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, leased_homes_stats, turn_times
+from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, leased_homes_stats, turn_times, weekly_rent_changes
 
 # Configure page layout
 st.set_page_config(
@@ -37,7 +38,8 @@ st.set_page_config(
 # Data Retrieval
 credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 leasing_df = leasing_scraper_data(credentials)
-leasing_rent_changes_df = leasing_scraper_rent_changes_data(credentials)
+leasing_rent_individual_rent_changes_df = leasing_scraper_individual_rent_changes_data(credentials)
+leasing_rent_weekly_rent_changes_df = leasing_scraper_weekly_rent_changes_data(credentials)
 rental_applications_df = rental_applications_data(credentials)
 raw_inquiries_df = raw_inquiries_data(credentials)
 leasing_funnel_df = leasing_funnel_data(credentials)
@@ -94,11 +96,15 @@ with vacancy_curve_tab:
     filtered_vacancy_curve_df, selected_vacancy = vacancy_curve_filters(distinct_vacancies_df, vacancy_curve_df)
     vacancy_curve(filtered_vacancy_curve_df)
 with competitors_tab:
-    leasing_period_df, start_date, end_date, color_scale = competitors_filters(leasing_df)
+    leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, start_date, end_date, color_scale = competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df)
     metrics()
     clearance_rates(leasing_period_df, start_date, end_date)
-    leased_homes_stats(leasing_rent_changes_df, leasing_period_df, start_date, end_date, color_scale)
+    st.divider()
+    leased_homes_stats(leasing_period_df, leasing_rent_individual_rent_changes_df, start_date, end_date, color_scale)
+    st.divider()
     turn_times(leasing_period_df, color_scale)
+    st.divider()
+    weekly_rent_changes(filtered_leasing_rent_weekly_rent_changes_df)
 
     
 
