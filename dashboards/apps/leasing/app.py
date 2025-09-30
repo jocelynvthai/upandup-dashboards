@@ -24,7 +24,7 @@ from tabs.leasing_funnel_tab import leasing_funnel_grouped, leasing_funnel_summa
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
 from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, new_projected_economic_occupancy, upcoming_moves
 from tabs.vacancy_curve_tab import vacancy_curve_filters, vacancy_curve
-from tabs.competitors_tab import metrics, competitors_filters, clearance_rates, leased_homes_stats, turn_times, weekly_rent_changes
+from tabs.competitors_tab import competitors_filters, metrics, turn_times, weekly_rent_changes, rent_curve, clearance_rates, leased_homes_stats
 
 # Configure page layout
 st.set_page_config(
@@ -96,15 +96,24 @@ with vacancy_curve_tab:
     filtered_vacancy_curve_df, selected_vacancy = vacancy_curve_filters(distinct_vacancies_df, vacancy_curve_df)
     vacancy_curve(filtered_vacancy_curve_df)
 with competitors_tab:
-    leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, start_date, end_date, color_scale = competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df)
+    leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, start_date, end_date, color_scale = competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df) 
     metrics()
-    clearance_rates(leasing_period_df, start_date, end_date)
-    st.divider()
-    leased_homes_stats(leasing_period_df, leasing_rent_individual_rent_changes_df, start_date, end_date, color_scale)
-    st.divider()
-    turn_times(leasing_period_df, color_scale)
-    st.divider()
-    weekly_rent_changes(filtered_leasing_rent_weekly_rent_changes_df)
+    selected_tab = st.pills('TABS', options=["Turn Times", "Weekly Rent Changes", "Leased Homes"], 
+                        default='Weekly Rent Changes',
+                        selection_mode = "single", 
+                        label_visibility="hidden"
+    )
+
+    if selected_tab == "Turn Times":
+        turn_times(leasing_period_df, color_scale)
+    if selected_tab == "Weekly Rent Changes":
+        weekly_rent_changes(filtered_leasing_rent_weekly_rent_changes_df)
+        st.divider()
+        rent_curve(filtered_leasing_rent_weekly_rent_changes_df)
+    elif selected_tab == "Leased Homes":
+        clearance_rates(leasing_period_df, start_date, end_date)
+        st.divider()
+        leased_homes_stats(leasing_period_df, leasing_rent_individual_rent_changes_df, start_date, end_date, color_scale)
 
     
 
