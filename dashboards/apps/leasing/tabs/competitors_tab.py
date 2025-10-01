@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 from tabs.utils import TEAL, DARK_TEAL
 
 
-def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df):
+def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df, rent_curve_df):
     col_date_range, col_market, col_competitor = st.columns(3)
     filtered_leasing_period_df = leasing_df.copy()
     filtered_leasing_rent_weekly_rent_changes_df = leasing_rent_weekly_rent_changes_df.copy()
+    filtered_rent_curve_df = rent_curve_df.copy()
 
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
@@ -33,6 +34,7 @@ def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df):
         if selected_market != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['market_name'] == selected_market]
             filtered_leasing_rent_weekly_rent_changes_df = filtered_leasing_rent_weekly_rent_changes_df[filtered_leasing_rent_weekly_rent_changes_df['market_name'] == selected_market]
+            filtered_rent_curve_df = filtered_rent_curve_df[filtered_rent_curve_df['market_name'] == selected_market]
             color_scale = alt.Scale(range=[TEAL]) 
     
     with col_competitor:
@@ -43,10 +45,11 @@ def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df):
         if selected_competitor != 'All':
             filtered_leasing_period_df = filtered_leasing_period_df[filtered_leasing_period_df['source'] == selected_competitor]
             filtered_leasing_rent_weekly_rent_changes_df = filtered_leasing_rent_weekly_rent_changes_df[filtered_leasing_rent_weekly_rent_changes_df['source'] == selected_competitor]
+            filtered_rent_curve_df = filtered_rent_curve_df[filtered_rent_curve_df['source'] == selected_competitor]
 
     
     
-    return filtered_leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, start_date, end_date, color_scale
+    return filtered_leasing_period_df, filtered_leasing_rent_weekly_rent_changes_df, filtered_rent_curve_df, start_date, end_date, color_scale
 
 
 
@@ -62,6 +65,34 @@ def metrics():
         <strong>home_rented_days_on_market</strong> = days between lease_signed and actual_available (estimated available_on if actual_available does not exist)
         </div>
     ''', unsafe_allow_html=True)
+
+
+
+def turn_times(filtered_leasing_period_df, color_scale):
+    st.subheader("Turn Times")
+    turn_times_df = filtered_leasing_period_df[filtered_leasing_period_df['actual_turn_time'].notna()]
+
+    # Histogram
+    turn_times_histogram = alt.Chart(turn_times_df).mark_bar(color=TEAL).encode(
+        x=alt.X('actual_turn_time:Q', bin=alt.Bin(maxbins=30), title='Turn Time (days)', axis=alt.Axis(format='d')),
+        y=alt.Y('count()', title='# Homes'),
+        tooltip=[
+            alt.Tooltip('count()', title='# Homes'),
+            alt.Tooltip('actual_turn_time:Q', title='Turn Time (days)')
+        ]
+    )
+    st.altair_chart(turn_times_histogram, use_container_width=True)
+
+    # Summary Statistics
+    st.markdown("<h6><b>Summary Statistics</b></h6>", unsafe_allow_html=True)
+    stats_df = turn_times_df.groupby('market_name').agg(
+        **{
+            '# Homes Turned': ('actual_turn_time', 'count'),
+            'Average Turn Time (days)': ('actual_turn_time', 'mean'),
+            'Median Turn Time (days)': ('actual_turn_time', 'median'), 
+        }
+    ).round(2)
+    st.dataframe(stats_df, use_container_width=True)
 
 
 
@@ -130,35 +161,51 @@ def weekly_rent_changes(leasing_rent_weekly_rent_changes_df):
 
 def rent_curve(leasing_rent_weekly_rent_changes_df):
     st.subheader("Rent Curve")
-    st.dataframe(leasing_rent_weekly_rent_changes_df, use_container_width=True)
+    col_month, col_leasing_type = st.columns(2)
+    with col_month:
+        rent_curve_months = sorted(leasing_rent_weekly_rent_changes_df['month'].unique())
+        selected_month = st.selectbox("Select a month", options=rent_curve_months, 
+                                        key='rent_curve_month', index=len(rent_curve_months) - 1)
+    with col_leasing_type:
+        selected_leasing_type = st.selectbox("Select a leasing type", options=leasing_rent_weekly_rent_changes_df['leasing_type'].unique(), key='rent_curve_leasing_type')
 
+    graph_rent_curve_df = leasing_rent_weekly_rent_changes_df[
+        (leasing_rent_weekly_rent_changes_df['month'] == selected_month) &
+        (leasing_rent_weekly_rent_changes_df['leasing_type'] == selected_leasing_type)
+    ].groupby('leasing_day').agg(
+        total_rent=('total_rent', 'sum'),
+        total_rent_ratio_to_day_zero=('total_rent_ratio_to_day_zero', 'sum'), 
+        distinct_properties=('distinct_properties', 'sum')
+    ).reset_index()
 
+    graph_rent_curve_df['avg_rent'] = graph_rent_curve_df['total_rent'] / graph_rent_curve_df['distinct_properties']
+    graph_rent_curve_df['avg_rent_ratio_to_day_zero'] = graph_rent_curve_df['total_rent_ratio_to_day_zero'] / graph_rent_curve_df['distinct_properties']
 
-def turn_times(filtered_leasing_period_df, color_scale):
-    st.subheader("Turn Times")
-    turn_times_df = filtered_leasing_period_df[filtered_leasing_period_df['actual_turn_time'].notna()]
-
-    # Histogram
-    turn_times_histogram = alt.Chart(turn_times_df).mark_bar(color=TEAL).encode(
-        x=alt.X('actual_turn_time:Q', bin=alt.Bin(maxbins=30), title='Turn Time (days)', axis=alt.Axis(format='d')),
-        y=alt.Y('count()', title='# Homes'),
-        tooltip=[
-            alt.Tooltip('count()', title='# Homes'),
-            alt.Tooltip('actual_turn_time:Q', title='Turn Time (days)')
-        ]
+    st.subheader("Average Rent")
+    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point=True).encode(
+        x=alt.X('leasing_day:O', title='Leasing Day'),
+        y=alt.Y('avg_rent:Q', title='Average Rent ($)', 
+                scale=alt.Scale(domain=(graph_rent_curve_df['avg_rent'].min() - 50, graph_rent_curve_df['avg_rent'].max() + 50)),
+                axis=alt.Axis(format='$,.0f'))
     )
-    st.altair_chart(turn_times_histogram, use_container_width=True)
+    st.altair_chart(rent_curve_chart, use_container_width=True)
+    graph_rent_curve_df['avg_rent'] = graph_rent_curve_df['avg_rent'].apply(lambda x: f"${x:,.2f}")
+    st.dataframe(graph_rent_curve_df[['leasing_day', 'avg_rent']], hide_index=True, use_container_width=True)
 
-    # Summary Statistics
-    st.markdown("<h6><b>Summary Statistics</b></h6>", unsafe_allow_html=True)
-    stats_df = turn_times_df.groupby('market_name').agg(
-        **{
-            '# Homes Turned': ('actual_turn_time', 'count'),
-            'Average Turn Time (days)': ('actual_turn_time', 'mean'),
-            'Median Turn Time (days)': ('actual_turn_time', 'median'), 
-        }
-    ).round(2)
-    st.dataframe(stats_df, use_container_width=True)
+    st.subheader("Current Rent Ratio to Day Zero")
+    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point=True).encode(
+        x=alt.X('leasing_day:O', title='Leasing Day'),
+        y=alt.Y('avg_rent_ratio_to_day_zero:Q', title='Average Rent Ratio to Day Zero', 
+                scale=alt.Scale(domain=(graph_rent_curve_df['avg_rent_ratio_to_day_zero'].min() - .05, graph_rent_curve_df['avg_rent_ratio_to_day_zero'].max() + .05)),
+                axis=alt.Axis(format='.0%'))
+    )
+    st.altair_chart(rent_curve_chart, use_container_width=True)
+    graph_rent_curve_df['avg_rent_ratio_to_day_zero'] = graph_rent_curve_df['avg_rent_ratio_to_day_zero'].apply(lambda x: f"{x:.2%}")
+    st.dataframe(graph_rent_curve_df[['leasing_day', 'avg_rent_ratio_to_day_zero']], hide_index=True, use_container_width=True)
+
+
+
+
 
 
 

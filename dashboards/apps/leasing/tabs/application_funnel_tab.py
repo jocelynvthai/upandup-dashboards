@@ -104,11 +104,11 @@ def application_funnel_chart(grouped_application_funnel_df):
     # Define funnel stages
     funnel_stages = ['Created', 'Submitted', 'Paid Fees', 'Reviewed', 'Approved', 'Lease Created', 'Initial Payments', 'Completed']
     
-    first_stage_col, second_stage_col = st.columns(2)
-    with first_stage_col:
+    col_first_stage, col_second_stage = st.columns(2)
+    with col_first_stage:
         first_stage = st.selectbox("Select First Funnel Stage", options=funnel_stages[:-1], key='application_first_funnel_stage')
         first_stage_index = funnel_stages.index(first_stage)
-    with second_stage_col:
+    with col_second_stage:
         second_stage = st.selectbox("Select Second Funnel Stage", options=funnel_stages[first_stage_index + 1:], key='application_second_funnel_stage', index=0)
 
     create_funnel_chart(grouped_application_funnel_df.copy(), funnel_stages, first_stage, second_stage, "hours")

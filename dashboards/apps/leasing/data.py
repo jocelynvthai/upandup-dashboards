@@ -15,33 +15,7 @@ def get_service_account_info():
     return service_account_info
 
 
-@st.cache_data
-def leasing_scraper_data(_credentials):
-    query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
-    """
-    return pd.read_gbq(query, credentials=_credentials)
-
-
-@st.cache_data
-def leasing_scraper_individual_rent_changes_data(_credentials):
-    query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod_tin.leasing_scraper_individual_rent_changes`
-    """
-    return pd.read_gbq(query, credentials=_credentials)
-
-
-@st.cache_data
-def leasing_scraper_weekly_rent_changes_data(_credentials):
-    query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod_tin.leasing_scraper_weekly_rent_changes`
-    """
-    return pd.read_gbq(query, credentials=_credentials)
-
-
+# summary tab data
 @st.cache_data
 def rental_applications_data(_credentials):
     query = """
@@ -51,6 +25,7 @@ def rental_applications_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 
+# inquiries tab data
 @st.cache_data
 def raw_inquiries_data(_credentials):
     query = """
@@ -71,8 +46,43 @@ def raw_inquiries_data(_credentials):
 
     """
     return pd.read_gbq(query, credentials=_credentials)
+@st.cache_data
+def inquiries_data(_credentials):
+    query = """
+        SELECT * FROM `homevest-data.dbt_prod.agg_rental_site_inquiries`
+        ORDER BY
+            CASE time_granularity
+                WHEN 'week' THEN 1
+                WHEN 'month' THEN 2
+                WHEN 'quarter' THEN 3
+                WHEN 'year' THEN 4
+            END,
+            address,
+            date
+    """
+    return pd.read_gbq(query, credentials=_credentials)
 
 
+# tours tab data
+@st.cache_data
+def tours_data(_credentials):
+    query = """
+        SELECT * FROM `homevest-data.dbt_prod.agg_tours`
+        WHERE fund IS NOT NULL
+        ORDER BY
+            CASE time_granularity
+                WHEN 'week' THEN 1
+                WHEN 'month' THEN 2
+                WHEN 'quarter' THEN 3
+                WHEN 'year' THEN 4
+            END,
+            address,
+            date
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+# leasing funnel tab data
 @st.cache_data
 def leasing_funnel_data(_credentials):
     query = """
@@ -92,48 +102,36 @@ def leasing_funnel_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 
+# occupancy tab data
 @st.cache_data
-def inquiries_data(_credentials):
+def economic_occupancy_data(_credentials):
     query = """
-        SELECT * FROM `homevest-data.dbt_prod.agg_rental_site_inquiries`
-        ORDER BY
-            CASE time_granularity
-                WHEN 'week' THEN 1
-                WHEN 'month' THEN 2
-                WHEN 'quarter' THEN 3
-                WHEN 'year' THEN 4
-            END,
-            address,
-            date
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.economic_occupancy_budget_vs_projected`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+@st.cache_data
+def rental_data(_credentials):
+    query = """
+        SELECT 
+            r.*, 
+            ad.address, 
+            ad.fund, 
+            ad.market, 
+        FROM `homevest-data.dbt_prod.stg_actual_rentals` AS r
+        LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS ad
+            ON r.property_id = ad.property_id
     """
     return pd.read_gbq(query, credentials=_credentials)
 
 
-@st.cache_data
-def tours_data(_credentials):
-    query = """
-        SELECT * FROM `homevest-data.dbt_prod.agg_tours`
-        WHERE fund IS NOT NULL
-        ORDER BY
-            CASE time_granularity
-                WHEN 'week' THEN 1
-                WHEN 'month' THEN 2
-                WHEN 'quarter' THEN 3
-                WHEN 'year' THEN 4
-            END,
-            address,
-            date
-    """
-    return pd.read_gbq(query, credentials=_credentials)
-
+# vacancy curve tab data
 @st.cache_data
 def vacancy_curve_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod_tin.vacancy_curve`
     """
     return pd.read_gbq(query, credentials=_credentials)
-
-
 @st.cache_data
 def distinct_vacancies_data(_credentials):
     query = """
@@ -149,28 +147,40 @@ def distinct_vacancies_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 
+# competitors tab data
 @st.cache_data
-def economic_occupancy_data(_credentials):
+def leasing_scraper_data(_credentials):
     query = """
         SELECT *
-        FROM `homevest-data.dbt_prod_tin.economic_occupancy_budget_vs_projected`
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
     """
     return pd.read_gbq(query, credentials=_credentials)
-
-
 @st.cache_data
-def rental_data(_credentials):
+def leasing_scraper_individual_rent_changes_data(_credentials):
     query = """
-        SELECT 
-            r.*, 
-            ad.address, 
-            ad.fund, 
-            ad.market, 
-        FROM `homevest-data.dbt_prod.stg_actual_rentals` AS r
-        LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS ad
-            ON r.property_id = ad.property_id
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_individual_rent_changes`
     """
     return pd.read_gbq(query, credentials=_credentials)
+@st.cache_data
+def leasing_scraper_weekly_rent_changes_data(_credentials):
+    query = """
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.leasing_scraper_weekly_rent_changes`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+@st.cache_data
+def rent_curve_data(_credentials):
+    query = """
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.rent_curve`
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+
+
+
+
+
 
 
 

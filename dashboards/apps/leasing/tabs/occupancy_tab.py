@@ -53,13 +53,13 @@ def occupancy_filters(economic_occupancy_df, rental_df):
 
 def occupancy_metrics(economic_occupancy_df):
     st.subheader("Today's Occupancy Metrics")
-    economic_occupancy_col, physical_occupancy_col = st.columns(2)
+    col_economic_occupancy, col_physical_occupancy = st.columns(2)
     today_occupancy = economic_occupancy_df[economic_occupancy_df['date'] == datetime.now()]
-    with economic_occupancy_col:
+    with col_economic_occupancy:
         st.metric("Economic Occupancy", 
                 f"{round(today_occupancy['total_gpr_occupied'].sum() * 100 / today_occupancy['total_gpr'].sum(), 2)}%", 
                 help="Today's Rent Charged / Today's GPR")
-    with physical_occupancy_col:
+    with col_physical_occupancy:
         st.metric("Physical Occupancy", 
                 f"{round(today_occupancy['num_properties_occupied'].sum() * 100 / today_occupancy['num_properties'].sum(), 2)}%", 
                 help="\# Homes Occupied / \# Homes")
@@ -72,10 +72,10 @@ def economic_occupancy(economic_occupancy_df):
         help = "Best case assumes that all current leases will be renewed.  Worst case assumes that all current leases will move out."
     )
 
-    time_granularity_col, date_range_col = st.columns(2)
-    with time_granularity_col:
+    col_time_granularity, col_date_range = st.columns(2)
+    with col_time_granularity:
         selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], index=0)
-    with date_range_col:
+    with col_date_range:
         last_date = economic_occupancy_df['period_end'].max()
         if selected_time_granularity == 'day':
             start = TODAY
@@ -163,19 +163,19 @@ def num_leases_to_target(economic_occupancy_df):
 
 
     # 2. Target week metrics
-    target_week_col, occupancy_week_col, num_leases_to_sign_worst_case_col, num_leases_to_sign_best_case_col, weeks_ahead_col = st.columns(5)
-    with target_week_col:
+    col_target_week, col_occupancy_week, col_num_leases_to_sign_worst_case, col_num_leases_to_sign_best_case, col_weeks_ahead = st.columns(5)
+    with col_target_week:
         st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}", 
                   help="The week we need to sign leases by. Move in/rent recovery occurs 14 days after lease signing, \
                         so the target number of leases to sign this week is based on the economic occupancy gap 2 weeks from now (Occupancy Week).")
-    with occupancy_week_col:
+    with col_occupancy_week:
         st.metric(f"Occupancy Week", f"{occupancy_week_start.strftime('%m/%d')} - {occupancy_week_end.strftime('%m/%d')}", 
                   help="The week the signed leases will move in/rent recovery begins.")
-    with num_leases_to_sign_worst_case_col:
+    with col_num_leases_to_sign_worst_case:
         st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}")
-    with num_leases_to_sign_best_case_col:
+    with col_num_leases_to_sign_best_case:
         st.metric(f"\# Leases to Sign (Best Case)", f"{st.session_state['num_new_leases_needed_best_case']:.2f}")
-    with weeks_ahead_col:
+    with col_weeks_ahead:
         max_weeks_ahead = int((max(week_economic_occupancy['date']) - occupancy_week_start).days / 7) - 1
         selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12)
     
@@ -303,13 +303,13 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     ).reset_index()
 
     # Select a target week and a number of leases
-    target_col, num_leases_col = st.columns([1, 4])
-    with target_col:
+    col_target_week, col_num_leases = st.columns([1, 4])
+    with col_target_week:
         st.metric(f"Target Week", f"{st.session_state['target_week_start'].strftime('%m/%d')} - {st.session_state['target_week_end'].strftime('%m/%d')}")
         occupancy_week_end = (st.session_state['target_week_end'] + relativedelta(days=14)).strftime('%Y-%m-%d')
         target_row = week_economic_occupancy[week_economic_occupancy['period_end'] == st.session_state['target_week_end']]
         num_vacant_homes = target_row['num_properties'].iloc[0] - target_row['num_properties_occupied'].iloc[0]
-    with num_leases_col:
+    with col_num_leases:
         selected_num_leases = st.slider("Select # of leases to sign", min_value=1, max_value=num_vacant_homes, value=round(st.session_state['num_new_leases_needed_worst_case']), help="The number of leases that need to be signed")
 
     signed_leases = week_economic_occupancy.copy()

@@ -47,16 +47,16 @@ def summary_metrics(rental_applications_df, start_date, end_date, raw_inquiries_
         (rental_applications_df['completed_at'] <= pd.to_datetime(end_date).tz_localize('UTC'))
     ])
 
-    num_inquiries_col, num_apps_col, num_approved_col, num_cancelled_col, num_completed_col = st.columns(5)
-    with num_inquiries_col:
+    col_num_inquiries, col_num_apps, col_num_approved, col_num_cancelled, col_num_completed = st.columns(5)
+    with col_num_inquiries:
         st.metric("&#35; Inquiries", num_inquiries)
-    with num_apps_col:
+    with col_num_apps:
         st.metric("&#35; Apps", num_apps)
-    with num_approved_col:
+    with col_num_approved:
         st.metric("&#35; Approved", num_approved)
-    with num_cancelled_col:
+    with col_num_cancelled:
         st.metric("&#35; Cancelled", num_cancelled)
-    with num_completed_col:
+    with col_num_completed:
         st.metric("&#35; Completed", num_completed)
 
 
