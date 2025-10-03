@@ -114,10 +114,11 @@ def num_inquiries(grouped_inquiries_df, selected_time_granularity):
         ]
     )
     
-    # Combine charts with shared y-axis
+    # Combine charts with shared y-axis and set properties
     combined_chart = (bar_chart + line_chart).properties(
-        width=800,
-        height=400
+        width=800, 
+        height=400,
+        padding={"bottom": 60} 
     )
     st.altair_chart(combined_chart, use_container_width=True)
 

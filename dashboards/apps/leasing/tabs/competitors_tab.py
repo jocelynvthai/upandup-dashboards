@@ -3,7 +3,7 @@ import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
 
-from tabs.utils import TEAL, DARK_TEAL
+from tabs.utils import TEAL, DARK_TEAL, LIGHT_GRAY
 
 
 def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df, rent_curve_df):
@@ -180,31 +180,39 @@ def rent_curve(leasing_rent_weekly_rent_changes_df):
 
     graph_rent_curve_df['avg_rent'] = graph_rent_curve_df['total_rent'] / graph_rent_curve_df['distinct_properties']
     graph_rent_curve_df['avg_rent_ratio_to_day_zero'] = graph_rent_curve_df['total_rent_ratio_to_day_zero'] / graph_rent_curve_df['distinct_properties']
+    vertical_line = alt.Chart(pd.DataFrame({'leasing_day': [-70, -63, -56, -49, -42, -35, -28, -21, -14, -7, 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70]})).mark_rule().encode(
+        x='leasing_day:O',
+        color=alt.condition(
+            alt.datum.leasing_day == 0,
+            alt.value('gray'), 
+            alt.value('lightgray') 
+        )
+    )
 
+    # Average Rent
     st.subheader("Average Rent")
-    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point=True).encode(
+    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point={'color': TEAL}).encode(
         x=alt.X('leasing_day:O', title='Leasing Day'),
         y=alt.Y('avg_rent:Q', title='Average Rent ($)', 
                 scale=alt.Scale(domain=(graph_rent_curve_df['avg_rent'].min() - 50, graph_rent_curve_df['avg_rent'].max() + 50)),
                 axis=alt.Axis(format='$,.0f'))
     )
-    st.altair_chart(rent_curve_chart, use_container_width=True)
+    st.altair_chart(vertical_line + rent_curve_chart, use_container_width=True)
     graph_rent_curve_df['avg_rent'] = graph_rent_curve_df['avg_rent'].apply(lambda x: f"${x:,.2f}")
     st.dataframe(graph_rent_curve_df[['leasing_day', 'avg_rent']], hide_index=True, use_container_width=True)
 
+
+    # Current Rent Ratio to Day Zero    
     st.subheader("Current Rent Ratio to Day Zero")
-    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point=True).encode(
+    rent_curve_chart = alt.Chart(graph_rent_curve_df).mark_line(color=TEAL, point={'color': TEAL}).encode(
         x=alt.X('leasing_day:O', title='Leasing Day'),
         y=alt.Y('avg_rent_ratio_to_day_zero:Q', title='Average Rent Ratio to Day Zero', 
                 scale=alt.Scale(domain=(graph_rent_curve_df['avg_rent_ratio_to_day_zero'].min() - .05, graph_rent_curve_df['avg_rent_ratio_to_day_zero'].max() + .05)),
                 axis=alt.Axis(format='.0%'))
     )
-    st.altair_chart(rent_curve_chart, use_container_width=True)
+    st.altair_chart(vertical_line + rent_curve_chart, use_container_width=True)
     graph_rent_curve_df['avg_rent_ratio_to_day_zero'] = graph_rent_curve_df['avg_rent_ratio_to_day_zero'].apply(lambda x: f"{x:.2%}")
     st.dataframe(graph_rent_curve_df[['leasing_day', 'avg_rent_ratio_to_day_zero']], hide_index=True, use_container_width=True)
-
-
-
 
 
 

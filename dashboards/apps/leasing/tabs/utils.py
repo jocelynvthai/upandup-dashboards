@@ -1,7 +1,7 @@
 import altair as alt
 import streamlit as st
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta, MO
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import numpy as np
 
@@ -160,14 +160,70 @@ def help_icon(help_text: str, align: str = "center"):
 
 def filters(df, tab_name, community_filter=False):
     if community_filter:
-        col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(5)
+        col_preselected_dates, col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(6)
     else:
-        col_date_range, col_time_granularity, col_fund, col_market = st.columns(4)
+        col_preselected_dates, col_date_range, col_time_granularity, col_fund, col_market = st.columns(5)
     filtered_df = df.copy()
 
+
+    today = datetime.now().date()
+    this_monday = today - relativedelta(days=today.weekday())  # current week's Monday
+    last_sunday = this_monday - relativedelta(days=1)          # last week's Sunday
+
+    options_dict = {
+        'Select...': (
+            datetime.now() - timedelta(days=30), 
+            datetime.now()
+        ),
+        # Weeks
+        'This week': (
+            this_monday,  # Monday of this week
+            today         # Today
+        ),
+        'Last week': (
+            this_monday - relativedelta(weeks=1),   # Monday of last week
+            last_sunday                             # Sunday of last week
+        ),
+        'Last 2 weeks': (
+            this_monday - relativedelta(weeks=2),   # Monday 2 weeks ago
+            last_sunday                             # Sunday of last week
+        ),
+        'Last 3 weeks': (
+            this_monday - relativedelta(weeks=3),   # Monday 3 weeks ago
+            last_sunday                             # Sunday of last week
+        ),
+
+        # Months
+        'This month': (
+            today.replace(day=1),  # 1st of this month
+            today                  # Today
+        ),
+        'Last month': (
+            (today.replace(day=1) - relativedelta(months=1)),    # 1st of last month
+            today.replace(day=1) - relativedelta(days=1)         # last day of last month
+        ),
+        'Last 2 months': (
+            (today.replace(day=1) - relativedelta(months=2)),    # 1st of 2 months ago
+            today.replace(day=1) - relativedelta(days=1)         # last day of last month
+        ),
+        'Last 3 months': (
+            (today.replace(day=1) - relativedelta(months=3)),    # 1st of 3 months ago
+            today.replace(day=1) - relativedelta(days=1)         # last day of last month
+        ),
+
+        # Year
+        'This year': (
+            datetime(today.year, 1, 1),  # Jan 1 of this year
+            today                    # today
+        )
+    }
+    with col_preselected_dates:
+        preselected_dates = st.selectbox("Quick select period range", options_dict.keys(), key=f'{tab_name}_preselected_dates')
+
     with col_date_range:
+        preselected_start_date, preselected_end_date = options_dict[preselected_dates]
         date_range = st.date_input("Pick a period range",
-                                   value=(datetime.now() - timedelta(days=30),  datetime.now()),
+                                   value=(preselected_start_date, preselected_end_date),
                                    format='MM/DD/YYYY',
                                    key=f'{tab_name}_date_range')
         if len(date_range) != 2:
@@ -437,49 +493,5 @@ def target_leases_per_week_text(target_leases_df, chart, case, funds):
 
 
 
-# def generate_new_economic_occupancy_df_day(day_economic_occupancy, selected_deadline, selected_num_leases):
-#     today = datetime.now().date()
-#     # Generate a uniform lease signed distribution between TODAY and selected_deadline
-#     num_days = (selected_deadline - today).days + 1
-#     interval = num_days / selected_num_leases
-#     lease_signed_dates = [today + timedelta(days=i*interval) for i in range(selected_num_leases)]
 
-#     lease_distribution = pd.DataFrame({
-#         'date': lease_signed_dates,
-#         'leases': [1] * (selected_num_leases),
-#     }).groupby('date').agg(
-#         num_leases_signed=('leases', 'sum')
-#     ).reset_index()
-
-#     # Set the recovery start to be 14 days after the lease signed date
-#     signed_leases = day_economic_occupancy.merge(lease_distribution, left_on='date', right_on='date', how='left').fillna(0)
-#     signed_leases['recovery_leases_start'] = signed_leases['num_leases_signed'].shift(14, fill_value=0)
-
-
-#     signed_leases['recovery_leases'] = 0
-#     for idx, row in signed_leases.iterrows():
-#         if row['recovery_leases_start'] > 0:
-#             start_idx = idx
-#             end_idx = min(idx + 365, len(signed_leases))  # cap at dataframe length
-#             signed_leases.loc[start_idx:end_idx-1, 'recovery_leases'] += row['recovery_leases_start']
-
-
-#     signed_leases['total_gpr_per_new_lease'] = (signed_leases['total_gpr']-signed_leases['total_gpr_occupied']) / (signed_leases['num_properties']-signed_leases['num_properties_occupied'])
-#     signed_leases['recovery_gpr'] = signed_leases['total_gpr_per_new_lease'] * signed_leases['recovery_leases']
-#     signed_leases['economic_occupancy_budget'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
-#     signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
-#     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
-    
-#     # TESTING
-#     from dateutil.relativedelta import relativedelta, MO 
-#     signed_leases['week_end'] = signed_leases['date'].apply(lambda x: (pd.to_datetime(x) + relativedelta(weekday=MO(-1)) + relativedelta(days=6)))
-#     week_test = signed_leases.groupby('week_end').agg(
-#         total_gpr=('total_gpr', 'sum'),
-#         total_gpr_occupied=('total_gpr_occupied', 'sum'),
-#         total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
-#     ).reset_index()
-#     week_test['eo'] = week_test['total_gpr_occupied'] / week_test['total_gpr']
-#     week_test['eo_budget'] = week_test['total_gpr_occupied_budget'] / week_test['total_gpr']
-
-#     return signed_leases, lease_distribution
     

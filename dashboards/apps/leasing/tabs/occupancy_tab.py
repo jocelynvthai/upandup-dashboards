@@ -105,10 +105,10 @@ def economic_occupancy(economic_occupancy_df):
 
     economic_occupancy_selected['economic_occupancy_best_case'] = economic_occupancy_selected['total_gpr_potentially_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_worst_case'] = economic_occupancy_selected['total_gpr_occupied'] * 100 / economic_occupancy_selected['total_gpr']
-    economic_occupancy_selected['economic_occupancy_budget'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
+    economic_occupancy_selected['economic_occupancy_forecast'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
 
     # View week ends in dashboard
-    projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_budget', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
+    projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_forecast', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
     st.altair_chart(projected_eo_chart)
 
 
@@ -321,7 +321,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
 
     signed_leases['total_gpr_per_new_lease'] = (signed_leases['total_gpr']-signed_leases['total_gpr_occupied']) / (signed_leases['num_properties']-signed_leases['num_properties_occupied'])
     signed_leases['recovery_gpr'] = signed_leases['total_gpr_per_new_lease'] * signed_leases['new_leases']
-    signed_leases['economic_occupancy_budget'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
+    signed_leases['economic_occupancy_forecast'] = signed_leases['total_gpr_occupied_budget'] * 100 / signed_leases['total_gpr']
     signed_leases['economic_occupancy_prior_projected'] = (signed_leases['total_gpr_occupied']) * 100 / signed_leases['total_gpr']
     signed_leases['economic_occupancy_new_projected'] = (signed_leases['total_gpr_occupied'] + signed_leases['recovery_gpr']) * 100 / signed_leases['total_gpr']
 
@@ -332,7 +332,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
     chart_signed_leases = signed_leases[signed_leases['period_end'] <= st.session_state['target_week_end'] + relativedelta(weeks=8)]
     new_projected_eo_chart = economic_occupancy_chart(
         chart_signed_leases, 
-        'economic_occupancy_budget', 
+        'economic_occupancy_forecast', 
         ['economic_occupancy_new_projected', 'economic_occupancy_prior_projected'], 
         'week'
     )
