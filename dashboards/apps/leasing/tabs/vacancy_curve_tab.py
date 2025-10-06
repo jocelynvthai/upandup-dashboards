@@ -5,7 +5,7 @@ from tabs.utils import LIGHT_GRAY, TEAL, LIGHT_PURPLE, PURPLE, DARK_PURPLE
 
 def vacancy_curve_filters(distinct_vacancies_df, vacancy_curve_df):
     distinct_vacancies = distinct_vacancies_df['address'] + ' -- ' + distinct_vacancies_df['vacancy_start_date'].astype(str)
-    selected_vacancy = st.selectbox("Select Vacancy", distinct_vacancies.unique()).split(' -- ')
+    selected_vacancy = st.selectbox("Select vacancy", distinct_vacancies.unique()).split(' -- ')
 
     filtered_vacancy_curve_df = vacancy_curve_df[
         (vacancy_curve_df['address'] == selected_vacancy[0]) & 
