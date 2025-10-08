@@ -4,6 +4,14 @@ from tabs.utils import create_funnel_chart
 import altair as alt
 
 
+def leasing_funnel_prelease(leasing_funnel_df):
+    prelease = st.toggle("Pre-lease")
+    if prelease:
+        filtered_leasing_funnel_df = leasing_funnel_df[leasing_funnel_df['is_pre_lease'] == 'Yes']
+    else:
+        filtered_leasing_funnel_df = leasing_funnel_df[leasing_funnel_df['is_pre_lease'] == 'No']
+    return filtered_leasing_funnel_df
+
 def leasing_funnel_grouped(filtered_leasing_funnel_df):
     grouped_leasing_funnel_df = filtered_leasing_funnel_df.groupby('date').agg(
         homes_listed=('num_homes_listed', 'sum'),

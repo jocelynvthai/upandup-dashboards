@@ -21,7 +21,7 @@ from tabs.utils import filters
 from tabs.summary_tab import summary_filters, summary_metrics
 from tabs.inquiries_tab import inquiries_grouped, num_inquiries, inquiries_filled_out_prequalification_form, inquiries_prequalified, homes_with_zero_inquiries
 from tabs.tours_tab import tours_grouped, tour_metrics, num_tours_by_source, num_tours_by_farthest_funnel_stage, homes_with_zero_tours
-from tabs.leasing_funnel_tab import leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
+from tabs.leasing_funnel_tab import leasing_funnel_prelease, leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
 from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, new_projected_economic_occupancy, upcoming_moves
 from tabs.vacancy_curve_tab import vacancy_curve_filters, vacancy_curve
@@ -82,10 +82,14 @@ with tours_tab:
     num_tours_by_farthest_funnel_stage(grouped_tours_df)
     homes_with_zero_tours(grouped_tours_df)
 with leasing_funnel_tab:
-    filtered_leasing_funnel_df, leasing_selected_time_granularity = filters(leasing_funnel_df, 'leasing_funnel')
-    grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
-    leasing_funnel_summary_metrics(grouped_leasing_funnel_df, leasing_selected_time_granularity)
-    leasing_funnel_chart(grouped_leasing_funnel_df)
+    filtered_leasing_funnel_df = leasing_funnel_prelease(leasing_funnel_df)
+    filtered_leasing_funnel_df, leasing_selected_time_granularity = filters(filtered_leasing_funnel_df, 'leasing_funnel')
+    if len(filtered_leasing_funnel_df) > 0:
+        grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
+        leasing_funnel_summary_metrics(grouped_leasing_funnel_df, leasing_selected_time_granularity)
+        leasing_funnel_chart(grouped_leasing_funnel_df)
+    else:
+        st.write("No data available")
 with application_funnel_tab:
     filtered_application_funnel_df, application_selected_time_granularity = filters(leasing_funnel_df, 'application_funnel')
     grouped_application_funnel_df = application_funnel_grouped(filtered_application_funnel_df)
