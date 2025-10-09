@@ -83,7 +83,7 @@ with tours_tab:
     homes_with_zero_tours(grouped_tours_df)
 with leasing_funnel_tab:
     filtered_leasing_funnel_df = leasing_funnel_prelease(leasing_funnel_df)
-    filtered_leasing_funnel_df, leasing_selected_time_granularity = filters(filtered_leasing_funnel_df, 'leasing_funnel')
+    filtered_leasing_funnel_df, leasing_selected_time_granularity = filters(filtered_leasing_funnel_df, 'leasing_funnel', time_granularity_help_text="Cohortized: will show the cohort of leads that were created during the selected time period")
     if len(filtered_leasing_funnel_df) > 0:
         grouped_leasing_funnel_df = leasing_funnel_grouped(filtered_leasing_funnel_df)
         leasing_funnel_summary_metrics(grouped_leasing_funnel_df, leasing_selected_time_granularity)
@@ -91,7 +91,7 @@ with leasing_funnel_tab:
     else:
         st.write("No data available")
 with application_funnel_tab:
-    filtered_application_funnel_df, application_selected_time_granularity = filters(leasing_funnel_df, 'application_funnel')
+    filtered_application_funnel_df, application_selected_time_granularity = filters(leasing_funnel_df, 'application_funnel', time_granularity_help_text="Cohortized: will show the cohort of applications that were created during the selected time period")
     grouped_application_funnel_df = application_funnel_grouped(filtered_application_funnel_df)
     application_funnel_summary_metrics(grouped_application_funnel_df, application_selected_time_granularity)
     application_funnel_chart(grouped_application_funnel_df)

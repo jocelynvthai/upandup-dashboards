@@ -158,7 +158,7 @@ def help_icon(help_text: str, align: str = "center"):
 
 
 
-def filters(df, tab_name, community_filter=False):
+def filters(df, tab_name, community_filter=False, time_granularity_help_text=None):
     if community_filter:
         col_preselected_dates, col_date_range, col_time_granularity, col_fund, col_market, col_community = st.columns(6)
     else:
@@ -218,14 +218,18 @@ def filters(df, tab_name, community_filter=False):
         )
     }
     with col_preselected_dates:
-        preselected_dates = st.selectbox("Quick select period range", options_dict.keys(), key=f'{tab_name}_preselected_dates')
+        preselected_dates = st.selectbox("Quick select period range", 
+                                          options_dict.keys(), 
+                                          key=f'{tab_name}_preselected_dates', 
+                                          help="Will override the period range selection filter to the right")
 
     with col_date_range:
         preselected_start_date, preselected_end_date = options_dict[preselected_dates]
         date_range = st.date_input("Pick a period range",
                                    value=(preselected_start_date, preselected_end_date),
                                    format='MM/DD/YYYY',
-                                   key=f'{tab_name}_date_range')
+                                   key=f'{tab_name}_date_range', 
+                                   help=time_granularity_help_text)
         if len(date_range) != 2:
             st.stop()
         else:
