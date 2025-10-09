@@ -46,7 +46,6 @@ def gpr_evictions(filtered_gpr_evictions_data):
 
 
 def evictions_by_status(filtered_evictions_data):
-    st.dataframe(filtered_evictions_data)
     for status in sorted(filtered_evictions_data['status'].unique(), key=lambda x: x in ['completed', 'canceled']):
         st.subheader(f"{status.title()} Evictions")
 
