@@ -15,14 +15,14 @@ def evictions_filters(evictions_data, gpr_evictions_data):
     return filtered_evictions_data, filtered_gpr_evictions_data, selected_fund
 
 
-def gpr_evictions(filtered_evictions_data):
+def gpr_evictions(filtered_gpr_evictions_data):
     st.subheader("GPR Evictions")
     selected_occupancy = st.selectbox("Occupancy Status", ['All', 'Occupied'])
 
     if selected_occupancy == 'Occupied':
-        filtered_evictions_data_status = filtered_evictions_data[~filtered_evictions_data['pg_occupancy_status'].isin(['vacant_unleased', 'vacant_leased'])]
+        filtered_evictions_data_status = filtered_gpr_evictions_data[~filtered_gpr_evictions_data['pg_occupancy_status'].isin(['vacant_unleased', 'vacant_leased'])]
     else:
-        filtered_evictions_data_status = filtered_evictions_data
+        filtered_evictions_data_status = filtered_gpr_evictions_data
     
     monthly_gpr_evictions = filtered_evictions_data_status.groupby('month').agg(
         total_gpr=('gpr', 'sum'),
@@ -46,7 +46,8 @@ def gpr_evictions(filtered_evictions_data):
 
 
 def evictions_by_status(filtered_evictions_data):
-    for status in ['scheduled', 'pending', 'completed', 'canceled']:
+    st.dataframe(filtered_evictions_data)
+    for status in sorted(filtered_evictions_data['status'].unique(), key=lambda x: x in ['completed', 'canceled']):
         st.subheader(f"{status.title()} Evictions")
 
         display_df = filtered_evictions_data[filtered_evictions_data['status'] == status]
