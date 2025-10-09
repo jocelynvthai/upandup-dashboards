@@ -27,7 +27,7 @@ def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df, rent_cu
                                                                                                             (filtered_leasing_rent_weekly_rent_changes_df['week_end'] >= start_date)]
     with col_market:
         selected_market = st.selectbox("Select a market", 
-                                options=['All'] + sorted(leasing_df['market_name'].unique()), 
+                                options=['All'] + sorted(filtered_leasing_period_df['market_name'].unique()), 
                                 index=0,
                                 key='competitors_market')
         color_scale = alt.Scale(scheme='tealblues')  
@@ -39,7 +39,7 @@ def competitors_filters(leasing_df, leasing_rent_weekly_rent_changes_df, rent_cu
     
     with col_competitor:
         selected_competitor = st.selectbox("Select a competitor", 
-                                options=['All'] + list(leasing_df['source'].unique()), 
+                                options=['All'] + list(filtered_leasing_period_df['source'].unique()), 
                                 index=0,
                                 key='competitors_competitor')
         if selected_competitor != 'All':
