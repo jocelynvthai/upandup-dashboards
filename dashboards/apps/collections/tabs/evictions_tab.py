@@ -46,7 +46,7 @@ def gpr_evictions(filtered_evictions_data):
 
 
 def evictions_by_status(filtered_evictions_data):
-    for status in ['pending', 'completed', 'canceled']:
+    for status in ['scheduled', 'pending', 'completed', 'canceled']:
         st.subheader(f"{status.title()} Evictions")
 
         display_df = filtered_evictions_data[filtered_evictions_data['status'] == status]
