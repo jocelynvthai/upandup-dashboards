@@ -5,6 +5,7 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
+CACHE_TTL = 3600
 
 def get_service_account_info():
     if os.getenv('ENV') == 'local':
@@ -16,7 +17,7 @@ def get_service_account_info():
 
 
 # summary tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def rental_applications_data(_credentials):
     query = """
         SELECT * 
@@ -26,7 +27,7 @@ def rental_applications_data(_credentials):
 
 
 # inquiries tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def raw_inquiries_data(_credentials):
     query = """
         WITH listed_dates AS (
@@ -46,7 +47,7 @@ def raw_inquiries_data(_credentials):
 
     """
     return pd.read_gbq(query, credentials=_credentials)
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def inquiries_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod.agg_rental_site_inquiries`
@@ -64,7 +65,7 @@ def inquiries_data(_credentials):
 
 
 # tours tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def tours_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod.agg_tours`
@@ -83,7 +84,7 @@ def tours_data(_credentials):
 
 
 # leasing funnel tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def leasing_funnel_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod.agg_cohortized_leasing_funnel`
@@ -103,14 +104,14 @@ def leasing_funnel_data(_credentials):
 
 
 # occupancy tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def economic_occupancy_data(_credentials):
     query = """
         SELECT *
         FROM `homevest-data.dbt_prod_tin.economic_occupancy_budget_vs_projected`
     """
     return pd.read_gbq(query, credentials=_credentials)
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def rental_data(_credentials):
     query = """
         SELECT 
@@ -126,13 +127,13 @@ def rental_data(_credentials):
 
 
 # vacancy curve tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def vacancy_curve_data(_credentials):
     query = """
         SELECT * FROM `homevest-data.dbt_prod_tin.vacancy_curve`
     """
     return pd.read_gbq(query, credentials=_credentials)
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def distinct_vacancies_data(_credentials):
     query = """
         SELECT DISTINCT
@@ -148,14 +149,14 @@ def distinct_vacancies_data(_credentials):
 
 
 # competitors tab data
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def leasing_scraper_data(_credentials):
     query = """
         SELECT *
         FROM `homevest-data.dbt_prod_tin.leasing_scraper_data`
     """
     return pd.read_gbq(query, credentials=_credentials)
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def leasing_scraper_individual_rent_changes_data(_credentials):
     query = """
         SELECT *
@@ -169,20 +170,10 @@ def leasing_scraper_weekly_rent_changes_data(_credentials):
         FROM `homevest-data.dbt_prod_tin.leasing_scraper_weekly_rent_changes`
     """
     return pd.read_gbq(query, credentials=_credentials)
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def rent_curve_data(_credentials):
     query = """
         SELECT *
         FROM `homevest-data.dbt_prod_tin.rent_curve`
     """
     return pd.read_gbq(query, credentials=_credentials)
-
-
-
-
-
-
-
-
-
-

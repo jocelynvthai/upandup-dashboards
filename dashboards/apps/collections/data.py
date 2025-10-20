@@ -5,6 +5,7 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
+CACHE_TTL = 3600
 
 def get_service_account_info():
     if os.getenv('ENV') == 'local':
@@ -15,7 +16,7 @@ def get_service_account_info():
     return service_account_info
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def get_bad_debt_inputs_data(_credentials):
     bad_debt_inputs_query = """
         SELECT * 
@@ -30,7 +31,7 @@ def get_bad_debt_inputs_data(_credentials):
     return bad_debt_inputs
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def get_collections_curve_data(_credentials):
     collections_curve_query = """
         SELECT * 
@@ -39,7 +40,7 @@ def get_collections_curve_data(_credentials):
     return pd.read_gbq(collections_curve_query, credentials=_credentials)
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def get_evictions_data(_credentials):
     evictions_query = """
         WITH 
@@ -99,7 +100,7 @@ def get_evictions_data(_credentials):
     return pd.read_gbq(evictions_query, credentials=_credentials)
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def gpr_evictions_data(_credentials):
     gpr_evictions_query = """
         WITH months AS (
