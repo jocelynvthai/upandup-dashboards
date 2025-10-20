@@ -6,6 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
+CACHE_TTL = 3600
 
 def get_service_account_info():
     if os.getenv('ENV') == 'local':
@@ -16,7 +17,7 @@ def get_service_account_info():
     return service_account_info
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def turns_data(_credentials):
     query = """
         SELECT * 
@@ -34,7 +35,7 @@ def turns_data(_credentials):
     return data
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def construction_scopes_data(_credentials):
     query = """
         SELECT
@@ -48,7 +49,7 @@ def construction_scopes_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def tickets_data(_credentials):
     query = """
         SELECT 
@@ -67,11 +68,10 @@ def tickets_data(_credentials):
     return pd.read_gbq(query, credentials=_credentials)
 
 
-@st.cache_data
+@st.cache_data(ttl=CACHE_TTL)
 def line_items_data(_credentials):
     query = """
         SELECT * 
         FROM `homevest-data.dbt_prod.stg_bdm_turn_line_items`
     """
     return pd.read_gbq(query, credentials=_credentials)
-
