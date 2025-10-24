@@ -6,6 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
+# Cache TTL for 1 hour
 CACHE_TTL = 3600
 
 def get_service_account_info():

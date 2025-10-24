@@ -19,10 +19,13 @@ def get_service_account_info():
 
 
 @st.cache_data(ttl=CACHE_TTL)
-def get_data(_credentials):
+def bills_tickets_invoices_data(_credentials):
     query = """
-        SELECT * 
-        FROM `_` 
+        SELECT *
+        FROM `homevest-data.dbt_prod_tin.bills_tickets_invoices`
     """
     data = pd.read_gbq(query, credentials=_credentials)
+    data['ticket_date'] = np.where(data['ticket_actual_start_date'].notna(), 
+                              data['ticket_actual_start_date'], 
+                              data['ticket_planned_start_date'])
     return data
