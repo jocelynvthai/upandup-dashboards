@@ -20,7 +20,7 @@ A collection of Streamlit dashboards for Up & Up, built with Python and Streamli
    poetry install
    ```
 3. Configure secrets:
-   - Create a `.streamlit/secrets.toml` file
+   - Create a `.streamlit/secrets.toml` file in the dashboards directory
    - Add your configuration secrets (see the [Streamlit BigQuery Tutorial](https://docs.streamlit.io/develop/tutorials/databases/bigquery))
      ```toml
      [gcp_service_account]
@@ -35,7 +35,7 @@ A collection of Streamlit dashboards for Up & Up, built with Python and Streamli
      auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
      client_x509_cert_url = "your-cert-url"
      ```
-   - Make sure you have a `.env` file containing the line
+   - Create or edit the `.env` file in the root directory, containing the line
      ```
      ENV=local
      ```
@@ -84,6 +84,7 @@ poetry export -f requirements.txt --output requirements.txt --without-hashes --o
 Option 1:
 
 - Activate the Poetry shell (optional but recommended):
+
   ```bash
   poetry shell
   ```
