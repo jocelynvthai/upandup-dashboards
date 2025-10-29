@@ -138,12 +138,30 @@ This only needs to be done once, when you create a new app and do the initial de
 3. Create an `app.py` file that contains the master code for the dashboard
 4. Deploy container at [Google Cloud Run](https://cloud.google.com/run) using a Github Repository
 
-   a. Set up with Cloud Build: authenticate Github select the Build Type as Dockerfile with the source location set to "/your_dashboard_name/Dockerfile
+   a. Set up with Cloud Build:
+
+   - Github: Continuously deploy from a repository (source or function)
+   - Source repository (ex. jocelynvthai/upandup-dashboards)
+   - Build Configuration
+     - Build Type: Dockerfile (source location: eg. `dashboards/maintenance.Dockerfile`)
 
    b. Choose a service name (typically upandup-your_dashboard_name)
 
-   c. Set Authentication as "Allow unauthenticated invocations"
+   c. Set Authentication to "Require Authentication"
 
-   d. Create Volume and Volume Mounts if app requires credential secrets (ex. google cloud service account to access BigQuery)
+   - Identity Aware Poxy (IAP)
+   - Edit policy -> add `upandup.co` as a principal
 
-   e. Create
+   d. Create Volume
+
+   - Volume type: Secret
+   - Volume name: gcp_service_account
+   - Secret: GCLOUD_SERVICE_ACCOUNT
+   - Path: GCLOUD_SERVICE_ACCOUNT
+
+   e. Mount Volume if app requires credential secrets (ex. google cloud service account to access BigQuery). In Containers > Volume Mounts
+
+   - Name: gcp_service_account (Secret)
+   - Mount path: gcp_service_account
+
+   f. Create
