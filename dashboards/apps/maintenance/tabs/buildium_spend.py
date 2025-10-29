@@ -144,7 +144,7 @@ def buildium_spend_over_time(all_management_expenses_df):
                if col != st.session_state["category"]}
         }
     )
-    st.markdown("<div style='text-align: right;'><i>select multiple columns with cmd (⌘) - click</i></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: right;'><i>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to filter the line items table below</i></div>", unsafe_allow_html=True)
     selected_info = event['selection']
     if len(selected_info['rows']):
         st.session_state["category_filter"] = pivot_df.loc[selected_info['rows'], st.session_state["category"]]
