@@ -30,7 +30,6 @@ def all_management_expenses_data(_credentials):
 			'run_rate_r_m',
 			'turn_r_m',
 			'disposition_r_m',
-
 			'make_ready_capex',
 			'run_rate_capex',
 			'turn_capex',

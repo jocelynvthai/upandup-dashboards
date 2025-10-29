@@ -157,7 +157,7 @@ def buildium_spend_over_time(all_management_expenses_df):
 
 
 def buildium_spend_line_items(all_management_expenses_df):
-    st.subheader("Line Items")
+    st.subheader("Line Items", help="Filter by selecting rows and/or columns in the Buildium Spend Over Time table above")
     line_items_df = all_management_expenses_df.copy()
 
     if ("time_granularity_filter" in st.session_state) and (st.session_state["time_granularity_filter"] is not None):
