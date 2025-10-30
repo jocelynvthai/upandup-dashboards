@@ -39,17 +39,7 @@ def all_management_expenses_data(_credentials):
     """
     data = pd.read_gbq(query, credentials=_credentials)
     return data
-
-
-@st.cache_data(ttl=CACHE_TTL)
-def construction_bills_source_data(_credentials):
-    query = """
-        SELECT *
-        FROM `homevest-data.dbt_prod_tin.construction_bills_source`
-    """
-    data = pd.read_gbq(query, credentials=_credentials)
-    return data
-
+    
 
 @st.cache_data(ttl=CACHE_TTL)
 def bills_tickets_invoices_data(_credentials):

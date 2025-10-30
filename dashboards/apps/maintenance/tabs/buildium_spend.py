@@ -42,6 +42,7 @@ def buildium_spend_data_clean(all_management_expenses_df):
         default=np.nan 
     )
 
+    # category group & type
     cleaned_all_management_expenses_df[['category_group', 'category_type']] = cleaned_all_management_expenses_df['category'].apply(
         lambda x: pd.Series([
             x.replace('_r_m', '') if 'r_m' in x else 
@@ -61,33 +62,41 @@ def buildium_spend_filters(all_management_expenses_df):
     filtered_all_management_expenses_df = all_management_expenses_df.copy()
 
     # filters
-    date_range = st.date_input("Pick a period range", 
-                            value=(datetime.now() - timedelta(days=30),  datetime.now()), 
-                            format='MM/DD/YYYY',
-                            help="The period range to filter the data type selected",
-                            key='latchel_spend_date_range')
-    if len(date_range) != 2:
-        st.stop()
-    else:
-        filtered_all_management_expenses_df = filtered_all_management_expenses_df[(filtered_all_management_expenses_df['date'] >= date_range[0]) & (filtered_all_management_expenses_df['date'] <= date_range[1])]
-    
+    col_date_range, col_category_type = st.columns(2)
+    with col_date_range:
+        date_range = st.date_input("Pick a period range", 
+                                value=(datetime.now() - timedelta(days=30),  datetime.now()), 
+                                format='MM/DD/YYYY',
+                                help="The period range to filter the data type selected",
+                                key='latchel_spend_date_range')
+        if len(date_range) != 2:
+            st.stop()
+        else:
+            filtered_all_management_expenses_df = filtered_all_management_expenses_df[(filtered_all_management_expenses_df['date'] >= date_range[0]) & (filtered_all_management_expenses_df['date'] <= date_range[1])]
+    with col_category_type:
+        category_type = st.multiselect("Select a category type", ['All'] + sorted(list(filtered_all_management_expenses_df['category_type'].unique())), default='All')
+        if 'All' not in category_type:
+            filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_type'].isin(category_type)]
+   
     col_gl_account, col_vendor = st.columns(2)
     with col_gl_account:
-        selected_gl_accounts = st.multiselect("Select a GL account", ['All'] + list(filtered_all_management_expenses_df['gl_account'].unique()), default=['All'])
+        selected_gl_accounts = st.multiselect("Select a GL account", ['All'] + sorted(list(filtered_all_management_expenses_df['gl_account'].unique())), default='All')
         if 'All' not in selected_gl_accounts:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['gl_account'].isin(selected_gl_accounts)]
     with col_vendor:
-        selected_vendors = st.multiselect("Select a vendor", ['All'] + list(filtered_all_management_expenses_df['vendor'].unique()), default=['All'])
+        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_all_management_expenses_df['vendor'].unique())), default='All', help="vendor format is 'Company Name (Contact Name)' or 'Contact Name'")
         if 'All' not in selected_vendors:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['vendor'].isin(selected_vendors)]
 
     col_fund, col_market = st.columns(2)
     with col_fund:
-        selected_funds = st.multiselect("Select a fund", ['All'] + list(filtered_all_management_expenses_df['fund'].unique()), default=['All'])
+        selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
     with col_market:
-        selected_markets = st.multiselect("Select a market", ['All'] + list(filtered_all_management_expenses_df['market'].unique()), default=['All'])
+        market_options = list(filtered_all_management_expenses_df['market'].unique())
+        market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
+        selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
 
@@ -105,7 +114,7 @@ def buildium_spend_over_time(all_management_expenses_df):
             'Week': 'week_end',
             'Month': 'month_end'
         }
-        selected_time_granularity = st.selectbox("Select a time granularity", time_granularity_dict.keys())
+        selected_time_granularity = st.selectbox("Select a time granularity", time_granularity_dict.keys(), key='buildium_spend_time_granularity')
         st.session_state["time_granularity"] = time_granularity_dict[selected_time_granularity]
     with col_dimension:
         category_dict = {
@@ -144,10 +153,14 @@ def buildium_spend_over_time(all_management_expenses_df):
                if col != st.session_state["category"]}
         }
     )
-    st.markdown("<div style='text-align: right;'><i>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to filter the line items table below</i></div>", unsafe_allow_html=True)
+    st.caption(
+        "<p style='text-align: right;'>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to filter the line items table below</p>",
+        unsafe_allow_html=True
+    )
     selected_info = event['selection']
     if len(selected_info['rows']):
         st.session_state["category_filter"] = pivot_df.loc[selected_info['rows'], st.session_state["category"]]
+        
     else:
         st.session_state["category_filter"] = None
     if len(selected_info['columns']):
