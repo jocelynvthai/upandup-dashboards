@@ -125,6 +125,7 @@ def budget_vs_actual_line_items(bills_tickets_invoices_df):
         # 'id', 
         'date', 
         'properties', 
+        'description', 
         'market', 
         'fund', 
         'vendor', 
@@ -134,7 +135,6 @@ def budget_vs_actual_line_items(bills_tickets_invoices_df):
         'ticket_max_cost', 
         # 'due_date', 
         # 'paid_date', 
-        # 'description', 
         # 'vendor_id', 
         # 'work_order_id', 
         # 'reference_number', 
@@ -192,6 +192,12 @@ def budget_vs_actual_line_items(bills_tickets_invoices_df):
         column_config={
             'date': st.column_config.DateColumn(pinned=True),
             'properties': st.column_config.TextColumn(pinned=True),
+            'description': st.column_config.LinkColumn(
+                label="latchel",
+                display_text=":material/link:",
+                width="small",
+                pinned=True,
+            ),
             'total_bill_amount': st.column_config.NumberColumn(format="dollar", label="buildium_bill_spend"),
             'invoice_total_amount': st.column_config.NumberColumn(format="dollar", label="latchel_invoice_amount"),
             'ticket_max_cost': st.column_config.NumberColumn(format="dollar", label="latchel_ticket_budget"),

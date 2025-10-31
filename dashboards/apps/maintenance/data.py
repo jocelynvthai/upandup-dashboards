@@ -19,8 +19,8 @@ def get_service_account_info():
 
 
 @st.cache_data(ttl=CACHE_TTL)
-def all_management_expenses_data(_credentials):
-    query = """
+def all_management_expenses_data(_credentials, start_date, end_date):
+    query = f"""
         SELECT ame.*, acq.market
         FROM `homevest-data.property_financials.all_management_expenses` AS ame
         LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS acq
@@ -36,10 +36,12 @@ def all_management_expenses_data(_credentials):
 			'disposition_capex',
 			'common_area_maintenance'
 		)
+        AND date >= '{start_date}'
+        AND date <= '{end_date}'
     """
     data = pd.read_gbq(query, credentials=_credentials)
     return data
-    
+
 
 @st.cache_data(ttl=CACHE_TTL)
 def bills_tickets_invoices_data(_credentials):

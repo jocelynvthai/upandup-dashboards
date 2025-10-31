@@ -4,6 +4,7 @@ import numpy as np
 import re
 from datetime import datetime, timedelta
 
+from data import all_management_expenses_data
 from tabs.utils import TEAL, PURPLE, PINK
 
 def buildium_spend_data_clean(all_management_expenses_df):
@@ -58,11 +59,9 @@ def buildium_spend_data_clean(all_management_expenses_df):
     return cleaned_all_management_expenses_df
 
 
-def buildium_spend_filters(all_management_expenses_df):
-    filtered_all_management_expenses_df = all_management_expenses_df.copy()
-
+def buildium_spend_filters(credentials):
     # filters
-    col_date_range, col_category_type = st.columns(2)
+    col_date_range, col_category_group = st.columns(2)
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
                                 value=(datetime.now() - timedelta(days=30),  datetime.now()), 
@@ -72,12 +71,13 @@ def buildium_spend_filters(all_management_expenses_df):
         if len(date_range) != 2:
             st.stop()
         else:
-            filtered_all_management_expenses_df = filtered_all_management_expenses_df[(filtered_all_management_expenses_df['date'] >= date_range[0]) & (filtered_all_management_expenses_df['date'] <= date_range[1])]
-    with col_category_type:
-        category_type = st.multiselect("Select a category type", ['All'] + sorted(list(filtered_all_management_expenses_df['category_type'].unique())), default='All')
-        if 'All' not in category_type:
-            filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_type'].isin(category_type)]
-   
+            all_management_expenses_df = all_management_expenses_data(credentials, date_range[0].strftime('%Y-%m-%d'), date_range[1].strftime('%Y-%m-%d'))
+            filtered_all_management_expenses_df = buildium_spend_data_clean(all_management_expenses_df)
+    with col_category_group:
+        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='All')
+        if 'All' not in category_group:
+            filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
+
     col_gl_account, col_vendor = st.columns(2)
     with col_gl_account:
         selected_gl_accounts = st.multiselect("Select a GL account", ['All'] + sorted(list(filtered_all_management_expenses_df['gl_account'].unique())), default='All')
@@ -99,7 +99,6 @@ def buildium_spend_filters(all_management_expenses_df):
         selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
-
 
     return filtered_all_management_expenses_df
 
