@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
+from data import bills_tickets_invoices_data
 from tabs.utils import RED
 
 def budget_vs_actual_data_clean(bills_tickets_invoices_df):
@@ -40,9 +41,7 @@ def budget_vs_actual_data_clean(bills_tickets_invoices_df):
     return cleaned_bills_tickets_invoices_df
 
 
-def budget_vs_actual_filters(bills_tickets_invoices_df):
-    filtered_bills_tickets_invoices_df = bills_tickets_invoices_df.copy()
-
+def budget_vs_actual_filters(credentials):
     # filters
     col_date_range, col_vendor = st.columns(2)
     with col_date_range:
@@ -54,7 +53,8 @@ def budget_vs_actual_filters(bills_tickets_invoices_df):
         if len(date_range) != 2:
             st.stop()
         else:
-            filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[(filtered_bills_tickets_invoices_df['date'] >= date_range[0]) & (filtered_bills_tickets_invoices_df['date'] <= date_range[1])]
+            bills_tickets_invoices_df = bills_tickets_invoices_data(credentials, date_range[0], date_range[1])
+            filtered_bills_tickets_invoices_df = budget_vs_actual_data_clean(bills_tickets_invoices_df)
     with col_vendor:
         selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_bills_tickets_invoices_df['vendor'].unique())), default='All')
         if 'All' not in selected_vendors:
@@ -74,8 +74,6 @@ def budget_vs_actual_filters(bills_tickets_invoices_df):
         if 'All' not in selected_markets:
             filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['market'].isin(selected_markets)]
 
-
-    return filtered_bills_tickets_invoices_df
     return filtered_bills_tickets_invoices_df
 
 

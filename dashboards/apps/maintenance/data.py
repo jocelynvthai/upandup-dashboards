@@ -44,10 +44,13 @@ def all_management_expenses_data(_credentials, start_date, end_date):
 
 
 @st.cache_data(ttl=CACHE_TTL)
-def bills_tickets_invoices_data(_credentials):
-    query = """
+def bills_tickets_invoices_data(_credentials, start_date, end_date):
+    query = f"""
         SELECT *
         FROM `homevest-data.dbt_prod_tin.bills_tickets_invoices`
+        WHERE date >= '{start_date}'
+        AND date <= '{end_date}'
+
     """
     data = pd.read_gbq(query, credentials=_credentials)
     data['ticket_date'] = np.where(data['ticket_actual_start_date'].notna(), 
