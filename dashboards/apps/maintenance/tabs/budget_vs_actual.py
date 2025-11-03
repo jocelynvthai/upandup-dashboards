@@ -70,7 +70,7 @@ def budget_vs_actual_filters(bills_tickets_invoices_df):
     with col_market:
         market_options = list(filtered_bills_tickets_invoices_df['market'].unique())
         market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
-        selected_markets = st.multiselect("Select a market", ['All'] + market_sorted, default='All')
+        selected_markets = st.multiselect("Select a market", ['All'] + market_sorted, default='All', key='budget_vs_actual_market')
         if 'All' not in selected_markets:
             filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['market'].isin(selected_markets)]
 
