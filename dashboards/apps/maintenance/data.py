@@ -36,6 +36,7 @@ def all_management_expenses_data(_credentials, start_date, end_date):
 			'disposition_capex',
 			'common_area_maintenance'
 		)
+        AND subcategory NOT LIKE '%chargeback%'
         AND date >= '{start_date}'
         AND date <= '{end_date}'
     """
