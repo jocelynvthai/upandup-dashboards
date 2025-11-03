@@ -47,7 +47,8 @@ def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df[['category_group', 'category_type']] = cleaned_all_management_expenses_df['category'].apply(
         lambda x: pd.Series([
             x.replace('_r_m', '') if 'r_m' in x else 
-            x.replace('_capex', '') if 'capex' in x else 
+            x.replace('_capex', '') if 'capex' in x else
+            'common_area_maintenance' if x == 'common_area_maintenance' else
             np.nan,
             'R&M' if 'r_m' in x else 
             'Capex' if 'capex' in x else 
