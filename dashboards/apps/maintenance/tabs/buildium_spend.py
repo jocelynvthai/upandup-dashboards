@@ -67,11 +67,11 @@ def buildium_spend_filters(credentials):
                                 value=(datetime.now() - timedelta(days=30),  datetime.now()), 
                                 format='MM/DD/YYYY',
                                 help="The period range to filter the data type selected",
-                                key='latchel_spend_date_range')
+                                key='buildium_spend_date_range')
         if len(date_range) != 2:
             st.stop()
         else:
-            all_management_expenses_df = all_management_expenses_data(credentials, date_range[0].strftime('%Y-%m-%d'), date_range[1].strftime('%Y-%m-%d'))
+            all_management_expenses_df = all_management_expenses_data(credentials, date_range[0], date_range[1])
             filtered_all_management_expenses_df = buildium_spend_data_clean(all_management_expenses_df)
     with col_category_group:
         category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='All')
@@ -170,8 +170,8 @@ def buildium_spend_over_time(all_management_expenses_df):
 
 def buildium_spend_line_items(all_management_expenses_df):
     st.subheader("Line Items", help="Filter by selecting rows and/or columns in the Buildium Spend Over Time table above")
+    
     line_items_df = all_management_expenses_df.copy()
-
     if ("time_granularity_filter" in st.session_state) and (st.session_state["time_granularity_filter"] is not None):
         line_items_df = line_items_df[line_items_df[st.session_state["time_granularity"]].isin(st.session_state["time_granularity_filter"])]
     if ("category_filter" in st.session_state) and (st.session_state["category_filter"] is not None):
