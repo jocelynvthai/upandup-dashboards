@@ -8,7 +8,7 @@ from data import all_management_expenses_data
 from tabs.utils import TEAL, PURPLE, PINK
 
 def buildium_spend_data_clean(all_management_expenses_df):
-    cleaned_all_management_expenses_df = all_management_expenses_df[all_management_expenses_df['transaction_type'] == 'Bill'].copy()
+    cleaned_all_management_expenses_df = all_management_expenses_df.copy()
 
     # week & month end dates
     cleaned_all_management_expenses_df['date_time'] = pd.to_datetime(cleaned_all_management_expenses_df['date'])
@@ -22,12 +22,12 @@ def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df['vendor_company_name'] = (
         cleaned_all_management_expenses_df['vendor_company_name'] 
         .apply(lambda x: x.strip() if isinstance(x, str) else x)
-        .replace(['', 'None', 'nan', 'NaN'], np.nan)         
+        .replace([None, '', 'None', 'nan', 'NaN'], np.nan)         
     )
     cleaned_all_management_expenses_df['vendor_contact_name'] = (
         cleaned_all_management_expenses_df['vendor_contact_name']
         .apply(lambda x: x.strip() if isinstance(x, str) else x)
-        .replace(['', 'None', 'nan', 'NaN'], np.nan)
+        .replace([None, '', 'None', 'nan', 'NaN'], np.nan)
     )
     cleaned_all_management_expenses_df['vendor'] = np.select(
         [
@@ -40,7 +40,7 @@ def buildium_spend_data_clean(all_management_expenses_df):
             '(' + cleaned_all_management_expenses_df['vendor_contact_name'] + ')', 
             cleaned_all_management_expenses_df['vendor_company_name'],
         ],
-        default=np.nan 
+        default=' (No vendor)'
     )
 
     # category group & type

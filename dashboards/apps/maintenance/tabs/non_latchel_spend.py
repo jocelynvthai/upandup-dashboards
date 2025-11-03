@@ -17,12 +17,12 @@ def non_latchel_spend_data_clean(bills_tickets_invoices_df):
     cleaned_bills_tickets_invoices_df['vendor_company'] = (
         cleaned_bills_tickets_invoices_df['vendor_company'] 
         .apply(lambda x: x.strip() if isinstance(x, str) else x)
-        .replace(['', 'None', 'nan', 'NaN'], np.nan)         
+        .replace([None, '', 'None', 'nan', 'NaN'], np.nan)         
     )
     cleaned_bills_tickets_invoices_df['vendor_name'] = (
         cleaned_bills_tickets_invoices_df['vendor_name']
         .apply(lambda x: x.strip() if isinstance(x, str) else x)
-        .replace(['', 'None', 'nan', 'NaN'], np.nan)
+        .replace([None, '', 'None', 'nan', 'NaN'], np.nan)
     )
     cleaned_bills_tickets_invoices_df['vendor'] = np.select(
         [
@@ -35,7 +35,7 @@ def non_latchel_spend_data_clean(bills_tickets_invoices_df):
             '(' + cleaned_bills_tickets_invoices_df['vendor_name'] + ')', 
             cleaned_bills_tickets_invoices_df['vendor_company'],
         ],
-        default=np.nan 
+        default=' (No vendor)'
     )
     return cleaned_bills_tickets_invoices_df
 
