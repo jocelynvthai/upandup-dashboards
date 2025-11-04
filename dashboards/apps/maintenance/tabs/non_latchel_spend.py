@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import re
 from datetime import datetime, timedelta
 
 from data import bills_tickets_invoices_data
@@ -62,19 +63,18 @@ def non_latchel_spend_filters(credentials):
         if 'All' not in selected_vendors:
             filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['vendor'].isin(selected_vendors)]
 
-    # col_fund, col_market = st.columns(2)
-    # with col_fund:
-    #     fund_options = list(filtered_bills_tickets_invoices_df['fund'].unique())
-    #     fund_sorted = sorted(fund_options, key=lambda x: (pd.isna(x), str(x).lower()))
-    #     selected_funds = st.multiselect("Select a fund", ['All'] + fund_sorted, default='All')
-    #     if 'All' not in selected_funds:
-    #         filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['fund'].isin(selected_funds)]
-    # with col_market:
-    #     market_options = list(filtered_bills_tickets_invoices_df['market'].unique())
-    #     market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
-    #     selected_markets = st.multiselect("Select a market", ['All'] + market_sorted, default='All', key='latchel_spend_market')
-    #     if 'All' not in selected_markets:
-    #         filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['market'].isin(selected_markets)]
+    # fund filter
+    all_funds = filtered_bills_tickets_invoices_df['funds'].apply(
+        lambda x: re.split(r', (?!(?:L\.P\.|LLC))', x)
+    ).explode().unique()
+    selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(all_funds)), default='All', key='non_latchel_spend_fund')
+    if 'All' not in selected_funds:
+        # Keep rows where any selected fund is in the 'funds' string
+        filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[
+            filtered_bills_tickets_invoices_df['funds'].apply(
+                lambda x: any(fund in x for fund in selected_funds)
+            )
+        ]
 
     return filtered_bills_tickets_invoices_df
 

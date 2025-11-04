@@ -65,7 +65,7 @@ def latchel_spend_filters(credentials):
     with col_fund:
         fund_options = list(filtered_bills_tickets_invoices_df['fund'].unique())
         fund_sorted = sorted(fund_options, key=lambda x: (pd.isna(x), str(x).lower()))
-        selected_funds = st.multiselect("Select a fund", ['All'] + fund_sorted, default='All')
+        selected_funds = st.multiselect("Select a fund", ['All'] + fund_sorted, default='All', key='latchel_spend_fund')
         if 'All' not in selected_funds:
             filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['fund'].isin(selected_funds)]
     with col_market:
