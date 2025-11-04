@@ -119,7 +119,7 @@ def latchel_spend(bills_tickets_invoices_df):
 
 
 def latchel_spend_bills(bills_tickets_invoices_df):
-    st.subheader("Bills")
+    st.subheader("Latchel Bills & Journal Entries")
 
     bills_df = bills_tickets_invoices_df.copy()
     if ("time_granularity_filter" in st.session_state) and (st.session_state["time_granularity_filter"] is not None):
