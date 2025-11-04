@@ -56,7 +56,9 @@ def non_latchel_spend_filters(credentials):
             bills_tickets_invoices_df = bills_tickets_invoices_data(credentials, date_range[0], date_range[1])
             filtered_bills_tickets_invoices_df = non_latchel_spend_data_clean(bills_tickets_invoices_df)
     with col_vendor:
-        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_bills_tickets_invoices_df['vendor'].unique())), default='All')
+        vendor_options = list(filtered_bills_tickets_invoices_df['vendor'].unique())
+        vendor_sorted = sorted(vendor_options, key=lambda x: (pd.isna(x), str(x).lower()))
+        selected_vendors = st.multiselect("Select a vendor", ['All'] + vendor_sorted, default='All')
         if 'All' not in selected_vendors:
             filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[filtered_bills_tickets_invoices_df['vendor'].isin(selected_vendors)]
 
@@ -124,22 +126,21 @@ def non_latchel_spend_bills(bills_tickets_invoices_df):
         bills_df = bills_df[bills_df[st.session_state["time_granularity"]] == st.session_state["time_granularity_filter"]]
 
     columns = [
-        # 'id', 
         'date', 
         'due_date', 
         'paid_date', 
-        'properties', 
+        'addresses', 
         'vendor', 
         'description', 
         'total_bill_amount', 
+         # 'id', 
         # 'vendor_id', 
-        # 'work_order_id', 
-        # 'reference_number', 
-        # 'approval_status', 
-        # 'spend_categories', 
-        # 'gl_account_names', 
         # 'vendor_name', 
         # 'vendor_company', 
+        # 'spend_categories', 
+        # 'gl_account_names', 
+        # 'funds', 
+        # 'properties', 
         # 'bill_source', 
         # 'latchel_invoice_id', 
         # 'address', 
@@ -158,8 +159,9 @@ def non_latchel_spend_bills(bills_tickets_invoices_df):
         # 'ticket_actual_cost', 
         # 'ticket_max_cost', 
         # 'ticket_date', 
-        # 'week_end',
-        # 'month_end'
+        # 'date_time', 
+        # 'week_end', 
+        # 'month_end', 
     ]
 
     st.dataframe(
@@ -169,13 +171,7 @@ def non_latchel_spend_bills(bills_tickets_invoices_df):
             'date': st.column_config.DateColumn(pinned=True),
             'due_date': st.column_config.DateColumn(pinned=True),
             'paid_date': st.column_config.DateColumn(pinned=True),
-            'properties': st.column_config.TextColumn(pinned=True),
-            # 'description': st.column_config.LinkColumn(
-            #     label="latchel",
-            #     display_text=":material/link:",
-            #     width="small",
-            #     pinned=True,
-            # ),
+            'addresses': st.column_config.TextColumn(pinned=True),
             'total_bill_amount': st.column_config.NumberColumn(format="dollar"),
         }
     )

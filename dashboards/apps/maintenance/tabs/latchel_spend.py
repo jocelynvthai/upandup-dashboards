@@ -126,11 +126,10 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         bills_df = bills_df[bills_df[st.session_state["time_granularity"]] == st.session_state["time_granularity_filter"]]
    
     columns = [
-        # 'id', 
         'date', 
         'due_date', 
         'paid_date', 
-        'properties', 
+        'addresses', 
         'description', 
         'market', 
         'fund', 
@@ -139,14 +138,14 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         'total_bill_amount', 
         'invoice_total_amount', 
         'ticket_max_cost', 
+        # 'id', 
         # 'vendor_id', 
-        # 'work_order_id', 
-        # 'reference_number', 
-        # 'approval_status', 
-        # 'spend_categories', 
-        # 'gl_account_names', 
         # 'vendor_name', 
         # 'vendor_company', 
+        # 'spend_categories', 
+        # 'gl_account_names', 
+        # 'funds', 
+        # 'properties', 
         # 'bill_source', 
         # 'latchel_invoice_id', 
         # 'address', 
@@ -160,9 +159,11 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         # 'ticket_estimated_cost', 
         # 'ticket_actual_cost', 
         # 'ticket_date', 
-        # 'week_end',
+        # 'date_time', 
+        # 'week_end', 
         # 'month_end'
     ]
+
     styled_df = (
         bills_df[columns]
         .sort_values(by='date')
@@ -194,7 +195,7 @@ def latchel_spend_bills(bills_tickets_invoices_df):
             'date': st.column_config.DateColumn(pinned=True),
             'due_date': st.column_config.DateColumn(pinned=True),
             'paid_date': st.column_config.DateColumn(pinned=True),
-            'properties': st.column_config.TextColumn(pinned=True),
+            'addresses': st.column_config.TextColumn(pinned=True),
             'description': st.column_config.LinkColumn(
                 label="latchel",
                 display_text=":material/link:",
