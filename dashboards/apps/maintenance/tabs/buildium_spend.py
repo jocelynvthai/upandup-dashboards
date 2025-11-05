@@ -152,7 +152,7 @@ def buildium_spend_over_time(all_management_expenses_df):
     event = st.dataframe(
         pivot_df, 
         on_select='rerun', 
-        selection_mode=['multi-row', 'multi-column'], 
+        selection_mode=['single-cell'], 
         hide_index=True,
         column_config={
             **{col: st.column_config.NumberColumn(format="dollar") 
@@ -161,90 +161,83 @@ def buildium_spend_over_time(all_management_expenses_df):
             st.session_state["category"]: st.column_config.TextColumn(pinned=True)
         }
     )
-    st.caption(
-        "<p style='text-align: right;'>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to see individual line items in table below</p>",
-        unsafe_allow_html=True
-    )
+    st.caption("<p style='text-align: right;'><i>Select a cell to view the line items</i></p>", unsafe_allow_html=True)
+
     selected_info = event['selection']
-    if len(selected_info['rows']):
-        st.session_state["category_filter"] = pivot_df.loc[selected_info['rows'], st.session_state["category"]]
-        
+    if len(selected_info['cells']):
+        st.session_state["category_filter"] = pivot_df.loc[selected_info['cells'][0][0], st.session_state["category"]]
+        st.session_state["time_granularity_filter"] = selected_info['cells'][0][1]
     else:
         st.session_state["category_filter"] = None
-    if len(selected_info['columns']):
-        st.session_state["time_granularity_filter"] = selected_info['columns']
-    else:
         st.session_state["time_granularity_filter"] = None
-
+        
 
 def buildium_spend_seasonality(all_management_expenses_df):
     st.subheader("WIP - Buildium Spend Seasonality")
+    st.dataframe(all_management_expenses_df, on_select='rerun', selection_mode=['single-cell'], hide_index=True)
 
 
 def buildium_spend_line_items(all_management_expenses_df):
-    if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is None):
-        st.stop()
+    if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is not None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is not None):
+        st.subheader("Line Items")    
+        
+        line_items_df = all_management_expenses_df.copy()
+        line_items_df = line_items_df[line_items_df[st.session_state["time_granularity"]] == st.session_state["time_granularity_filter"]]
+        line_items_df = line_items_df[line_items_df[st.session_state["category"]] == st.session_state["category_filter"]]
 
-    st.subheader("Line Items", help="Filter by selecting rows and/or columns in the Buildium Spend Over Time table above")    
-    line_items_df = all_management_expenses_df.copy()
-    if ("time_granularity_filter" in st.session_state) and (st.session_state["time_granularity_filter"] is not None):
-        line_items_df = line_items_df[line_items_df[st.session_state["time_granularity"]].isin(st.session_state["time_granularity_filter"])]
-    if ("category_filter" in st.session_state) and (st.session_state["category_filter"] is not None):
-        line_items_df = line_items_df[line_items_df[st.session_state["category"]].isin(st.session_state["category_filter"])]
+        line_items_cols = [
+            'latchel_invoice_link',
+            'category_group',
+            'category_type',
+            'gl_account',
+            'address',
+            'fund',
+            'market',
+            'date',
+            'amount',
+            'description',
+            'vendor'
+        ]
+        def color_category(val):
+            if val == 'R&M':
+                return f'color: {TEAL}'  # teal
+            elif val == 'Capex':
+                return f'color: {PURPLE}'  # purple
+            elif val == 'Common Area Maintenance':
+                return f'color: {PINK}'  # pink
 
-    line_items_cols = [
-        'latchel_invoice_link',
-        'category_group',
-        'category_type',
-        'gl_account',
-        'address',
-        'fund',
-        'market',
-        'date',
-        'amount',
-        'description',
-        'vendor'
-    ]
-    def color_category(val):
-        if val == 'R&M':
-            return f'color: {TEAL}'  # teal
-        elif val == 'Capex':
-            return f'color: {PURPLE}'  # purple
-        elif val == 'Common Area Maintenance':
-            return f'color: {PINK}'  # pink
-
-    styled_df = (
-        line_items_df.assign(
-            category_type=pd.Categorical(
-                line_items_df['category_type'], 
-                categories=['R&M', 'Capex', 'Common Area Maintenance'], 
-                ordered=True
-            ),
-            category_group=pd.Categorical(
-                line_items_df['category_group'], 
-                categories=['make_ready', 'run_rate', 'turn', 'disposition'], 
-                ordered=True
+        styled_df = (
+            line_items_df.assign(
+                category_type=pd.Categorical(
+                    line_items_df['category_type'], 
+                    categories=['R&M', 'Capex', 'Common Area Maintenance'], 
+                    ordered=True
+                ),
+                category_group=pd.Categorical(
+                    line_items_df['category_group'], 
+                    categories=['make_ready', 'run_rate', 'turn', 'disposition'], 
+                    ordered=True
+                )
             )
+            .sort_values(['category_type', 'category_group'])
+            [line_items_cols]
+            .style.applymap(color_category, subset=['category_type'])
         )
-        .sort_values(['category_type', 'category_group'])
-        [line_items_cols]
-        .style.applymap(color_category, subset=['category_type'])
-    )
-    st.dataframe(
-        styled_df, 
-        hide_index=True,
-        column_config={
-            'latchel_invoice_link': st.column_config.LinkColumn(
-                label="latchel_link",
-                display_text=":material/link:",
-                width="small",
-                pinned=True,
-            ),
-            'gl_account': st.column_config.TextColumn(pinned=True),
-            'category_group': st.column_config.TextColumn(pinned=True,),
-            'category_type': st.column_config.TextColumn(pinned=True),
-            'amount': st.column_config.NumberColumn(format="dollar"),
-        }
-    )
+        st.dataframe(
+            styled_df, 
+            hide_index=True,
+            column_config={
+                'latchel_invoice_link': st.column_config.LinkColumn(
+                    label="latchel_link",
+                    display_text=":material/link:",
+                    width="small",
+                    pinned=True,
+                ),
+                'gl_account': st.column_config.TextColumn(pinned=True),
+                'category_group': st.column_config.TextColumn(pinned=True,),
+                'category_type': st.column_config.TextColumn(pinned=True),
+                'amount': st.column_config.NumberColumn(format="dollar"),
+            }
+        )
 
 
