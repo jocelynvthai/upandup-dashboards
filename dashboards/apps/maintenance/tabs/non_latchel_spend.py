@@ -36,7 +36,7 @@ def non_latchel_spend_data_clean(bills_tickets_invoices_df):
             '(' + cleaned_bills_tickets_invoices_df['vendor_name'] + ')', 
             cleaned_bills_tickets_invoices_df['vendor_company'],
         ],
-        default=' (No vendor)'
+        default='No vendor'
     )
     return cleaned_bills_tickets_invoices_df
 

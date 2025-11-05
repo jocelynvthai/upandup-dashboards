@@ -40,7 +40,7 @@ def buildium_spend_data_clean(all_management_expenses_df):
             '(' + cleaned_all_management_expenses_df['vendor_contact_name'] + ')', 
             cleaned_all_management_expenses_df['vendor_company_name'],
         ],
-        default=' (No vendor)'
+        default='No vendor'
     )
 
     # category group & type
@@ -228,7 +228,7 @@ def buildium_spend_line_items(all_management_expenses_df):
             hide_index=True,
             column_config={
                 'latchel_invoice_link': st.column_config.LinkColumn(
-                    label="latchel_link",
+                    label="latchel",
                     display_text=":material/link:",
                     width="small",
                     pinned=True,
