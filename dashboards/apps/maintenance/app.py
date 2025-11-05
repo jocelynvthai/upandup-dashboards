@@ -8,7 +8,7 @@ from tabs.non_latchel_spend import non_latchel_spend_filters, non_latchel_spend,
 
 # Configure page layout
 st.set_page_config(
-    page_title="Dashboard Name",
+    page_title="Maintenance Dashboard",
     page_icon="",
     layout="wide",
     initial_sidebar_state="collapsed"

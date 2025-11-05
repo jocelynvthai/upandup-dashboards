@@ -65,7 +65,7 @@ def buildium_spend_filters(credentials):
     col_date_range, col_category_group = st.columns(2)
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
-                                value=(datetime.now() - timedelta(days=30),  datetime.now()), 
+                                value=(datetime(2021, 1, 1),  datetime.now()), 
                                 format='MM/DD/YYYY',
                                 help="The period range to filter the data type selected",
                                 key='buildium_spend_date_range')
@@ -150,11 +150,12 @@ def buildium_spend_over_time(all_management_expenses_df):
         column_config={
             **{col: st.column_config.NumberColumn(format="dollar") 
                for col in pivot_df.columns 
-               if col != st.session_state["category"]}
+               if col != st.session_state["category"]},
+            st.session_state["category"]: st.column_config.TextColumn(pinned=True)
         }
     )
     st.caption(
-        "<p style='text-align: right;'>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to filter the line items table below</p>",
+        "<p style='text-align: right;'>Select multiple rows (checkboxes) and/or columns (cmd⌘ - click) to see individual line items in table below</p>",
         unsafe_allow_html=True
     )
     selected_info = event['selection']
@@ -170,8 +171,10 @@ def buildium_spend_over_time(all_management_expenses_df):
 
 
 def buildium_spend_line_items(all_management_expenses_df):
-    st.subheader("Line Items", help="Filter by selecting rows and/or columns in the Buildium Spend Over Time table above")
-    
+    if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is None):
+        st.stop()
+
+    st.subheader("Line Items", help="Filter by selecting rows and/or columns in the Buildium Spend Over Time table above")    
     line_items_df = all_management_expenses_df.copy()
     if ("time_granularity_filter" in st.session_state) and (st.session_state["time_granularity_filter"] is not None):
         line_items_df = line_items_df[line_items_df[st.session_state["time_granularity"]].isin(st.session_state["time_granularity_filter"])]
