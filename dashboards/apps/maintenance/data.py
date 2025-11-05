@@ -21,8 +21,22 @@ def get_service_account_info():
 @st.cache_data(ttl=CACHE_TTL)
 def all_management_expenses_data(_credentials, start_date, end_date):
     query = f"""
-        SELECT ame.*, acq.market
-        FROM `homevest-data.property_financials.all_management_expenses` AS ame
+        SELECT
+            ame.property_id,
+            ame.address,
+            acq.market,
+            ame.fund,
+            ame.date,
+            ame.gl_account_number,
+            ame.gl_account_name,
+            ame.category,
+            ame.subcategory,
+            ame.amount,
+            ame.description,
+            ame.vendor_company_name,
+            ame.vendor_contact_name,
+            REGEXP_EXTRACT(ame.memo, r'app\.latchel\.com/admin/invoices/([0-9]+)') AS latchel_invoice_id
+        FROM `homevest-data.dbt_prod.stg_all_management_expenses__no_capex_winddowns` AS ame
         LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS acq
             ON ame.property_id = acq.property_id
         WHERE category IN (
@@ -45,13 +59,24 @@ def all_management_expenses_data(_credentials, start_date, end_date):
 
 
 @st.cache_data(ttl=CACHE_TTL)
+def owned_homes_data(_credentials, start_date, end_date):
+    query = f"""
+        SELECT *
+        FROM `homevest-data.dbt_prod.stg_owned_homes`
+        WHERE date_marker >= '{start_date}'
+        AND date_marker <= '{end_date}'
+    """
+    data = pd.read_gbq(query, credentials=_credentials)
+    return data
+
+
+@st.cache_data(ttl=CACHE_TTL)
 def bills_tickets_invoices_data(_credentials, start_date, end_date):
     query = f"""
         SELECT *
         FROM `homevest-data.dbt_prod_tin.bills_tickets_invoices`
         WHERE date >= '{start_date}'
         AND date <= '{end_date}'
-
     """
     data = pd.read_gbq(query, credentials=_credentials)
     data['ticket_date'] = np.where(data['ticket_actual_start_date'].notna(), 

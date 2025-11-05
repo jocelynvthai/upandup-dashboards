@@ -36,7 +36,7 @@ def latchel_spend_data_clean(bills_tickets_invoices_df):
             '(' + cleaned_bills_tickets_invoices_df['vendor_name'] + ')', 
             cleaned_bills_tickets_invoices_df['vendor_company'],
         ],
-        default=np.nan 
+        default='No vendor'
     )
     return cleaned_bills_tickets_invoices_df
 
@@ -126,11 +126,11 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         bills_df = bills_df[bills_df[st.session_state["time_granularity"]] == st.session_state["time_granularity_filter"]]
    
     columns = [
+        'description', 
         'date', 
         'due_date', 
         'paid_date', 
         'addresses', 
-        'description', 
         'market', 
         'fund', 
         'vendor', 
@@ -138,30 +138,6 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         'total_bill_amount', 
         'invoice_total_amount', 
         'ticket_max_cost', 
-        # 'id', 
-        # 'vendor_id', 
-        # 'vendor_name', 
-        # 'vendor_company', 
-        # 'spend_categories', 
-        # 'gl_account_names', 
-        # 'funds', 
-        # 'properties', 
-        # 'bill_source', 
-        # 'latchel_invoice_id', 
-        # 'address', 
-        # 'entity', 
-        # 'invoice_date', 
-        # 'latchel_vendor_name', 
-        # 'ticket_title', 
-        # 'ticket_description', 
-        # 'ticket_actual_start_date', 
-        # 'ticket_planned_start_date', 
-        # 'ticket_estimated_cost', 
-        # 'ticket_actual_cost', 
-        # 'ticket_date', 
-        # 'date_time', 
-        # 'week_end', 
-        # 'month_end'
     ]
 
     styled_df = (
@@ -192,16 +168,16 @@ def latchel_spend_bills(bills_tickets_invoices_df):
         styled_df, 
         hide_index=True,
         column_config={
-            'date': st.column_config.DateColumn(pinned=True),
-            'due_date': st.column_config.DateColumn(pinned=True),
-            'paid_date': st.column_config.DateColumn(pinned=True),
-            'addresses': st.column_config.TextColumn(pinned=True),
             'description': st.column_config.LinkColumn(
                 label="latchel",
                 display_text=":material/link:",
                 width="small",
                 pinned=True,
             ),
+            'date': st.column_config.DateColumn(pinned=True),
+            'due_date': st.column_config.DateColumn(pinned=True),
+            'paid_date': st.column_config.DateColumn(pinned=True),
+            'addresses': st.column_config.TextColumn(pinned=True),
             'total_bill_amount': st.column_config.NumberColumn(format="dollar", label="buildium_bill_spend"),
             'invoice_total_amount': st.column_config.NumberColumn(format="dollar", label="latchel_invoice_amount"),
             'ticket_max_cost': st.column_config.NumberColumn(format="dollar", label="latchel_ticket_budget"),
