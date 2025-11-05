@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 import re
 from datetime import datetime, timedelta
 
 from data import all_management_expenses_data
-from tabs.utils import TEAL, PURPLE, PINK
+from tabs.utils import ORANGE, YELLOW, GREEN, TEAL, PURPLE, PINK
 
 def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
@@ -14,6 +15,8 @@ def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df['date_time'] = pd.to_datetime(cleaned_all_management_expenses_df['date'])
     cleaned_all_management_expenses_df['week_end'] = (cleaned_all_management_expenses_df['date_time'] + pd.to_timedelta(6 - cleaned_all_management_expenses_df['date_time'].dt.weekday, unit='d')).dt.strftime('%Y-%m-%d')
     cleaned_all_management_expenses_df['month_end'] = (cleaned_all_management_expenses_df['date_time'] + pd.offsets.MonthEnd(0)).dt.strftime('%Y-%m-%d')
+    cleaned_all_management_expenses_df['month'] = cleaned_all_management_expenses_df['date_time'].dt.strftime('%B')
+    cleaned_all_management_expenses_df['year'] = cleaned_all_management_expenses_df['date_time'].dt.year
 
     # gl account
     cleaned_all_management_expenses_df['gl_account'] = cleaned_all_management_expenses_df['gl_account_number'] + ' (' + cleaned_all_management_expenses_df['gl_account_name'] + ')'
@@ -111,6 +114,37 @@ def buildium_spend_filters(credentials):
     return filtered_all_management_expenses_df
 
 
+def buildium_spend_seasonality(all_management_expenses_df):
+    st.subheader("Buildium Spend Seasonality")
+
+    seasonality_df = (
+        all_management_expenses_df
+        .groupby(['year', 'month'], as_index=False)
+        .agg(total_amount=('amount', 'sum'))
+    )
+    month_order = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+    seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=month_order, ordered=True)
+    seasonality_df = seasonality_df.sort_values(['year', 'month'])
+
+    seasonality_chart = (
+        alt.Chart(seasonality_df)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X('month', sort=month_order, title='Month'),
+            y=alt.Y('total_amount', title='Buildium Spend ($)'),
+            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[ORANGE, GREEN, TEAL, PURPLE, PINK])),
+            tooltip=['year', 'month', 'total_amount']
+        )
+        .properties(width=700, height=400)
+        .interactive()
+    )
+    st.altair_chart(seasonality_chart, use_container_width=True)
+
+
+
 def buildium_spend_over_time(all_management_expenses_df):
     st.subheader("Buildium Spend Over Time")
 
@@ -172,14 +206,9 @@ def buildium_spend_over_time(all_management_expenses_df):
         st.session_state["time_granularity_filter"] = None
         
 
-def buildium_spend_seasonality(all_management_expenses_df):
-    st.subheader("WIP - Buildium Spend Seasonality")
-    st.dataframe(all_management_expenses_df, on_select='rerun', selection_mode=['single-cell'], hide_index=True)
-
-
 def buildium_spend_line_items(all_management_expenses_df):
     if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is not None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is not None):
-        st.subheader("Line Items")    
+        st.subheader("Buildium Spend Line Items")    
         
         line_items_df = all_management_expenses_df.copy()
         line_items_df = line_items_df[line_items_df[st.session_state["time_granularity"]] == st.session_state["time_granularity_filter"]]
@@ -200,11 +229,11 @@ def buildium_spend_line_items(all_management_expenses_df):
         ]
         def color_category(val):
             if val == 'R&M':
-                return f'color: {TEAL}'  # teal
+                return f'color: {TEAL}' 
             elif val == 'Capex':
-                return f'color: {PURPLE}'  # purple
+                return f'color: {PURPLE}' 
             elif val == 'Common Area Maintenance':
-                return f'color: {PINK}'  # pink
+                return f'color: {PINK}'
 
         styled_df = (
             line_items_df.assign(
