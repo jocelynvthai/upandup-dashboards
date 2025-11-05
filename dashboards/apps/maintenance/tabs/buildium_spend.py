@@ -5,8 +5,8 @@ import altair as alt
 import re
 from datetime import datetime, timedelta
 
-from data import all_management_expenses_data
-from tabs.utils import ORANGE, YELLOW, GREEN, TEAL, PURPLE, PINK
+from data import all_management_expenses_data, owned_homes_data
+from tabs.utils import DARK_TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK
 
 def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
@@ -83,6 +83,7 @@ def buildium_spend_filters(credentials):
             st.stop()
         else:
             all_management_expenses_df = all_management_expenses_data(credentials, date_range[0], date_range[1])
+            filtered_owned_homes_df = owned_homes_data(credentials, date_range[0], date_range[1])
             filtered_all_management_expenses_df = buildium_spend_data_clean(all_management_expenses_df)
     with col_category_group:
         category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='All')
@@ -104,14 +105,16 @@ def buildium_spend_filters(credentials):
         selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
+            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
     with col_market:
         market_options = list(filtered_all_management_expenses_df['market'].unique())
         market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
         selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All', key='buildium_spend_market')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
+            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
 
-    return filtered_all_management_expenses_df
+    return filtered_all_management_expenses_df, filtered_owned_homes_df
 
 
 def buildium_spend_seasonality(all_management_expenses_df):
@@ -135,7 +138,7 @@ def buildium_spend_seasonality(all_management_expenses_df):
         .encode(
             x=alt.X('month', sort=month_order, title='Month'),
             y=alt.Y('total_amount', title='Buildium Spend ($)'),
-            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[ORANGE, GREEN, TEAL, PURPLE, PINK])),
+            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[DARK_TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK])),
             tooltip=['year', 'month', 'total_amount']
         )
         .properties(width=700, height=400)
@@ -145,7 +148,7 @@ def buildium_spend_seasonality(all_management_expenses_df):
 
 
 
-def buildium_spend_over_time(all_management_expenses_df):
+def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
     st.subheader("Buildium Spend Over Time")
 
     # customize view specifications
