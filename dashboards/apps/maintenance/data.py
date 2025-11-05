@@ -34,7 +34,8 @@ def all_management_expenses_data(_credentials, start_date, end_date):
             ame.amount,
             ame.description,
             ame.vendor_company_name,
-            ame.vendor_contact_name
+            ame.vendor_contact_name,
+            REGEXP_EXTRACT(ame.memo, r'app\.latchel\.com/admin/invoices/([0-9]+)') AS latchel_invoice_id
         FROM `homevest-data.dbt_prod.stg_all_management_expenses__no_capex_winddowns` AS ame
         LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS acq
             ON ame.property_id = acq.property_id

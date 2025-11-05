@@ -57,6 +57,13 @@ def buildium_spend_data_clean(all_management_expenses_df):
         ])
     )
 
+    # latchel invoice link
+    cleaned_all_management_expenses_df['latchel_invoice_link'] = (
+        cleaned_all_management_expenses_df['latchel_invoice_id'].apply(
+            lambda x: f'https://app.latchel.com/admin/invoices/{x}' if x is not None else ''
+        )
+    )
+
     return cleaned_all_management_expenses_df
 
 
@@ -182,40 +189,17 @@ def buildium_spend_line_items(all_management_expenses_df):
         line_items_df = line_items_df[line_items_df[st.session_state["category"]].isin(st.session_state["category_filter"])]
 
     line_items_cols = [
-        'date',
-        'gl_account',
+        'latchel_invoice_link',
         'category_group',
         'category_type',
+        'gl_account',
         'address',
         'fund',
         'market',
-        'vendor',
+        'date',
+        'amount',
         'description',
-        'amount'
-        # 'accounting_property_name',
-        # 'state',
-        # 'entity',
-        # 'gl_account_id',
-        # 'gl_account_number',
-        # 'gl_account_name',
-        # 'transaction_id',
-        # 'transaction_type',
-        # 'payment_type',
-        # 'memo',
-        # 'category',
-        # 'supercategory',
-        # 'subcategory',
-        # 'cashflow_type',
-        # 'vendor_id',
-        # 'vendor_contact_name',
-        # 'vendor_company_name',
-        # 'vendor_primary_phone',
-        # 'vendor_primary_email',
-        # 'is_uuid',
-        # 'source',
-        # 'date_time',
-        # 'week_end',
-        # 'month_end'
+        'vendor'
     ]
     def color_category(val):
         if val == 'R&M':
@@ -246,11 +230,16 @@ def buildium_spend_line_items(all_management_expenses_df):
         styled_df, 
         hide_index=True,
         column_config={
-            'date': st.column_config.DateColumn(pinned=True),
+            'latchel_invoice_link': st.column_config.LinkColumn(
+                label="latchel_link",
+                display_text=":material/link:",
+                width="small",
+                pinned=True,
+            ),
             'gl_account': st.column_config.TextColumn(pinned=True),
             'category_group': st.column_config.TextColumn(pinned=True,),
             'category_type': st.column_config.TextColumn(pinned=True),
-            'amount': st.column_config.NumberColumn(format="dollar"), 
+            'amount': st.column_config.NumberColumn(format="dollar"),
         }
     )
 
