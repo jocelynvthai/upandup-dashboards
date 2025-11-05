@@ -2,7 +2,7 @@ import streamlit as st
 from google.oauth2 import service_account
 
 from data import get_service_account_info
-from tabs.buildium_spend import buildium_spend_filters, buildium_spend_over_time, buildium_spend_line_items
+from tabs.buildium_spend import buildium_spend_filters, buildium_spend_over_time, buildium_spend_seasonality, buildium_spend_line_items
 from tabs.latchel_spend import latchel_spend_filters, latchel_spend, latchel_spend_bills
 from tabs.non_latchel_spend import non_latchel_spend_filters, non_latchel_spend, non_latchel_spend_bills
 
@@ -23,6 +23,7 @@ buildium_spend_tab, latchel_tab, non_latchel_tab = st.tabs(["Buildium Spend", "L
 with buildium_spend_tab:
     filtered_all_management_expenses_df = buildium_spend_filters(credentials)
     buildium_spend_over_time(filtered_all_management_expenses_df)
+    buildium_spend_seasonality(filtered_all_management_expenses_df)
     buildium_spend_line_items(filtered_all_management_expenses_df)
 with latchel_tab:
     filtered_bills_tickets_invoices_df = latchel_spend_filters(credentials)

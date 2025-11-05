@@ -177,6 +177,10 @@ def buildium_spend_over_time(all_management_expenses_df):
         st.session_state["time_granularity_filter"] = None
 
 
+def buildium_spend_seasonality(all_management_expenses_df):
+    st.subheader("WIP - Buildium Spend Seasonality")
+
+
 def buildium_spend_line_items(all_management_expenses_df):
     if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is None):
         st.stop()
