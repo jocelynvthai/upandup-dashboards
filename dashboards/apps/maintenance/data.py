@@ -59,12 +59,11 @@ def all_management_expenses_data(_credentials, start_date, end_date):
 
 
 @st.cache_data(ttl=CACHE_TTL)
-def owned_homes_data(_credentials, start_date, end_date):
+def owned_homes_data(_credentials, start_date):
     query = f"""
         SELECT *
         FROM `homevest-data.dbt_prod.stg_owned_homes`
-        WHERE date_marker >= '{start_date}'
-        AND date_marker <= '{end_date}'
+        WHERE date >= '{start_date}'
     """
     data = pd.read_gbq(query, credentials=_credentials)
     return data
