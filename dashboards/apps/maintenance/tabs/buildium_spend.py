@@ -132,14 +132,19 @@ def buildium_spend_seasonality(all_management_expenses_df):
     seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=month_order, ordered=True)
     seasonality_df = seasonality_df.sort_values(['year', 'month'])
 
+    seasonality_selection = alt.selection_single(fields=['year'], bind='legend')
     seasonality_chart = (
         alt.Chart(seasonality_df)
         .mark_line(point=True)
         .encode(
             x=alt.X('month', sort=month_order, title='Month'),
             y=alt.Y('total_amount', title='Buildium Spend ($)'),
-            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[DARK_TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK])),
-            tooltip=['year', 'month', 'total_amount']
+            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[PINK, PURPLE, LIGHT_TEAL, DARK_PURPLE, DARK_TEAL])),
+            tooltip=['year', 'month', 'total_amount'], 
+            opacity=alt.condition(seasonality_selection, alt.value(1), alt.value(0.2))
+        )
+        .add_selection(
+            seasonality_selection
         )
         .properties(width=700, height=400)
         .interactive()
