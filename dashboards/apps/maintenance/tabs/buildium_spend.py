@@ -86,7 +86,7 @@ def buildium_spend_filters(credentials):
             filtered_owned_homes_df = owned_homes_data(credentials, date_range[0])
             filtered_all_management_expenses_df = buildium_spend_data_clean(all_management_expenses_df)
     with col_category_group:
-        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='All')
+        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='run_rate')
         if 'All' not in category_group:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
 
