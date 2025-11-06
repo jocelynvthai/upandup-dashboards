@@ -75,7 +75,7 @@ def buildium_spend_filters(credentials):
     col_date_range, col_category_group = st.columns(2)
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
-                                value=(datetime(2021, 1, 1),  datetime.now()), 
+                                value=(datetime(2023, 1, 1),  datetime.now()), 
                                 format='MM/DD/YYYY',
                                 help="The period range to filter the data type selected",
                                 key='buildium_spend_date_range')
@@ -114,7 +114,10 @@ def buildium_spend_filters(credentials):
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
 
-    return filtered_all_management_expenses_df, filtered_owned_homes_df
+    if st.button('Submit filters', type='primary', key='submit_filters_btn'):
+        return filtered_all_management_expenses_df, filtered_owned_homes_df
+    else:
+        return None, None
 
 
 def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df):
@@ -145,18 +148,35 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df):
         seasonality_df['total_spend_per_home'] = seasonality_df['total_spend'] / seasonality_df['total_homes_owned']
 
     seasonality_selection = alt.selection_single(fields=['year'], bind='legend')
+    latest_year = seasonality_df['year'].max()
+    pastel_palette = [
+        "#E4C1F9",  # lilac
+        "#C6DEF1",  # light blue
+        "#F6BDC0",  # soft pink
+        "#F7E1A0",  # pastel yellow
+        "#C9E4DE",  # mint
+    ]
+    unique_years = sorted(seasonality_df['year'].unique())
+    color_mapping = {
+        year: (TEAL if year == latest_year else pastel_palette[i % len(pastel_palette)])
+        for i, year in enumerate(unique_years)
+    }
+    color_scale = alt.Scale(domain=list(color_mapping.keys()), range=list(color_mapping.values()))
+
     seasonality_chart = (
         alt.Chart(seasonality_df)
         .mark_line(point=True)
         .encode(
             x=alt.X('month', sort=month_order, title='Month'),
-            y=alt.Y('total_spend_per_home' if spend_per_home else 'total_spend', title='Buildium Spend ($)' if not spend_per_home else 'Buildium Spend ($)/Home'),
-            color=alt.Color('year:N', title='Year', scale=alt.Scale(range=[PINK, PURPLE, LIGHT_TEAL, DARK_PURPLE, DARK_TEAL])),
-            tooltip=['year', 'month', 'total_spend_per_home' if spend_per_home else 'total_spend'], 
-            opacity=alt.condition(seasonality_selection, alt.value(1), alt.value(0.2))
-        )
-        .add_selection(
-            seasonality_selection
+            y=alt.Y(
+                'total_spend_per_home' if spend_per_home else 'total_spend',
+                title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)'
+            ),
+            color=alt.Color('year:N', title='Year', scale=color_scale),
+            strokeWidth=alt.condition(
+                f"datum.year == {latest_year}", alt.value(3), alt.value(1.5)
+            ),
+            tooltip=['year', 'month', 'total_spend_per_home' if spend_per_home else 'total_spend']
         )
         .properties(width=700, height=400)
         .interactive()
@@ -230,18 +250,24 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
         values='total_spend_per_home' if spend_per_home else 'total_spend'
     ).fillna(0).reset_index()
     
-    # display dataframe with selection
+    value_columns = [col for col in pivot_df.columns if col != st.session_state["category"]]
+    styled_pivot_df = pivot_df.style.map(
+        lambda v: "color: rgba(0, 0, 0, 0.25)" if v == 0 else "",
+        subset=value_columns,
+    )
     event = st.dataframe(
-        pivot_df, 
-        on_select='rerun', 
-        selection_mode=['single-cell'], 
+        styled_pivot_df,
+        on_select="rerun",
+        selection_mode=["single-cell"],
         hide_index=True,
         column_config={
-            **{col: st.column_config.NumberColumn(format="dollar") 
-               for col in pivot_df.columns 
-               if col != st.session_state["category"]},
-            st.session_state["category"]: st.column_config.TextColumn(pinned=True)
-        }
+            **{
+                col: st.column_config.NumberColumn(format="dollar")
+                for col in pivot_df.columns
+                if col != st.session_state["category"]
+            },
+            st.session_state["category"]: st.column_config.TextColumn(pinned=True),
+        },
     )
     st.caption("<p style='text-align: right;'><i>Select a cell to view the line items</i></p>", unsafe_allow_html=True)
 

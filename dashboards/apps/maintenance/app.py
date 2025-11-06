@@ -22,9 +22,10 @@ st.title("Maintenance Dashboard")
 buildium_spend_tab, latchel_tab, non_latchel_tab = st.tabs(["Buildium Spend", "Latchel Spend (Budget vs Actual)", "Non-Latchel Spend"])
 with buildium_spend_tab:
     filtered_all_management_expenses_df, filtered_owned_homes_df = buildium_spend_filters(credentials)
-    buildium_spend_seasonality(filtered_all_management_expenses_df, filtered_owned_homes_df)
-    buildium_spend_over_time(filtered_all_management_expenses_df, filtered_owned_homes_df)
-    buildium_spend_line_items(filtered_all_management_expenses_df)
+    if filtered_all_management_expenses_df is not None and filtered_owned_homes_df is not None:
+        buildium_spend_seasonality(filtered_all_management_expenses_df, filtered_owned_homes_df)
+        buildium_spend_over_time(filtered_all_management_expenses_df, filtered_owned_homes_df)
+        buildium_spend_line_items(filtered_all_management_expenses_df)
 with latchel_tab:
     filtered_bills_tickets_invoices_df = latchel_spend_filters(credentials)
     latchel_spend(filtered_bills_tickets_invoices_df)
