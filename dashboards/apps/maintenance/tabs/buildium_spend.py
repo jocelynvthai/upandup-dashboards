@@ -105,14 +105,15 @@ def buildium_spend_filters(credentials):
         selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
-            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
+            # filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
     with col_market:
         market_options = list(filtered_all_management_expenses_df['market'].unique())
         market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
         selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All', key='buildium_spend_market')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
-            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
+            # st.dataframe(filtered_owned_homes_df, hide_index=True)
+            # filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
 
     return filtered_all_management_expenses_df, filtered_owned_homes_df
 
@@ -175,6 +176,7 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
         selected_dimension = st.selectbox("Select a dimension", category_dict.keys())
         st.session_state["category"] = category_dict[selected_dimension]
 
+    # st.dataframe(owned_homes_df, hide_index=True)
     # group, pivot & format data
     grouped_management_expenses_df = (
         all_management_expenses_df
