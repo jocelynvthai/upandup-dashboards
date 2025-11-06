@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timedelta
 
 from data import all_management_expenses_data, owned_homes_data
-from tabs.utils import DARK_TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK
+from tabs.utils import DARK_TEAL, TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK
 
 def buildium_spend_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
