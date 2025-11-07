@@ -76,7 +76,8 @@ def budget_by_month_data(_credentials, start_date):
         month AS date,
         fund, 
         CASE 
-            WHEN management_category IN ('run_rate_r_m', 'turn_r_m') THEN 'run_rate'
+            WHEN management_category = 'run_rate_r_m' THEN 'run_rate'
+            WHEN management_category = 'turn_r_m' THEN 'turn'
             WHEN management_category = 'common_area_maintenance' THEN 'common_area_maintenance'
         END AS management_category,
         SUM(amount) AS amount

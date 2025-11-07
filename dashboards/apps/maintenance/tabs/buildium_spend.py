@@ -110,7 +110,7 @@ def buildium_spend_filters(credentials):
         category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='run_rate', key='buildium_spend_category_group')
         if 'All' not in category_group:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
-            if (len(category_group) == 1) and (category_group[0] in ['run_rate', 'common_area_maintenance']):
+            if (len(category_group) == 1) and (category_group[0] in ['run_rate', 'common_area_maintenance', 'turn']):
                 filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['management_category'] == category_group[0]]
                 
     col_gl_account, col_vendor = st.columns(2)
