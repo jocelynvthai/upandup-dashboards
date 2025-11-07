@@ -6,15 +6,10 @@ import re
 from datetime import datetime, timedelta
 
 from data import all_management_expenses_data, owned_homes_data, budget_by_month_data
-from tabs.utils import DARK_TEAL, TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK
+from tabs.utils import DARK_TEAL, TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK, PASTEL_LILAC, PASTEL_LIGHT_BLUE, PASTEL_SOFT_PINK, PASTEL_YELLOW, PASTEL_MINT
+PASTEL_PALETTE = [PASTEL_LILAC, PASTEL_LIGHT_BLUE, PASTEL_SOFT_PINK, PASTEL_MINT]
 
-PASTEL_PALETTE = [
-    "#E4C1F9",  # lilac
-    "#C6DEF1",  # light blue
-    "#F6BDC0",  # soft pink
-    "#F7E1A0",  # pastel yellow
-    "#C9E4DE",  # mint
-]
+CURRENT_YEAR = datetime.now().year
 
 def all_management_expenses_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
@@ -93,7 +88,7 @@ def budget_by_month_data_clean(budget_by_month_df):
     cleaned_budget_by_month_df['month'] = cleaned_budget_by_month_df['date_time'].dt.strftime('%B')
     cleaned_budget_by_month_df['year'] = cleaned_budget_by_month_df['date_time'].dt.year
     cleaned_budget_by_month_df['date'] = cleaned_budget_by_month_df['date_time'].dt.strftime('%Y-%m-%d')
-    return cleaned_budget_by_month_df
+    return cleaned_budget_by_month_df[cleaned_budget_by_month_df['year'] == CURRENT_YEAR]
 
 
 def buildium_spend_filters(credentials):
@@ -257,12 +252,8 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
     seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=month_order, ordered=True)
     seasonality_df = seasonality_df.sort_values(['year', 'month'])
 
-    # add budget 
-    # grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_budget=('amount', 'sum'))
-    # st.dataframe(grouped_budget_by_month_df)
-
-
-    
+    # prepare budget data
+    grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount', 'sum'))
     # add spend per home
     _, col_spend_per_home = st.columns([2, 0.25])
     with col_spend_per_home:
@@ -271,15 +262,22 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
         month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
         grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
         seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
+        # add budget data
+        budget_seasonality_df = grouped_budget_by_month_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
+        budget_seasonality_df.loc[budget_seasonality_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
+        seasonality_df = pd.concat([seasonality_df, budget_seasonality_df])
         seasonality_df['total_spend_per_home'] = seasonality_df['total_spend'] / seasonality_df['total_homes_owned']
+    else:
+        # add budget data
+        grouped_budget_by_month_df.loc[grouped_budget_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
+        seasonality_df = pd.concat([seasonality_df, grouped_budget_by_month_df])
 
-    latest_year = seasonality_df['year'].max()
-    color_mapping = {
-        year: (TEAL if year == latest_year else PASTEL_PALETTE[i % len(PASTEL_PALETTE)])
-        for i, year in enumerate(sorted(seasonality_df['year'].unique()))
-    }
-    color_scale = alt.Scale(domain=list(color_mapping.keys()), range=list(color_mapping.values()))
 
+    years = [str(y) for y in seasonality_df['year'].unique() if y not in ['Budget', CURRENT_YEAR]]
+    color_scale = alt.Scale(
+        domain=years+[str(CURRENT_YEAR), 'Budget'],
+        range=PASTEL_PALETTE[:len(years)]+[TEAL, PASTEL_YELLOW]
+    )
     seasonality_chart = (
         alt.Chart(seasonality_df)
         .mark_line(point=True)
@@ -291,7 +289,7 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
             ),
             color=alt.Color('year:N', title='Year', scale=color_scale),
             strokeWidth=alt.condition(
-                f"datum.year == {latest_year}", alt.value(3), alt.value(1.5)
+                f"datum.year == {CURRENT_YEAR}", alt.value(3), alt.value(1.5)
             ),
             tooltip=['year', 'month', 'total_spend_per_home' if spend_per_home else 'total_spend']
         )
