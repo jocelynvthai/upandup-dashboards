@@ -5,10 +5,18 @@ import altair as alt
 import re
 from datetime import datetime, timedelta
 
-from data import all_management_expenses_data, owned_homes_data
+from data import all_management_expenses_data, owned_homes_data, budget_by_month_data
 from tabs.utils import DARK_TEAL, TEAL, LIGHT_TEAL, DARK_PURPLE, PURPLE, PINK
 
-def buildium_spend_data_clean(all_management_expenses_df):
+PASTEL_PALETTE = [
+    "#E4C1F9",  # lilac
+    "#C6DEF1",  # light blue
+    "#F6BDC0",  # soft pink
+    "#F7E1A0",  # pastel yellow
+    "#C9E4DE",  # mint
+]
+
+def all_management_expenses_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
 
     # week & month end dates
@@ -70,6 +78,24 @@ def buildium_spend_data_clean(all_management_expenses_df):
     return cleaned_all_management_expenses_df
 
 
+def owned_homes_data_clean(owned_homes_df):
+    cleaned_owned_homes_df = owned_homes_df.copy()
+    cleaned_owned_homes_df['date_time'] = pd.to_datetime(cleaned_owned_homes_df['date'])
+    cleaned_owned_homes_df['month'] = cleaned_owned_homes_df['date_time'].dt.strftime('%B')
+    cleaned_owned_homes_df['year'] = cleaned_owned_homes_df['date_time'].dt.year
+    cleaned_owned_homes_df['date'] = cleaned_owned_homes_df['date_time'].dt.strftime('%Y-%m-%d')
+    return cleaned_owned_homes_df
+
+
+def budget_by_month_data_clean(budget_by_month_df):
+    cleaned_budget_by_month_df = budget_by_month_df.copy()
+    cleaned_budget_by_month_df['date_time'] = pd.to_datetime(cleaned_budget_by_month_df['date'])
+    cleaned_budget_by_month_df['month'] = cleaned_budget_by_month_df['date_time'].dt.strftime('%B')
+    cleaned_budget_by_month_df['year'] = cleaned_budget_by_month_df['date_time'].dt.year
+    cleaned_budget_by_month_df['date'] = cleaned_budget_by_month_df['date_time'].dt.strftime('%Y-%m-%d')
+    return cleaned_budget_by_month_df
+
+
 def buildium_spend_filters(credentials):
     # filters
     col_date_range, col_category_group = st.columns(2)
@@ -82,14 +108,16 @@ def buildium_spend_filters(credentials):
         if len(date_range) != 2:
             st.stop()
         else:
-            all_management_expenses_df = all_management_expenses_data(credentials, date_range[0], date_range[1])
-            filtered_owned_homes_df = owned_homes_data(credentials, date_range[0])
-            filtered_all_management_expenses_df = buildium_spend_data_clean(all_management_expenses_df)
+            filtered_all_management_expenses_df = all_management_expenses_data_clean(all_management_expenses_data(credentials, date_range[0], date_range[1]))
+            filtered_owned_homes_df = owned_homes_data_clean(owned_homes_data(credentials, date_range[0]))
+            filtered_budget_by_month_df = budget_by_month_data_clean(budget_by_month_data(credentials, date_range[0]))
     with col_category_group:
-        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='run_rate')
+        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='run_rate', key='buildium_spend_category_group')
         if 'All' not in category_group:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
-
+            if (len(category_group) == 1) and (category_group[0] in ['run_rate', 'common_area_maintenance']):
+                filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['management_category'] == category_group[0]]
+                
     col_gl_account, col_vendor = st.columns(2)
     with col_gl_account:
         selected_gl_accounts = st.multiselect("Select a GL account", ['All'] + sorted(list(filtered_all_management_expenses_df['gl_account'].unique())), default='All')
@@ -106,6 +134,7 @@ def buildium_spend_filters(credentials):
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
+            filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['fund'].isin(selected_funds)]
     with col_market:
         market_options = list(filtered_all_management_expenses_df['market'].unique())
         market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
@@ -114,74 +143,7 @@ def buildium_spend_filters(credentials):
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
 
-    if st.button('Submit filters', type='primary', key='submit_filters_btn'):
-        return filtered_all_management_expenses_df, filtered_owned_homes_df
-    else:
-        return None, None
-
-
-def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df):
-    st.subheader("Buildium Spend Seasonality")
-
-    seasonality_df = (
-        all_management_expenses_df
-        .groupby(['year', 'month'], as_index=False)
-        .agg(total_spend=('amount', 'sum'))
-    )
-    month_order = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ]
-    seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=month_order, ordered=True)
-    seasonality_df = seasonality_df.sort_values(['year', 'month'])
-
-    _, col_spend_per_home = st.columns([2, 0.25])
-    with col_spend_per_home:
-        spend_per_home = st.toggle("$/Home", value=False, key='buildium_spend_seasonality_per_home')
-
-    if spend_per_home:
-        month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
-        month_owned_homes_df['month'] = pd.to_datetime(owned_homes_df['date']).dt.strftime('%B')
-        month_owned_homes_df['year'] = pd.to_datetime(owned_homes_df['date']).dt.year
-        grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
-        seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
-        seasonality_df['total_spend_per_home'] = seasonality_df['total_spend'] / seasonality_df['total_homes_owned']
-
-    seasonality_selection = alt.selection_single(fields=['year'], bind='legend')
-    latest_year = seasonality_df['year'].max()
-    pastel_palette = [
-        "#E4C1F9",  # lilac
-        "#C6DEF1",  # light blue
-        "#F6BDC0",  # soft pink
-        "#F7E1A0",  # pastel yellow
-        "#C9E4DE",  # mint
-    ]
-    unique_years = sorted(seasonality_df['year'].unique())
-    color_mapping = {
-        year: (TEAL if year == latest_year else pastel_palette[i % len(pastel_palette)])
-        for i, year in enumerate(unique_years)
-    }
-    color_scale = alt.Scale(domain=list(color_mapping.keys()), range=list(color_mapping.values()))
-
-    seasonality_chart = (
-        alt.Chart(seasonality_df)
-        .mark_line(point=True)
-        .encode(
-            x=alt.X('month', sort=month_order, title='Month'),
-            y=alt.Y(
-                'total_spend_per_home' if spend_per_home else 'total_spend',
-                title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)'
-            ),
-            color=alt.Color('year:N', title='Year', scale=color_scale),
-            strokeWidth=alt.condition(
-                f"datum.year == {latest_year}", alt.value(3), alt.value(1.5)
-            ),
-            tooltip=['year', 'month', 'total_spend_per_home' if spend_per_home else 'total_spend']
-        )
-        .properties(width=700, height=400)
-        .interactive()
-    )
-    st.altair_chart(seasonality_chart, use_container_width=True)
+    return filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df
 
 
 def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
@@ -224,6 +186,7 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
         .agg(total_spend=('amount', 'sum'))
         .reset_index()
     )
+    # add spend per home
     if spend_per_home:
         if st.session_state["category"] in configured_owned_homes_df.columns:
             # fund or market dimension
@@ -237,7 +200,6 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
             merge_right_on = ['date']
 
         grouped_owned_homes_df = configured_owned_homes_df.groupby(groupby_cols).agg(total_homes_owned=('homes_owned', 'sum')).reset_index()
-        grouped_owned_homes_df['date'] = pd.to_datetime(grouped_owned_homes_df['date']).dt.strftime('%Y-%m-%d')
         grouped_management_expenses_df = grouped_management_expenses_df.merge(grouped_owned_homes_df, 
                                             left_on=merge_left_on, 
                                             right_on=merge_right_on, 
@@ -279,6 +241,66 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
         st.session_state["category_filter"] = None
         st.session_state["time_granularity_filter"] = None
         
+
+def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budget_by_month_df):
+    st.subheader("Buildium Spend Seasonality")
+
+    seasonality_df = (
+        all_management_expenses_df
+        .groupby(['year', 'month'], as_index=False)
+        .agg(total_spend=('amount', 'sum'))
+    )
+    month_order = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+    seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=month_order, ordered=True)
+    seasonality_df = seasonality_df.sort_values(['year', 'month'])
+
+    # add budget 
+    # grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_budget=('amount', 'sum'))
+    # st.dataframe(grouped_budget_by_month_df)
+
+
+    
+    # add spend per home
+    _, col_spend_per_home = st.columns([2, 0.25])
+    with col_spend_per_home:
+        spend_per_home = st.toggle("$/Home", value=False, key='buildium_spend_seasonality_per_home')
+    if spend_per_home:
+        month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
+        grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
+        seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
+        seasonality_df['total_spend_per_home'] = seasonality_df['total_spend'] / seasonality_df['total_homes_owned']
+
+    latest_year = seasonality_df['year'].max()
+    color_mapping = {
+        year: (TEAL if year == latest_year else PASTEL_PALETTE[i % len(PASTEL_PALETTE)])
+        for i, year in enumerate(sorted(seasonality_df['year'].unique()))
+    }
+    color_scale = alt.Scale(domain=list(color_mapping.keys()), range=list(color_mapping.values()))
+
+    seasonality_chart = (
+        alt.Chart(seasonality_df)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X('month', sort=month_order, title='Month'),
+            y=alt.Y(
+                'total_spend_per_home' if spend_per_home else 'total_spend',
+                title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)'
+            ),
+            color=alt.Color('year:N', title='Year', scale=color_scale),
+            strokeWidth=alt.condition(
+                f"datum.year == {latest_year}", alt.value(3), alt.value(1.5)
+            ),
+            tooltip=['year', 'month', 'total_spend_per_home' if spend_per_home else 'total_spend']
+        )
+        .properties(width=700, height=400)
+        .interactive()
+    )
+    st.altair_chart(seasonality_chart, use_container_width=True)
+
+
 
 def buildium_spend_line_items(all_management_expenses_df):
     if ("time_granularity_filter" in st.session_state and st.session_state["time_granularity_filter"] is not None) and ("category_filter" in st.session_state and st.session_state["category_filter"] is not None):
