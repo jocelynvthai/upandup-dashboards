@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-from data import all_management_expenses_data
-from tabs.utils import all_management_expenses_data_clean, seasonality_chart, MONTH_ORDER
+from data import all_management_expenses_data, owned_homes_data
+from tabs.utils import all_management_expenses_data_clean, owned_homes_data_clean, seasonality_chart, MONTH_ORDER
 
 def seasonality_filters(credentials):
     # filters
@@ -16,6 +16,7 @@ def seasonality_filters(credentials):
         st.stop()
     else:
         filtered_all_management_expenses_df = all_management_expenses_data_clean(all_management_expenses_data(credentials, date_range[0], date_range[1]))
+        filtered_owned_homes_df = owned_homes_data_clean(owned_homes_data(credentials, date_range[0]))
                 
     col_category_group, col_vendor = st.columns(2)
     with col_category_group:
@@ -32,17 +33,19 @@ def seasonality_filters(credentials):
         selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All', key='seasonality_fund')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
+            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
     with col_market:
         market_options = list(filtered_all_management_expenses_df['market'].unique())
         market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
         selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All', key='seasonality_market')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
+            filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
 
-    return filtered_all_management_expenses_df
+    return filtered_all_management_expenses_df, filtered_owned_homes_df
 
 
-def seasonality_by_category(all_management_expenses_df):
+def seasonality_by_category(all_management_expenses_df, owned_homes_df):
     st.subheader("Seasonality by Category")
 
     # only include categories if column has values
@@ -52,13 +55,18 @@ def seasonality_by_category(all_management_expenses_df):
         unique_values = [v for v in unique_values if str(v).lower() != 'none']
         if len(unique_values) > 0:
             category_options.append(category)
-    selected_group_by = st.selectbox("Select a category", category_options, key='seasonality_group_by')
-    for group in sorted(all_management_expenses_df[selected_group_by].unique()):
-        group_expenses_df = all_management_expenses_df[all_management_expenses_df[selected_group_by] == group]
+
+    col_category, col_spend_per_home = st.columns([2, 0.25])
+    with col_category:
+        selected_category = st.selectbox("Select a category", category_options, key='seasonality_category')
+    with col_spend_per_home:
+        spend_per_home = st.toggle("$/Home", value=False, key='seasonality_by_category_per_home')
+    for category in sorted(all_management_expenses_df[selected_category].unique()):
+        category_expenses_df = all_management_expenses_df[all_management_expenses_df[selected_category] == category]
 
         # group by year and month
         seasonality_df = (
-            group_expenses_df
+            category_expenses_df
             .groupby(['year', 'month'], as_index=False)
             .agg(total_spend=('amount', 'sum'))
         )
@@ -74,6 +82,15 @@ def seasonality_by_category(all_management_expenses_df):
             .fillna({'total_spend': 0})
         )
 
+        if spend_per_home:
+            month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
+            grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
+            seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
+            seasonality_df['total_spend_per_home'] = round(seasonality_df['total_spend'] / seasonality_df['total_homes_owned'], 2)
+
         # display chart
-        st.markdown(f"<h5>{group.replace('_', ' ').title()}</h5>", unsafe_allow_html=True)
-        seasonality_chart(seasonality_df, 'total_spend', 'Buildium Spend ($)')
+        st.markdown(f"<h5>{category.replace('_', ' ').title()}</h5>", unsafe_allow_html=True)
+        seasonality_chart(seasonality_df, 
+            spend_col='total_spend_per_home' if spend_per_home else 'total_spend', 
+            spend_title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)', 
+        )

@@ -33,8 +33,8 @@ with buildium_spend_tab:
         buildium_spend_seasonality(filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df)
         buildium_spend_line_items(filtered_all_management_expenses_df)
     if selected_tab == 'Seasonality by Category':
-        filtered_all_management_expenses_df = seasonality_filters(credentials)
-        seasonality_by_category(filtered_all_management_expenses_df)
+        filtered_all_management_expenses_df, filtered_owned_homes_df = seasonality_filters(credentials)
+        seasonality_by_category(filtered_all_management_expenses_df, filtered_owned_homes_df)
 with latchel_tab:
     filtered_bills_tickets_invoices_df = latchel_spend_filters(credentials)
     latchel_spend(filtered_bills_tickets_invoices_df)
