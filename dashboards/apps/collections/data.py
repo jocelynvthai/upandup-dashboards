@@ -37,6 +37,7 @@ def get_collections_curve_data(_credentials):
     collections_curve_query = """
         SELECT * 
         FROM `homevest-data.dbt_prod_tin.rent_collections_curve`
+        ORDER BY day_of_month
     """
     return pd.read_gbq(collections_curve_query, credentials=_credentials)
 
