@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from data import all_management_expenses_data, owned_homes_data
-from tabs.utils import all_management_expenses_data_clean, owned_homes_data_clean, seasonality_chart, MONTH_ORDER
+from tabs.utils import all_management_expenses_data_clean, owned_homes_data_clean, seasonality_chart, MONTH_ORDER, CURRENT_MONTH_PROJECTED
 
 def seasonality_filters(credentials):
     # filters
@@ -49,12 +50,14 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
     st.subheader("Seasonality by Category")
 
     # only include categories if column has values
-    category_options = ['gl_account']
+    category_options = []
     for category in ['maintenance_category', 'maintenance_subcategory']:
         unique_values = all_management_expenses_df[category].dropna().unique()
         unique_values = [v for v in unique_values if str(v).lower() != 'none']
         if len(unique_values) > 0:
             category_options.append(category)
+
+    category_options.append('gl_account')
 
     col_category, col_spend_per_home = st.columns([2, 0.25])
     with col_category:
@@ -68,18 +71,48 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
         seasonality_df = (
             category_expenses_df
             .groupby(['year', 'month'], as_index=False)
-            .agg(total_spend=('amount', 'sum'))
+            .agg(
+                total_spend=('amount', 'sum'),
+                date=('date_time', 'min')
+            )
         )
+
+        # add data point for current month with projected spend by end of month
+        seasonality_df = pd.concat([
+            seasonality_df,
+            get_projected_current_month_df(category_expenses_df)
+        ], ignore_index=True)
+
         seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=MONTH_ORDER, ordered=True)
         seasonality_df = seasonality_df.sort_values(['year', 'month'])
         
         # ensure all months are present for each year in the selected date range
         years = sorted(all_management_expenses_df['year'].unique())
         all_combos = pd.MultiIndex.from_product([years, MONTH_ORDER], names=['year', 'month']).to_frame(index=False)
+        all_combos = pd.concat([
+            all_combos,
+            pd.DataFrame([
+                {
+                    'year': CURRENT_MONTH_PROJECTED,
+                    'month': datetime.now().strftime('%B')
+                },
+                {
+                    'year': CURRENT_MONTH_PROJECTED,
+                    'month': (datetime.now() - relativedelta(months=1)).strftime('%B')
+                }
+            ]) 
+        ], ignore_index=True)
         seasonality_df = (
             all_combos
             .merge(seasonality_df, on=['year', 'month'], how='left')
             .fillna({'total_spend': 0})
+        )
+        # however don't fill any data points for future months
+        seasonality_df = seasonality_df.assign(
+            total_spend=lambda df: df['total_spend'].where(
+                pd.isna(df['date']) | (df['date'] <= datetime.now()),
+                pd.NA
+            )
         )
 
         if spend_per_home:
@@ -94,3 +127,38 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
             spend_col='total_spend_per_home' if spend_per_home else 'total_spend', 
             spend_title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)', 
         )
+
+def get_projected_current_month_df(category_expenses_df):
+    now = datetime.now()
+    last_month = now - relativedelta(months=1)
+
+    projected_current_year = CURRENT_MONTH_PROJECTED
+    current_month_string = datetime.now().strftime('%B')
+    last_month_string = last_month.strftime('%B')
+
+    last_month_spend = category_expenses_df[
+        (category_expenses_df['year'] == last_month.year)
+        & (category_expenses_df['month'] == last_month_string)
+    ]['amount'].sum()
+    current_month_spend = category_expenses_df[
+        (category_expenses_df['year'] == now.year)
+        & (category_expenses_df['month'] == current_month_string)
+    ]['amount'].sum()
+
+    days_in_month = (now.replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).day
+    projected_current_month_spend = current_month_spend / (now.day / days_in_month)
+
+    return pd.DataFrame([
+        {
+            'year': projected_current_year,
+            'month': current_month_string,
+            'total_spend': projected_current_month_spend,
+            'date': datetime.now()
+        },
+        {
+            'year': projected_current_year,
+            'month': last_month_string,
+            'total_spend': last_month_spend,
+            'date': last_month
+        }
+    ])
