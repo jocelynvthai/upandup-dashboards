@@ -71,10 +71,7 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
         seasonality_df = (
             category_expenses_df
             .groupby(['year', 'month'], as_index=False)
-            .agg(
-                total_spend=('amount', 'sum'),
-                date=('date_time', 'min')
-            )
+            .agg(total_spend=('amount', 'sum'))
         )
 
         # add data point for current month with projected spend by end of month
@@ -85,10 +82,17 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
 
         seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=MONTH_ORDER, ordered=True)
         seasonality_df = seasonality_df.sort_values(['year', 'month'])
-        
+
         # ensure all months are present for each year in the selected date range
         years = sorted(all_management_expenses_df['year'].unique())
-        all_combos = pd.MultiIndex.from_product([years, MONTH_ORDER], names=['year', 'month']).to_frame(index=False)
+        all_combos = pd.MultiIndex.from_product(
+            [years, MONTH_ORDER],
+            names=['year', 'month']
+        ).to_frame(index=False)
+        # however, exclude any future months
+        num_future_rows = 12 - datetime.now().month
+        all_combos = all_combos.iloc[:-num_future_rows] if num_future_rows > 0 else all_combos
+
         all_combos = pd.concat([
             all_combos,
             pd.DataFrame([
@@ -106,13 +110,6 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
             all_combos
             .merge(seasonality_df, on=['year', 'month'], how='left')
             .fillna({'total_spend': 0})
-        )
-        # however don't fill any data points for future months
-        seasonality_df = seasonality_df.assign(
-            total_spend=lambda df: df['total_spend'].where(
-                pd.isna(df['date']) | (df['date'] <= datetime.now()),
-                pd.NA
-            )
         )
 
         if spend_per_home:
@@ -133,7 +130,7 @@ def get_projected_current_month_df(category_expenses_df):
     last_month = now - relativedelta(months=1)
 
     projected_current_year = CURRENT_MONTH_PROJECTED
-    current_month_string = datetime.now().strftime('%B')
+    current_month_string = now.strftime('%B')
     last_month_string = last_month.strftime('%B')
 
     last_month_spend = category_expenses_df[
@@ -152,13 +149,11 @@ def get_projected_current_month_df(category_expenses_df):
         {
             'year': projected_current_year,
             'month': current_month_string,
-            'total_spend': projected_current_month_spend,
-            'date': datetime.now()
+            'total_spend': projected_current_month_spend
         },
         {
             'year': projected_current_year,
             'month': last_month_string,
-            'total_spend': last_month_spend,
-            'date': last_month
+            'total_spend': last_month_spend
         }
     ])
