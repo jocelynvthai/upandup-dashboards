@@ -31,6 +31,8 @@ MONTH_ORDER = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
+CURRENT_MONTH_PROJECTED = 'Current Month (projected)'
+
 
 def all_management_expenses_data_clean(all_management_expenses_df):
     cleaned_all_management_expenses_df = all_management_expenses_df.copy()
@@ -115,12 +117,16 @@ def budget_by_month_data_clean(budget_by_month_df):
 def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False):
     PASTEL_PALETTE = [PASTEL_LILAC, PASTEL_LIGHT_BLUE, PASTEL_SOFT_PINK, PASTEL_MINT]
     
-    # convert year to string, if not already 
+    # convert year to string, if not already
     seasonality_df['year'] = seasonality_df['year'].astype(str)
-    years = [y for y in seasonality_df['year'].unique() if y not in [str(CURRENT_YEAR), 'Budget']]
+    has_current_month_projected = CURRENT_MONTH_PROJECTED in seasonality_df['year'].unique()
+    years = [
+        y for y in seasonality_df['year'].unique()
+        if y not in [str(CURRENT_YEAR), 'Budget', CURRENT_MONTH_PROJECTED]
+    ]
     color_scale = alt.Scale(
-        domain=years + [str(CURRENT_YEAR)] + (['Budget'] if budget_year else []),
-        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([PASTEL_YELLOW] if budget_year else [])
+        domain=years + [str(CURRENT_YEAR)] + (['Budget'] if budget_year else []) + ([CURRENT_MONTH_PROJECTED] if has_current_month_projected else []),
+        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([PASTEL_YELLOW] if budget_year else []) + ([ORANGE] if has_current_month_projected else [])
     )
     seasonality_chart = (
         alt.Chart(seasonality_df)
@@ -131,6 +137,11 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
             color=alt.Color('year:N', title='Year', scale=color_scale),
             strokeWidth=alt.condition(
                 f"datum.year == {CURRENT_YEAR}", alt.value(3), alt.value(1.5)
+            ),
+            strokeDash=alt.condition(
+                alt.datum.year == CURRENT_MONTH_PROJECTED,
+                alt.value([10, 4]), # dashed line
+                alt.value([0]) # solid line
             ),
             tooltip=['year', 'month', spend_col]
         )
