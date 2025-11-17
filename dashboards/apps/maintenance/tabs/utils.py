@@ -114,6 +114,13 @@ def budget_by_month_data_clean(budget_by_month_df):
     return cleaned_budget_by_month_df[cleaned_budget_by_month_df['year'] == CURRENT_YEAR]
 
 
+def imputed_daily_budget_data_clean(imputed_daily_budget_df):
+    cleaned_imputed_daily_budget_df = imputed_daily_budget_df.copy()
+    cleaned_imputed_daily_budget_df['date_time'] = pd.to_datetime(cleaned_imputed_daily_budget_df['date'])
+    cleaned_imputed_daily_budget_df['date'] = cleaned_imputed_daily_budget_df['date_time'].dt.strftime('%Y-%m-%d')
+    return cleaned_imputed_daily_budget_df
+
+
 def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False):
     PASTEL_PALETTE = [PASTEL_LILAC, PASTEL_LIGHT_BLUE, PASTEL_SOFT_PINK, PASTEL_MINT]
     
