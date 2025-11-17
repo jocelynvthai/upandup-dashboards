@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import altair as alt
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 LIGHT_GRAY = "#d3d3d3"
 GRAY = "#808080" 
@@ -156,3 +157,37 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
         .interactive()
     )
     st.altair_chart(seasonality_chart, use_container_width=True)
+
+
+def projected_current_month_df(management_expenses_df):
+    now = datetime.now()
+    last_month = now - relativedelta(months=1)
+
+    projected_current_year = CURRENT_MONTH_PROJECTED
+    current_month_string = now.strftime('%B')
+    last_month_string = last_month.strftime('%B')
+
+    last_month_spend = management_expenses_df[
+        (management_expenses_df['year'] == last_month.year)
+        & (management_expenses_df['month'] == last_month_string)
+    ]['amount'].sum()
+    current_month_spend = management_expenses_df[
+        (management_expenses_df['year'] == now.year)
+        & (management_expenses_df['month'] == current_month_string)
+    ]['amount'].sum()
+
+    days_in_month = (now.replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).day
+    projected_current_month_spend = current_month_spend / (now.day / days_in_month)
+
+    return pd.DataFrame([
+        {
+            'year': projected_current_year,
+            'month': current_month_string,
+            'total_spend': projected_current_month_spend
+        },
+        {
+            'year': projected_current_year,
+            'month': last_month_string,
+            'total_spend': last_month_spend
+        }
+    ])

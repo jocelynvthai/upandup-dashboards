@@ -9,12 +9,14 @@ from tabs.utils import (
     owned_homes_data_clean,
     budget_by_month_data_clean,
     imputed_daily_budget_data_clean,
-    seasonality_chart, 
+    seasonality_chart,
+    projected_current_month_df,
     TEAL,
     PURPLE,
     PINK, 
     CURRENT_YEAR, 
-    MONTH_ORDER
+    MONTH_ORDER,
+    CURRENT_MONTH_PROJECTED
 )
 
 
@@ -224,6 +226,7 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
 def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budget_by_month_df):
     st.subheader("Buildium Spend Seasonality")
     
+    # group by year and month
     seasonality_df = (
         all_management_expenses_df
         .groupby(['year', 'month'], as_index=False)
@@ -231,9 +234,18 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
     )
     seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=MONTH_ORDER, ordered=True)
     seasonality_df = seasonality_df.sort_values(['year', 'month'])
+    
+    # add projected current month data
+    seasonality_df = pd.concat([
+        seasonality_df,
+        projected_current_month_df(all_management_expenses_df)
+    ], ignore_index=True)
 
-    # prepare budget data
+    # add budget data
     grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount', 'sum'))
+    grouped_budget_by_month_df.loc[grouped_budget_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
+    seasonality_df = pd.concat([seasonality_df, grouped_budget_by_month_df])
+
     # add spend per home
     _, col_spend_per_home = st.columns([2, 0.25])
     with col_spend_per_home:
@@ -242,16 +254,36 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
         month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
         grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
         seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
-        # add budget data
-        budget_seasonality_df = grouped_budget_by_month_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
-        budget_seasonality_df.loc[budget_seasonality_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
-        seasonality_df = pd.concat([seasonality_df, budget_seasonality_df])
-        seasonality_df['total_spend_per_home'] = round(seasonality_df['total_spend'] / seasonality_df['total_homes_owned'], 2)
-    else:
-        # add budget data
-        grouped_budget_by_month_df.loc[grouped_budget_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
-        seasonality_df = pd.concat([seasonality_df, grouped_budget_by_month_df])
 
+        # impute value of total_homes_owned for Budget and CURRENT_MONTH_PROJECTED rows
+        budget_and_projected_rows = seasonality_df[
+            (seasonality_df['year'] == 'Budget')
+            | (seasonality_df['year'] == CURRENT_MONTH_PROJECTED)
+        ]
+        for index, row in budget_and_projected_rows.iterrows():
+            homes_owned_this_month = seasonality_df.loc[(
+                (seasonality_df['year'] == CURRENT_YEAR)
+                & (seasonality_df['month'] == row['month'])
+            ), 'total_homes_owned']
+            # try to pull the actual total_homes_owned for the corresponding month
+            if len(homes_owned_this_month) > 0:
+                homes_owned_this_month = homes_owned_this_month.iloc[0]
+            # however if this month is in the future, use the number from the current month instead
+            else:
+                homes_owned_this_month = seasonality_df.loc[(
+                    (seasonality_df['year'] == CURRENT_YEAR)
+                    & (seasonality_df['month'] == datetime.now().strftime('%B'))
+                ), 'total_homes_owned'].iloc[0]
+            seasonality_df.loc[
+                ((seasonality_df['year'] == 'Budget') | (seasonality_df['year'] == CURRENT_MONTH_PROJECTED))
+                & (seasonality_df['month'] == row['month']),
+                'total_homes_owned'
+            ] = homes_owned_this_month
+        
+        # compute spend per home
+        seasonality_df['total_spend_per_home'] = round(seasonality_df['total_spend'] / seasonality_df['total_homes_owned'], 2)
+
+    # display chart
     seasonality_chart(seasonality_df, 
         spend_col='total_spend_per_home' if spend_per_home else 'total_spend', 
         spend_title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)', 
