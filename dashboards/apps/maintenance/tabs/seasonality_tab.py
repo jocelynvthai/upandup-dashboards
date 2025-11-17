@@ -93,17 +93,13 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
         num_future_rows = 12 - datetime.now().month
         all_combos = all_combos.iloc[:-num_future_rows] if num_future_rows > 0 else all_combos
 
+        current_month = datetime.now().strftime('%B')
+        last_month = (datetime.now() - relativedelta(months=1)).strftime('%B')
         all_combos = pd.concat([
             all_combos,
             pd.DataFrame([
-                {
-                    'year': CURRENT_MONTH_PROJECTED,
-                    'month': datetime.now().strftime('%B')
-                },
-                {
-                    'year': CURRENT_MONTH_PROJECTED,
-                    'month': (datetime.now() - relativedelta(months=1)).strftime('%B')
-                }
+                { 'year': CURRENT_MONTH_PROJECTED, 'month': current_month },
+                { 'year': CURRENT_MONTH_PROJECTED, 'month': last_month }
             ]) 
         ], ignore_index=True)
         seasonality_df = (
@@ -116,6 +112,28 @@ def seasonality_by_category(all_management_expenses_df, owned_homes_df):
             month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
             grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
             seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
+
+            # fill values for CURRENT_MONTH_PROJECTED
+            current_month_homes_owned = seasonality_df.loc[(
+                (seasonality_df['year'] == datetime.now().year)
+                & (seasonality_df['month'] == current_month)
+            ), 'total_homes_owned'].iloc[0]
+            seasonality_df.loc[
+                (seasonality_df['year'] == CURRENT_MONTH_PROJECTED)
+                & (seasonality_df['month'] == current_month),
+                'total_homes_owned'
+            ] = current_month_homes_owned
+
+            last_month_homes_owned = seasonality_df.loc[(
+                (seasonality_df['year'] == datetime.now().year)
+                & (seasonality_df['month'] == last_month)
+            ), 'total_homes_owned'].iloc[0]
+            seasonality_df.loc[
+                (seasonality_df['year'] == CURRENT_MONTH_PROJECTED)
+                & (seasonality_df['month'] == last_month),
+                'total_homes_owned'
+            ] = last_month_homes_owned
+
             seasonality_df['total_spend_per_home'] = round(seasonality_df['total_spend'] / seasonality_df['total_homes_owned'], 2)
 
         # display chart
