@@ -30,8 +30,8 @@ with buildium_spend_tab:
     if selected_tab == 'Overall':
         filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df, filtered_imputed_daily_budget_df = buildium_spend_filters(credentials)
         buildium_spend_bar_chart(filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_imputed_daily_budget_df)
+        buildium_spend_seasonality(filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df)
         buildium_spend_over_time(filtered_all_management_expenses_df, filtered_owned_homes_df)
-        # buildium_spend_seasonality(filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df)
         buildium_spend_line_items(filtered_all_management_expenses_df)
     if selected_tab == 'Seasonality by Category':
         filtered_all_management_expenses_df, filtered_owned_homes_df = seasonality_filters(credentials)
