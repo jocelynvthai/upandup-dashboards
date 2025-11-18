@@ -37,11 +37,12 @@ def total_turn_cost_over_time(turns_df, selected_time_granularity):
         turns_df[time_granularity_col] = pd.to_datetime(turns_df['project_end_date']).apply(
             lambda d: d + relativedelta(days=6 - d.dayofweek) if pd.notnull(d) else pd.NaT
         )
-        cutoff_date = datetime.now().date() + relativedelta(days=6 - datetime.now().date().weekday()) - timedelta(weeks=12)
+        this_week = datetime.now().date() + relativedelta(days=6 - datetime.now().date().weekday())
+        cutoff_date = this_week - timedelta(weeks=12)
         # add empty weeks
         all_dates = pd.date_range(
-            start=cutoff_date, 
-            end=turns_df[time_granularity_col].max(), 
+            start=cutoff_date,
+            end=this_week,
             freq='W-SUN'
         ).strftime('%Y-%m-%d')
         all_dates_df = pd.DataFrame({f'{time_granularity_col}_str': all_dates})
@@ -52,7 +53,8 @@ def total_turn_cost_over_time(turns_df, selected_time_granularity):
         turns_df[time_granularity_col] = pd.to_datetime(turns_df['project_end_date']).apply(
             lambda d: (d + relativedelta(day=31)) if pd.notnull(d) else pd.NaT
         )
-        cutoff_date = datetime.now().date() + relativedelta(day=31) - relativedelta(months=3)
+        this_month = datetime.now().date() + relativedelta(day=31)
+        cutoff_date = this_month - relativedelta(months=3)
         # add empty months
         all_dates = pd.date_range(
             start=cutoff_date, 
