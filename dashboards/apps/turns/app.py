@@ -1,7 +1,7 @@
 import streamlit as st
 from google.oauth2 import service_account
 
-from data import get_service_account_info, turns_data, construction_scopes_data, tickets_data, line_items_data
+from data import get_service_account_info, turns_data, turn_chargebacks_clawbacks_data, construction_scopes_data, tickets_data, line_items_data
 from tabs.summary_tab import turn_filters, total_turn_cost_over_time
 from tabs.individual_turn_drilldown_tab import drilldown_filters, individual_turn_timeline, individual_turn_budget_breakdown, individual_turn_drilldown, invoices_by_vendor
 from tabs.economic_turn_costs_tab import economic_turn_costs_filters, economic_turn_costs
@@ -27,6 +27,7 @@ st.markdown("""
 # Data Retrieval
 credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 turns_df = turns_data(credentials)
+turn_chargebacks_clawbacks_df = turn_chargebacks_clawbacks_data(credentials)
 construction_scopes_df = construction_scopes_data(credentials)
 tickets_df = tickets_data(credentials)
 line_items_df = line_items_data(credentials)
@@ -40,8 +41,8 @@ selected_tab = st.pills('TABS', options=["Summary", "Individual Turn Drilldown",
                         label_visibility="hidden"
 )
 if selected_tab == "Summary":
-    filtered_turns_df, selected_time_granularity = turn_filters(turns_df)
-    total_turn_cost_over_time(filtered_turns_df, selected_time_granularity)
+    filtered_turns_df, filtered_turn_chargebacks_clawbacks_df, selected_time_granularity = turn_filters(turns_df, turn_chargebacks_clawbacks_df)
+    total_turn_cost_over_time(filtered_turns_df, filtered_turn_chargebacks_clawbacks_df, selected_time_granularity)
 if selected_tab == "Individual Turn Drilldown":
     selected_turn_arr, filtered_construction_scopes_df, filtered_line_items_df = drilldown_filters(turns_df, construction_scopes_df, line_items_df)
     individual_turn_timeline(selected_turn_arr)
