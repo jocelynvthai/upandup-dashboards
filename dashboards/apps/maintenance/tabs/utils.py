@@ -133,8 +133,8 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
         if y not in [str(CURRENT_YEAR), 'Budget', CURRENT_MONTH_PROJECTED]
     ]
     color_scale = alt.Scale(
-        domain=years + [str(CURRENT_YEAR)] + (['Budget'] if budget_year else []) + ([CURRENT_MONTH_PROJECTED] if has_current_month_projected else []),
-        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([PASTEL_YELLOW] if budget_year else []) + ([ORANGE] if has_current_month_projected else [])
+        domain=years + [str(CURRENT_YEAR)] + ([CURRENT_MONTH_PROJECTED] if has_current_month_projected else []) + (['Budget'] if budget_year else []) ,
+        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([LIGHT_TEAL] if has_current_month_projected else []) + ([PASTEL_YELLOW] if budget_year else [])
     )
     seasonality_chart = (
         alt.Chart(seasonality_df)
