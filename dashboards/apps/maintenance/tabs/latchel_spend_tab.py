@@ -4,7 +4,6 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from data import bills_tickets_invoices_data
-from tabs.utils import RED
 
 def latchel_spend_data_clean(bills_tickets_invoices_df):
     cleaned_bills_tickets_invoices_df = bills_tickets_invoices_df[bills_tickets_invoices_df['latchel_invoice_id'].notna()].copy()
