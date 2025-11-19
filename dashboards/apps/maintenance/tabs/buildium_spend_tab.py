@@ -3,29 +3,26 @@ import pandas as pd
 import altair as alt
 from datetime import datetime, timedelta
 
-from data import all_management_expenses_data, owned_homes_data, budget_by_month_data, imputed_daily_budget_data
+from data import all_management_expenses_data, owned_homes_data, imputed_daily_budget_data
 from tabs.utils import (
     all_management_expenses_data_clean,
     owned_homes_data_clean,
-    budget_by_month_data_clean,
     imputed_daily_budget_data_clean,
-    seasonality_chart,
-    projected_current_month_df,
+    LIGHT_TEAL, 
     TEAL,
     PURPLE,
     PINK, 
-    CURRENT_YEAR, 
-    MONTH_ORDER,
-    CURRENT_MONTH_PROJECTED
+    TODAY
 )
 
 
 def buildium_spend_filters(credentials):
     # filters
+    # --- Data Range & Category Group ---
     col_date_range, col_category_group = st.columns(2)
     with col_date_range:
         date_range = st.date_input("Pick a period range", 
-                                value=(datetime(2023, 1, 1),  datetime.now()), 
+                                value=(TODAY - timedelta(weeks=4) - timedelta(days=TODAY.weekday()), TODAY - timedelta(days=(TODAY.weekday() + 1))), 
                                 format='MM/DD/YYYY',
                                 help="The period range to filter the data type selected",
                                 key='buildium_spend_date_range')
@@ -34,65 +31,46 @@ def buildium_spend_filters(credentials):
         else:
             filtered_all_management_expenses_df = all_management_expenses_data_clean(all_management_expenses_data(credentials, date_range[0], date_range[1]))
             filtered_owned_homes_df = owned_homes_data_clean(owned_homes_data(credentials, date_range[0]))
-            filtered_budget_by_month_df = budget_by_month_data_clean(budget_by_month_data(credentials, date_range[0]))
-            filtered_imputed_daily_budget_df = imputed_daily_budget_data_clean(imputed_daily_budget_data(credentials, date_range[0]))
+            filtered_imputed_daily_budget_df = imputed_daily_budget_data_clean(imputed_daily_budget_data(credentials, date_range[0], date_range[1]))
     with col_category_group:
         category_group = st.multiselect(
             "Select a category group",
-            ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())),
+            ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].dropna().unique())),
             default='run_rate',
             key='buildium_spend_category_group'
         )
         if 'All' not in category_group:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
-            if (len(category_group) == 1) and (category_group[0] in ['run_rate', 'common_area_maintenance', 'turn']):
-                filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['management_category'] == category_group[0]]
-                filtered_imputed_daily_budget_df = filtered_imputed_daily_budget_df[filtered_imputed_daily_budget_df['management_category'] == category_group[0]]
+            filtered_imputed_daily_budget_df = filtered_imputed_daily_budget_df[filtered_imputed_daily_budget_df['management_category'].isin(category_group)]
 
+    # --- Maintenance Category & Subcategory ---
     col_maintenance_category, col_maintenance_subcategory = st.columns(2)
     with col_maintenance_category:
-        selected_maintenance_categories = st.multiselect(
-            "Select a maintenance category",
-            ['All'] + sorted(list(filtered_all_management_expenses_df['maintenance_category'].unique())),
-            default='All',
-            key='buildium_spend_maintenance_category',
-            format_func=lambda x: x.replace('_', ' ').title()
-        )
+        selected_maintenance_categories = st.multiselect("Select a maintenance category", ['All'] + sorted(list(filtered_all_management_expenses_df['maintenance_category'].dropna().unique())), default='All', format_func=lambda x: x.replace('_', ' ').title(), key='buildium_spend_maintenance_category')
         if 'All' not in selected_maintenance_categories:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['maintenance_category'].isin(selected_maintenance_categories)]
     with col_maintenance_subcategory:
-        selected_maintenance_subcategories = st.multiselect(
-            "Select a maintenance subcategory",
-            ['All'] + sorted(list(filtered_all_management_expenses_df['maintenance_subcategory'].unique())),
-            default='All',
-            key='buildium_spend_maintenance_subcategory',
-            format_func=lambda x: x.replace('_', ' ').title()
-        )
+        selected_maintenance_subcategories = st.multiselect("Select a maintenance subcategory", ['All'] + sorted(list(filtered_all_management_expenses_df['maintenance_subcategory'].dropna().unique())), default='All', format_func=lambda x: x.replace('_', ' ').title(), key='buildium_spend_maintenance_subcategory')
         if 'All' not in selected_maintenance_subcategories:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['maintenance_subcategory'].isin(selected_maintenance_subcategories)]
 
+    # --- GL Account & Vendor ---
     col_gl_account, col_vendor = st.columns(2)
     with col_gl_account:
-        selected_gl_accounts = st.multiselect(
-            "Select a GL account",
-            ['All'] + sorted(list(filtered_all_management_expenses_df['gl_account'].unique())),
-            default='All',
-            key='buildium_spend_gl_account'
-        )
+        selected_gl_accounts = st.multiselect("Select a GL account", ['All'] + sorted(list(filtered_all_management_expenses_df['gl_account'].dropna().unique())), default='All', key='buildium_spend_gl_account')
         if 'All' not in selected_gl_accounts:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['gl_account'].isin(selected_gl_accounts)]
     with col_vendor:
-        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_all_management_expenses_df['vendor'].unique())), default='All', key='buildium_spend_vendor', help="vendor format is 'Company Name (Contact Name)' or 'Contact Name'")
+        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_all_management_expenses_df['vendor'].dropna().unique())), default='All', key='buildium_spend_vendor', help="vendor format is 'Company Name (Contact Name)' or 'Contact Name'")
         if 'All' not in selected_vendors:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['vendor'].isin(selected_vendors)]
 
     col_fund, col_market = st.columns(2)
     with col_fund:
-        selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All', key='buildium_spend_fund')
+        selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].dropna().unique())), default='All', key='buildium_spend_fund')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
-            filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['fund'].isin(selected_funds)]
             filtered_imputed_daily_budget_df = filtered_imputed_daily_budget_df[filtered_imputed_daily_budget_df['fund'].isin(selected_funds)]
     with col_market:
         market_options = list(filtered_all_management_expenses_df['market'].unique())
@@ -102,142 +80,43 @@ def buildium_spend_filters(credentials):
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]
     
-    return filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_budget_by_month_df, filtered_imputed_daily_budget_df
+    return filtered_all_management_expenses_df, filtered_owned_homes_df, filtered_imputed_daily_budget_df
 
 
-def buildium_spend_bar_chart(all_management_expenses_df, owned_homes_df, imputed_daily_budget_df):
+def buildium_spend_per_home(all_management_expenses_df, owned_homes_df, imputed_daily_budget_df):
     st.subheader("Buildium Spend per Home")
 
-    # default to last 4 weeks of data
-    today = datetime.now()
-    col_date_range, col_grouping = st.columns(2)
-    with col_date_range:
-        date_range = st.date_input(
-            "Pick a period range",
-            value=(today - timedelta(weeks=4) - timedelta(days=today.weekday()), today - timedelta(days=(today.weekday() + 1))),
-            key='buildium_spend_bar_chart_date_range'
+    # group by
+    selected_grouping = st.selectbox("Group by", ['maintenance_category', 'maintenance_subcategory', 'gl_account'], format_func=lambda x: x.replace('_', ' ').title(), key='buildium_spend_bar_chart_grouping')
+
+    # actual spend
+    grouped_expenses_df = all_management_expenses_df.groupby(selected_grouping, as_index=False).agg(total_spend=('amount', 'sum'))
+    grouped_expenses_df[selected_grouping] = grouped_expenses_df[selected_grouping].apply(lambda x: x.replace('_', ' ').title())
+    grouped_expenses_df['type'] = 'Actual'
+
+    # merge budget and actual spend
+    budget_df = pd.DataFrame({
+        selected_grouping: 'Budget',
+        'total_spend': imputed_daily_budget_df.agg(budgeted_spend=('amount', 'sum')).iloc[0],
+        'type': 'Budget',
+    })
+    grouped_expenses_df = pd.concat([grouped_expenses_df, budget_df])
+    grouped_expenses_df['total_homes_owned'] = owned_homes_df[(owned_homes_df['time_granularity'] == 'week') & (owned_homes_df['date'] == min(owned_homes_df['date']))]['homes_owned'].sum()
+
+    # format data
+    grouped_expenses_df['total_spend_per_home'] = round(grouped_expenses_df['total_spend'] / grouped_expenses_df['total_homes_owned'], 2)
+
+    # create bar chart
+    spend_per_home_chart = alt.Chart(grouped_expenses_df).mark_bar().encode(
+        x=alt.X('type', title=None, sort=['Budget', 'Actual']),
+        y=alt.Y('total_spend_per_home', title='Total Spend per Home', axis=alt.Axis(format='$,.0f')),
+        color=alt.condition(
+            alt.datum.type == 'Budget',
+            alt.value(LIGHT_TEAL),
+            alt.Color(selected_grouping)
         )
-    with col_grouping:
-        selected_grouping = st.selectbox(
-            "Group by",
-            ['maintenance_category', 'maintenance_subcategory', 'gl_account'],
-            key='buildium_spend_bar_chart_grouping',
-            format_func=lambda x: x.replace('_', ' ').title()
-        )
-
-    if len(date_range) == 2:
-        # owned homes
-        owned_homes = owned_homes_df[
-            owned_homes_df['date'] >= (date_range[1] - timedelta(weeks=1)).strftime('%Y-%m-%d')
-        ].iloc[0]['homes_owned']
-
-        # expenses
-        grouped_expenses_df = all_management_expenses_df[
-            (all_management_expenses_df['date'] >= date_range[0])
-            & (all_management_expenses_df['date'] <= date_range[1])
-        ].groupby(selected_grouping, as_index=False).agg(total_spend=('amount', 'sum')).reset_index()
-        grouped_expenses_df[selected_grouping] = grouped_expenses_df[selected_grouping].apply(lambda x: x.replace('_', ' ').title())
-        grouped_expenses_df['type'] = 'Actual'
-        grouped_expenses_df['total_homes_owned'] = owned_homes
-
-        # budget
-        total_budget = imputed_daily_budget_df[
-            (imputed_daily_budget_df['date_time'] >= pd.to_datetime(date_range[0]))
-            & (imputed_daily_budget_df['date_time'] <= pd.to_datetime(date_range[1]))
-        ].agg(budgeted_spend=('amount', 'sum')).iloc[0]
-
-        # merge budget and actual data
-        budget_df = pd.DataFrame({
-            selected_grouping: 'Budget',
-            'type': 'Budget',
-            'total_spend': total_budget,
-            'total_homes_owned': owned_homes
-        })
-        grouped_expenses_df = pd.concat([grouped_expenses_df, budget_df])
-
-        # format data
-        grouped_expenses_df['total_spend_per_home'] = round(grouped_expenses_df['total_spend'].fillna(0) / grouped_expenses_df['total_homes_owned'].fillna(0), 2)
-        unique_categories = grouped_expenses_df[selected_grouping].dropna().unique()
-        if len(unique_categories) > 1:
-            grouped_expenses_df[selected_grouping] = grouped_expenses_df[selected_grouping].fillna(unique_categories[0])
-
-        # create bar chart
-        chart = alt.Chart(grouped_expenses_df).mark_bar().encode(
-            x=alt.X('type', title=None, axis=alt.Axis(labelAngle=0), sort=['Budget', 'Actual']),
-            y=alt.Y('total_spend_per_home', title='Total Spend per Home', axis=alt.Axis(format='$,.2f')),
-            color=alt.Color(selected_grouping, title=selected_grouping.replace('_', ' ').title())
-        )
-        st.altair_chart(chart, width=1200)
-
-
-
-def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budget_by_month_df):
-    st.subheader("Buildium Spend Seasonality")
-    
-    # group by year and month
-    seasonality_df = (
-        all_management_expenses_df
-        .groupby(['year', 'month'], as_index=False)
-        .agg(total_spend=('amount', 'sum'))
     )
-    seasonality_df['month'] = pd.Categorical(seasonality_df['month'], categories=MONTH_ORDER, ordered=True)
-    seasonality_df = seasonality_df.sort_values(['year', 'month'])
-    
-    # add projected current month data
-    seasonality_df = pd.concat([
-        seasonality_df,
-        projected_current_month_df(all_management_expenses_df)
-    ], ignore_index=True)
-
-    # add budget data
-    grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount', 'sum'))
-    grouped_budget_by_month_df.loc[grouped_budget_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
-    seasonality_df = pd.concat([seasonality_df, grouped_budget_by_month_df])
-
-    # add spend per home
-    _, col_spend_per_home = st.columns([2, 0.25])
-    with col_spend_per_home:
-        spend_per_home = st.toggle("$/Home", value=False, key='buildium_spend_seasonality_per_home')
-    if spend_per_home:
-        month_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == 'month']
-        grouped_month_owned_homes_df = month_owned_homes_df.groupby(['year', 'month'], as_index=False).agg(total_homes_owned=('homes_owned', 'sum'))
-        seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
-
-        # impute value of total_homes_owned for Budget and CURRENT_MONTH_PROJECTED rows
-        budget_and_projected_rows = seasonality_df[
-            (seasonality_df['year'] == 'Budget')
-            | (seasonality_df['year'] == CURRENT_MONTH_PROJECTED)
-        ]
-        for index, row in budget_and_projected_rows.iterrows():
-            homes_owned_this_month = seasonality_df.loc[(
-                (seasonality_df['year'] == CURRENT_YEAR)
-                & (seasonality_df['month'] == row['month'])
-            ), 'total_homes_owned']
-            # try to pull the actual total_homes_owned for the corresponding month
-            if len(homes_owned_this_month) > 0:
-                homes_owned_this_month = homes_owned_this_month.iloc[0]
-            # however if this month is in the future, use the number from the current month instead
-            else:
-                homes_owned_this_month = seasonality_df.loc[(
-                    (seasonality_df['year'] == CURRENT_YEAR)
-                    & (seasonality_df['month'] == datetime.now().strftime('%B'))
-                ), 'total_homes_owned'].iloc[0]
-            seasonality_df.loc[
-                ((seasonality_df['year'] == 'Budget') | (seasonality_df['year'] == CURRENT_MONTH_PROJECTED))
-                & (seasonality_df['month'] == row['month']),
-                'total_homes_owned'
-            ] = homes_owned_this_month
-        
-        # compute spend per home
-        seasonality_df['total_spend_per_home'] = round(seasonality_df['total_spend'] / seasonality_df['total_homes_owned'], 2)
-
-    # display chart
-    seasonality_chart(seasonality_df, 
-        spend_col='total_spend_per_home' if spend_per_home else 'total_spend', 
-        spend_title='Buildium Spend ($/Home)' if spend_per_home else 'Buildium Spend ($)', 
-        budget_year=True, 
-    )
-
+    st.altair_chart(spend_per_home_chart)
 
 
 def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
@@ -246,12 +125,14 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
     # customize view specifications
     col_time_granularity, col_dimension, col_spend_per_home = st.columns([1, 1, 0.25])
     with col_time_granularity:
-        selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], key='buildium_spend_time_granularity')
+        selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], format_func=lambda x: x.title(), key='buildium_spend_time_granularity')
         st.session_state["time_granularity"] = f'{selected_time_granularity}_end'
         configured_owned_homes_df = owned_homes_df[owned_homes_df['time_granularity'] == selected_time_granularity]
     with col_dimension:
         category_dict = {
             'GL Account': 'gl_account',
+            'Maintenance Category': 'maintenance_category',
+            'Maintenance Subcategory': 'maintenance_subcategory',
             'Vendor': 'vendor',
             'Fund': 'fund',
             'Market': 'market'

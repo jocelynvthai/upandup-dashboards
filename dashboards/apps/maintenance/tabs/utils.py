@@ -25,14 +25,15 @@ PASTEL_SOFT_PINK = "#F6BDC0"
 PASTEL_YELLOW = "#F7E1A0"
 PASTEL_MINT = "#C9E4DE"
 
-CURRENT_YEAR = datetime.now().year
+TODAY = datetime.now()
+CURRENT_YEAR = TODAY.year
 
 MONTH_ORDER = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
-CURRENT_MONTH_PROJECTED = 'Current Month (projected)'
+CURRENT_YEAR_PROJECTED = '2025 (Projected)'
 
 
 def all_management_expenses_data_clean(all_management_expenses_df):
@@ -127,13 +128,13 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
     
     # convert year to string, if not already
     seasonality_df['year'] = seasonality_df['year'].astype(str)
-    has_current_month_projected = CURRENT_MONTH_PROJECTED in seasonality_df['year'].unique()
+    has_current_month_projected = CURRENT_YEAR_PROJECTED in seasonality_df['year'].unique()
     years = [
         y for y in seasonality_df['year'].unique()
-        if y not in [str(CURRENT_YEAR), 'Budget', CURRENT_MONTH_PROJECTED]
+        if y not in [str(CURRENT_YEAR), 'Budget', CURRENT_YEAR_PROJECTED]
     ]
     color_scale = alt.Scale(
-        domain=years + [str(CURRENT_YEAR)] + ([CURRENT_MONTH_PROJECTED] if has_current_month_projected else []) + (['Budget'] if budget_year else []) ,
+        domain=years + [str(CURRENT_YEAR)] + ([CURRENT_YEAR_PROJECTED] if has_current_month_projected else []) + (['Budget'] if budget_year else []) ,
         range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([LIGHT_TEAL] if has_current_month_projected else []) + ([PASTEL_YELLOW] if budget_year else [])
     )
     seasonality_chart = (
@@ -147,7 +148,7 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
                 f"datum.year == {CURRENT_YEAR}", alt.value(3), alt.value(1.5)
             ),
             strokeDash=alt.condition(
-                alt.datum.year == CURRENT_MONTH_PROJECTED,
+                alt.datum.year == CURRENT_YEAR_PROJECTED,
                 alt.value([10, 4]), # dashed line
                 alt.value([0]) # solid line
             ),
@@ -159,35 +160,27 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
     st.altair_chart(seasonality_chart, use_container_width=True)
 
 
-def projected_current_month_df(management_expenses_df):
+def projected_df(management_expenses_df):
     now = datetime.now()
     last_month = now - relativedelta(months=1)
-
-    projected_current_year = CURRENT_MONTH_PROJECTED
     current_month_string = now.strftime('%B')
     last_month_string = last_month.strftime('%B')
 
-    last_month_spend = management_expenses_df[
-        (management_expenses_df['year'] == last_month.year)
-        & (management_expenses_df['month'] == last_month_string)
-    ]['amount'].sum()
-    current_month_spend = management_expenses_df[
-        (management_expenses_df['year'] == now.year)
-        & (management_expenses_df['month'] == current_month_string)
-    ]['amount'].sum()
+    last_month_spend = management_expenses_df[(management_expenses_df['year'] == last_month.year) & (management_expenses_df['month'] == last_month_string)]['amount'].sum()
+    current_month_spend = management_expenses_df[(management_expenses_df['year'] == now.year) & (management_expenses_df['month'] == current_month_string)]['amount'].sum()
 
     days_in_month = (now.replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).day
     projected_current_month_spend = current_month_spend / (now.day / days_in_month)
 
     return pd.DataFrame([
         {
-            'year': projected_current_year,
+            'year': CURRENT_YEAR_PROJECTED,
+            'month': last_month_string,
+            'total_spend': last_month_spend
+        }, 
+        {
+            'year': CURRENT_YEAR_PROJECTED,
             'month': current_month_string,
             'total_spend': projected_current_month_spend
         },
-        {
-            'year': projected_current_year,
-            'month': last_month_string,
-            'total_spend': last_month_spend
-        }
     ])
