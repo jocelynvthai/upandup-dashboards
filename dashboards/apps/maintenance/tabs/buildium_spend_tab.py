@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from data import all_management_expenses_data, owned_homes_data, imputed_daily_budget_data
 from tabs.utils import (
