@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 from data import all_management_expenses_data, owned_homes_data, budget_by_month_data
 from tabs.utils import (
