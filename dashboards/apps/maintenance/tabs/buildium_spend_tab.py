@@ -187,6 +187,9 @@ def buildium_spend_over_time(all_management_expenses_df, owned_homes_df):
         values='total_spend_per_home' if spend_per_home else 'total_spend'
     ).fillna(0).reset_index()
     
+    # Add total column
+    pivot_df["Total"] = pivot_df[[c for c in pivot_df.columns if c != st.session_state["category"]]].sum(axis=1)
+    
     value_columns = [col for col in pivot_df.columns if col != st.session_state["category"]]
     styled_pivot_df = pivot_df.style.map(
         lambda v: "color: rgba(0, 0, 0, 0.25)" if v == 0 else "",
