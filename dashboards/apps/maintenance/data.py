@@ -76,14 +76,14 @@ def owned_homes_data(_credentials, start_date):
 def budget_by_month_data(_credentials, start_date):
     query = f"""
         SELECT 
-        month AS date,
-        fund, 
-        CASE
-            WHEN management_category = 'run_rate_r_m' THEN 'run_rate'
-            WHEN management_category = 'turn_r_m' THEN 'turn'
-            WHEN management_category = 'common_area_maintenance' THEN 'common_area_maintenance'
-        END AS management_category,
-        SUM(amount) AS amount
+            month AS date,
+            fund, 
+            CASE
+                WHEN management_category = 'run_rate_r_m' THEN 'run_rate'
+                WHEN management_category = 'turn_r_m' THEN 'turn'
+                WHEN management_category = 'common_area_maintenance' THEN 'common_area_maintenance'
+            END AS management_category,
+            SUM(amount) AS amount
         FROM `homevest-data.operating_forecasts.monthly_budget_ledger_2025_09`
         WHERE management_category IN ('run_rate_r_m', 'turn_r_m', 'common_area_maintenance')
         AND month >= '{start_date}'
@@ -94,14 +94,14 @@ def budget_by_month_data(_credentials, start_date):
 
 
 @st.cache_data(ttl=CACHE_TTL)
-def imputed_daily_budget_data(_credentials, start_date):
+def imputed_daily_budget_data(_credentials, start_date, end_date):
     query = f"""
         WITH dates AS (
             SELECT
                 *,
                 EXTRACT(DAY FROM LAST_DAY(_date, MONTH)) AS days_in_month
             FROM `homevest-data.dbt_prod.dim_dates`
-            WHERE _date BETWEEN '{start_date}' AND CURRENT_DATE
+            WHERE _date BETWEEN '{start_date}' AND '{end_date}'
         )
 
         SELECT 
@@ -117,7 +117,6 @@ def imputed_daily_budget_data(_credentials, start_date):
         INNER JOIN `homevest-data.operating_forecasts.monthly_budget_ledger_2025_09` AS mbl
             ON LAST_DAY(d._date, MONTH) = mbl.month
         WHERE mbl.management_category IN ('run_rate_r_m', 'turn_r_m', 'common_area_maintenance')
-            AND mbl.month >= '{start_date}'
         GROUP BY 1, 2, 3
     """
     data = pd.read_gbq(query, credentials=_credentials)

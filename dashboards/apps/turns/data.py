@@ -37,6 +37,17 @@ def turns_data(_credentials):
 
 
 @st.cache_data(ttl=CACHE_TTL)
+def turn_chargebacks_clawbacks_data(_credentials):
+    query = """
+        SELECT * 
+        FROM `homevest-data.dbt_prod.stg_amortized_rent_roll_ledger__prorated`
+        WHERE (type = 'payment' OR type = 'wallet_clawback')
+        AND liability_type = 'Maintenance Chargeback - Turn Repairs'
+    """
+    data = pd.read_gbq(query, credentials=_credentials)
+    return data
+
+@st.cache_data(ttl=CACHE_TTL)
 def construction_scopes_data(_credentials):
     query = """
         SELECT
