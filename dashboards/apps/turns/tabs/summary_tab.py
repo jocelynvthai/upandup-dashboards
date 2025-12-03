@@ -36,7 +36,7 @@ def total_turn_cost_over_time(turns_df, turn_chargebacks_clawbacks_df, selected_
 
     # --- Build period columns ---
     if selected_time_granularity == 'week':
-        title = 'Week End'
+        title = 'Week End (project end date)'
         turns_df[time_granularity_col] = pd.to_datetime(turns_df['project_end_date']).apply(
             lambda d: d + relativedelta(days=6 - d.dayofweek) if pd.notnull(d) else pd.NaT
         )
@@ -48,7 +48,7 @@ def total_turn_cost_over_time(turns_df, turn_chargebacks_clawbacks_df, selected_
             days=6 - datetime.now().date().weekday()
         ) - timedelta(weeks=12)
     else:
-        title = 'Month End'
+        title = 'Month End of Project End Date'
         turns_df[time_granularity_col] = pd.to_datetime(turns_df['project_end_date']).apply(
             lambda d: (d + relativedelta(day=31)) if pd.notnull(d) else pd.NaT
         )
