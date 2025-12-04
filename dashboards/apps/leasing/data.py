@@ -2,7 +2,9 @@ import json
 import os
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
+from dateutil.relativedelta import relativedelta
 load_dotenv()
 
 # Cache TTL for 1 hour
@@ -123,6 +125,38 @@ def rental_data(_credentials):
         FROM `homevest-data.dbt_prod.stg_actual_rentals` AS r
         LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS ad
             ON r.property_id = ad.property_id
+    """
+    return pd.read_gbq(query, credentials=_credentials)
+@st.cache_data(ttl=CACHE_TTL)
+def renewal_data(_credentials):
+    week_start = datetime.now().date() - relativedelta(days=datetime.now().weekday())
+    query = f"""
+        SELECT 
+            r1.id, 
+            ad.address, 
+            ad.fund, 
+            ad.market, 
+            r1._date AS week_start_date, 
+            r1.starts_at AS current_lease_start, 
+            r1.ends_at AS current_lease_end, 
+            r2._date AS current_lease_ended_first_day, 
+            r2.starts_at AS new_lease_start, 
+            r2.ends_at AS new_lease_end, 
+        CASE 
+            WHEN (r1.move_out_date IS NULL and r2.ends_at > r1.ends_at) 
+                THEN 'yes'
+            WHEN (r1.move_out_date IS NOT NULL)
+                THEN 'no'
+            ELSE 'pending'
+        END AS renewed
+        FROM `homevest-data.dbt_prod.stg_daily_rentals` as r1
+        LEFT JOIN `homevest-data.dbt_prod.stg_daily_rentals` AS r2
+            ON r1.id = r2.id
+            AND DATE_ADD(r1.ends_at, INTERVAL 1 DAY) = r2._date
+        LEFT JOIN `homevest-data.dbt_prod.dim_acquisition_details` AS ad
+            ON r1.property_id = ad.property_id
+        WHERE r1._date = '{week_start}'
+            AND r1.ends_at >= '{week_start}'
     """
     return pd.read_gbq(query, credentials=_credentials)
 

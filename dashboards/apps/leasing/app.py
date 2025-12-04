@@ -10,6 +10,7 @@ from data import (
     leasing_funnel_data,
     economic_occupancy_data,
     rental_data, 
+    renewal_data, 
     vacancy_curve_data,
     distinct_vacancies_data,
     leasing_scraper_data,
@@ -23,7 +24,7 @@ from tabs.inquiries_tab import inquiries_grouped, num_inquiries, inquiries_fille
 from tabs.tours_tab import tours_grouped, tour_metrics, num_tours_by_source, num_tours_by_farthest_funnel_stage, homes_with_zero_tours
 from tabs.leasing_funnel_tab import leasing_funnel_prelease, leasing_funnel_grouped, leasing_funnel_summary_metrics, leasing_funnel_chart
 from tabs.application_funnel_tab import application_funnel_grouped, application_funnel_summary_metrics, application_funnel_chart
-from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, new_projected_economic_occupancy, upcoming_moves
+from tabs.occupancy_tab import occupancy_filters, occupancy_metrics, economic_occupancy, num_leases_to_target, upcoming_important_dates, new_projected_economic_occupancy
 from tabs.vacancy_curve_tab import vacancy_curve_filters, vacancy_curve
 from tabs.competitors_tab import competitors_filters, metrics, turn_times, weekly_rent_changes, rent_curve, clearance_rates, leased_homes_stats
 
@@ -50,6 +51,7 @@ leasing_funnel_df = leasing_funnel_data(credentials)
 # occupancy tab data
 economic_occupancy_df = economic_occupancy_data(credentials)
 rental_df = rental_data(credentials)
+renewal_df = renewal_data(credentials)
 # vacancy curve tab data
 vacancy_curve_df = vacancy_curve_data(credentials)
 distinct_vacancies_df = distinct_vacancies_data(credentials)
@@ -96,16 +98,16 @@ with application_funnel_tab:
     application_funnel_summary_metrics(grouped_application_funnel_df, application_selected_time_granularity)
     application_funnel_chart(grouped_application_funnel_df)
 with occupancy_tab:
-    filtered_economic_occupancy_df, filtered_rental_df = occupancy_filters(economic_occupancy_df, rental_df)
+    filtered_economic_occupancy_df, filtered_rental_df, filtered_renewal_df = occupancy_filters(economic_occupancy_df, rental_df, renewal_df)
     occupancy_metrics(filtered_economic_occupancy_df)
     st.divider()
     economic_occupancy(filtered_economic_occupancy_df)
     st.divider()
     num_leases_to_target(filtered_economic_occupancy_df)
     st.divider()
-    new_projected_economic_occupancy(filtered_economic_occupancy_df)
+    upcoming_important_dates(filtered_rental_df, filtered_renewal_df)
     st.divider()
-    upcoming_moves(filtered_rental_df)
+    new_projected_economic_occupancy(filtered_economic_occupancy_df)
 with vacancy_curve_tab:
     filtered_vacancy_curve_df, selected_vacancy = vacancy_curve_filters(distinct_vacancies_df, vacancy_curve_df)
     vacancy_curve(filtered_vacancy_curve_df)

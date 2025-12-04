@@ -3,7 +3,6 @@ import altair as alt
 import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta, MO
-from datetime import timedelta
 
 from tabs.utils import (
     LIGHT_TEAL, 
@@ -20,21 +19,24 @@ from tabs.utils import (
 TODAY = datetime.now().date()
 
 
-def occupancy_filters(economic_occupancy_df, rental_df):
+def occupancy_filters(economic_occupancy_df, rental_df, renewal_df):
     col_fund, col_market = st.columns(2)
 
     filtered_economic_occupancy_df = economic_occupancy_df.copy().sort_values(by='date', ascending=False)
     filtered_rental_df = rental_df.copy()
+    filtered_renewal_df = renewal_df.copy()
     with col_fund:
         selected_fund = st.selectbox("Select a fund", ['All'] + sorted(list(economic_occupancy_df['fund'].unique())))
         if selected_fund != 'All':
             filtered_economic_occupancy_df = filtered_economic_occupancy_df[filtered_economic_occupancy_df['fund'] == selected_fund]
             filtered_rental_df = filtered_rental_df[filtered_rental_df['fund'] == selected_fund]
+            filtered_renewal_df = filtered_renewal_df[filtered_renewal_df['fund'] == selected_fund]
     with col_market:
         selected_market = st.selectbox("Select a market", ['All'] + sorted(list(filtered_economic_occupancy_df['market'].unique())))
         if selected_market != 'All':
             filtered_economic_occupancy_df = filtered_economic_occupancy_df[filtered_economic_occupancy_df['market'] == selected_market]
             filtered_rental_df = filtered_rental_df[filtered_rental_df['market'] == selected_market]
+            filtered_renewal_df = filtered_renewal_df[filtered_renewal_df['market'] == selected_market]
 
 
     # Determine period_end based on time_granularity
@@ -47,7 +49,7 @@ def occupancy_filters(economic_occupancy_df, rental_df):
         ),
         axis=1
     )
-    return filtered_economic_occupancy_df, filtered_rental_df
+    return filtered_economic_occupancy_df, filtered_rental_df, filtered_renewal_df
 
 
 
@@ -77,11 +79,11 @@ def economic_occupancy(economic_occupancy_df):
         selected_time_granularity = st.selectbox("Select a time granularity", ['week', 'month'], index=0)
     with col_date_range:
         last_date = economic_occupancy_df['period_end'].max()
-        if selected_time_granularity == 'day':
-            start = TODAY
-            selected_days = st.slider("Select # days to view", min_value=1, max_value=(last_date-TODAY).days, value=60)
-            end = TODAY + relativedelta(days=selected_days)
-        elif selected_time_granularity == 'week':
+        # if selected_time_granularity == 'day':
+        #     start = TODAY
+        #     selected_days = st.slider("Select # days to view", min_value=1, max_value=(last_date-TODAY).days, value=60)
+        #     end = TODAY + relativedelta(days=selected_days)
+        if selected_time_granularity == 'week':
             start = TODAY - relativedelta(days=datetime.now().weekday())
             last_week_start = last_date - relativedelta(days=last_date.weekday())
             selected_weeks = st.slider("Select # weeks to view", min_value=1, max_value=int((last_week_start-start).days/7), value=8)
@@ -172,9 +174,11 @@ def num_leases_to_target(economic_occupancy_df):
         st.metric(f"Occupancy Week", f"{occupancy_week_start.strftime('%m/%d')} - {occupancy_week_end.strftime('%m/%d')}", 
                   help="The week the signed leases will move in/rent recovery begins.")
     with col_num_leases_to_sign_worst_case:
-        st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}")
+        st.metric(f"\# Leases to Sign (Worst Case)", f"{st.session_state['num_new_leases_needed_worst_case']:.2f}", 
+                  help="Worst case assumes the leases with no confirmed move-out date & agreement ends dates in occupancy week (2 weeks from target) all move out.")
     with col_num_leases_to_sign_best_case:
-        st.metric(f"\# Leases to Sign (Best Case)", f"{st.session_state['num_new_leases_needed_best_case']:.2f}")
+        st.metric(f"\# Leases to Sign (Best Case)", f"{st.session_state['num_new_leases_needed_best_case']:.2f}", 
+                  help="Best case assumes the leases with no confirmed move-out date & agreement ends dates in occupancy week (2 weeks from target) all renew.")
     with col_weeks_ahead:
         max_weeks_ahead = int((max(week_economic_occupancy['date']) - occupancy_week_start).days / 7) - 1
         selected_weeks_ahead = st.slider("Select # weeks to view", min_value=8, max_value=max_weeks_ahead, value=12)
@@ -281,6 +285,101 @@ def num_leases_to_target(economic_occupancy_df):
         st.altair_chart(target_leases_chart, use_container_width=True)
         
 
+def upcoming_important_dates(rental_df, renewal_df): 
+    types = {
+        'pending_renewals': {
+            'title': 'Pending Renewals in the Next Month',
+            'table': 'renewals',
+            'filter_sort_column': 'current_lease_end',
+            'display_columns': ['current_lease_end', 'renewed']
+        }, 
+        'move_ins': {
+            'title': 'All Future Move-Ins',
+            'table': 'rentals', 
+            'filter_sort_column': 'occupancy_date',
+            'display_columns': ['occupancy_date']
+        }, 
+        'move_outs': {
+            'title': 'All Future Move-Outs',
+            'table': 'rentals',
+            'filter_sort_column': 'move_out_date',
+            'display_columns': ['move_out_date']
+        }
+    }
+    for type, values in types.items():
+        st.subheader(f"{values['title']}")
+        
+        if values['table'] == 'rentals':
+            df = rental_df
+            df = df[df[values['filter_sort_column']] > TODAY]
+        else:
+            df = renewal_df
+            df = df[df[values['filter_sort_column']] <= TODAY + relativedelta(months=1)]
+        
+        display_df = df[['id', 'address', 'fund', 'market'] + values['display_columns']].sort_values(by=values['filter_sort_column'], ascending=True)
+
+        if display_df.empty:
+            st.badge(f"No future {type}s!", color="violet")
+            continue
+
+        display_df['month'] = pd.to_datetime(display_df[values['filter_sort_column']]).dt.strftime('%B %Y')
+
+        grouped_moves = display_df.groupby('month')
+        html_rows = []
+        sorted_months = sorted(grouped_moves.groups.keys(), key=lambda x: pd.to_datetime(x, format='%B %Y'))
+        for month in sorted_months:
+            group = grouped_moves.get_group(month)
+            for i, row in group.iterrows():
+                
+                # use green check mark to renewed column
+                def format_cell(column, value):
+                    if column == 'renewed':
+                        if value == 'yes':
+                            return '<td style="text-align: center; color: green;">✓</td>'
+                        if value == 'no':
+                            return '<td style="text-align: center; color: red;">✗</td>'
+                        if value == 'pending':
+                            return '<td></td>'
+                    return f'<td>{value}</td>'
+                def address_cell(row):
+                    url = f"https://hudson.upandup.co/rent-roll/{row['id']}"
+                    return f'<td><a href="{url}" target="_blank">{row["address"]}</a></td>'
+
+                specific_columns_cells = ''.join([format_cell(column, row[column]) for column in values['display_columns']])
+                
+                if i == group.index[0]:
+                    html_rows.append(f'''<tr>
+                                            <td rowspan="{group.shape[0]}">{month}</td>
+                                            {address_cell(row)}
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            {specific_columns_cells}
+                                        </tr>''')
+                else:
+                    html_rows.append(f'''<tr>
+                                            {address_cell(row)}
+                                            <td>{row['fund']}</td>
+                                            <td>{row['market']}</td>
+                                            {specific_columns_cells}
+                                        </tr>''')
+
+        # Convert the rows to a complete HTML table
+        specific_columns_headers = ''.join([f'<th>{column.title().replace("_", " ")}</th>' for column in values['display_columns']])
+        html_table = f'''<table class="dataframe" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Address</th>
+                                    <th>Fund</th>
+                                    <th>Market</th>
+                                    {specific_columns_headers}
+                                </tr>
+                            </thead>
+                            <tbody>{"".join(html_rows)}</tbody>
+                        </table>'''
+        st.markdown(html_table, unsafe_allow_html=True)
+
+
 
 def new_projected_economic_occupancy(economic_occupancy_df):
     st.subheader(
@@ -352,61 +451,6 @@ def new_projected_economic_occupancy(economic_occupancy_df):
 
     st.altair_chart(alt.layer(new_projected_eo_chart + move_in_line).resolve_scale(x='independent'), use_container_width=True)
 
-
-
-def upcoming_moves(rental_df): 
-    types = {
-        'occupancy_date': 'Move-In Date',
-        'move_out_date': 'Move-Out Date'
-    }
-    for type in types.keys():
-        formal_type = types[type].replace(' Date', '')
-        st.subheader(f"Upcoming {formal_type}s")
-
-        upcoming_moves = rental_df[rental_df[type] > datetime.now()][['address', 'fund', 'market', type]].sort_values(by=type, ascending=True)
-        if upcoming_moves.empty:
-            st.badge(f"No upcoming {formal_type}s!", color="violet")
-            continue
-        upcoming_moves['month'] = pd.to_datetime(upcoming_moves[type]).dt.strftime('%B %Y')
-        upcoming_moves.sort_values(by=type, ascending=True, inplace=True)
-
-        grouped_moves = upcoming_moves.groupby('month')
-        html_rows = []
-        sorted_months = sorted(grouped_moves.groups.keys(), key=lambda x: pd.to_datetime(x, format='%B %Y'))
-        for month in sorted_months:
-            group = grouped_moves.get_group(month)
-            month_count = group.shape[0]
-            for i, row in group.iterrows():
-                if i == group.index[0]:
-                    html_rows.append(f'''<tr>
-                                            <td rowspan="{month_count}">{month}</td>
-                                            <td>{row['address']}</td>
-                                            <td>{row['fund']}</td>
-                                            <td>{row['market']}</td>
-                                            <td>{row[type]}</td>
-                                        </tr>''')
-                else:
-                    html_rows.append(f'''<tr>
-                                            <td>{row['address']}</td>
-                                            <td>{row['fund']}</td>
-                                            <td>{row['market']}</td>
-                                            <td>{row[type]}</td>
-                                        </tr>''')
-
-        # Convert the rows to a complete HTML table
-        html_table = f'''<table class="dataframe" style="width: 100%;">
-                            <thead>
-                                <tr>
-                                    <th>Month</th>
-                                    <th>Address</th>
-                                    <th>Fund</th>
-                                    <th>Market</th>
-                                    <th>{types[type]}</th>
-                                </tr>
-                            </thead>
-                            <tbody>{"".join(html_rows)}</tbody>
-                        </table>'''
-        st.markdown(html_table, unsafe_allow_html=True)
 
 
 
