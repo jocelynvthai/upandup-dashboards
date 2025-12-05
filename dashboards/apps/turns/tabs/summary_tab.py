@@ -219,11 +219,56 @@ def turns_breakdown(turns_df):
             }
         )
 
-        
+
 
 def turns_without_ends_dates(turns_df):
     st.subheader("Turns Missing Project End Date")
-    st.dataframe(turns_df[turns_df['project_end_date'].isna()])
+
+    # Filter missing end dates
+    missing_end_dates_df = turns_df[turns_df['project_end_date'].isna()].copy()
+    missing_end_dates_df['hudson_link'] = (
+        "https://hudson.upandup.co/rent-roll/" + 
+        missing_end_dates_df['rental_id'].astype(str)
+    )
+
+    # Only show those starting 2025+
+    missing_end_dates_df = missing_end_dates_df[
+        missing_end_dates_df['project_start_date'] >= pd.to_datetime('2025-01-01')
+    ].copy()
+
+    # Add display column
+    missing_end_dates_df['project_end_date_display'] = missing_end_dates_df['project_end_date'].apply(
+        lambda x: "MISSING" if pd.isna(x) else x.strftime('%Y-%m-%d')
+    )
+
+    # Reorder / rename
+    df_display = missing_end_dates_df[
+        ['hudson_link', 'address', 'fund', 'market', 'project_start_date', 'project_end_date_display']
+    ].rename(columns={
+        'address': 'Address',
+        'fund': 'Fund',
+        'market': 'Market',
+        'project_start_date': 'Project Start Date',
+        'project_end_date_display': 'Project End Date'
+    }).sort_values(by='Project Start Date').reset_index(drop=True)
+
+    # Style MISSING red
+    def highlight_missing(val):
+        if val == "MISSING":
+            return "color: red;"
+        return ""
+
+    styled = df_display.style.applymap(highlight_missing, subset=['Project End Date'])
+    st.dataframe(
+        styled,
+        column_config={
+            "hudson_link": st.column_config.LinkColumn(
+                "Hudson",
+                display_text=":material/link:",
+                width="small"
+            ),
+        }
+    )
 
 
 
