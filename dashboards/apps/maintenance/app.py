@@ -14,6 +14,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+st.markdown("""
+    <style>
+        .stMultiSelect [data-baseweb="select"] span{
+            max-width: none !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+    </style>
+    """, unsafe_allow_html=True
+)
 
 # Data Retrieval
 credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
