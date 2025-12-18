@@ -31,6 +31,8 @@ credentials = service_account.Credentials.from_service_account_info(get_service_
 
 # Application
 st.title("Maintenance Dashboard")
+st.button("Refresh All Data", on_click=st.cache_data.clear)
+
 buildium_spend_tab, latchel_tab, non_latchel_tab = st.tabs(["Buildium Spend", "Latchel Spend (Budget vs Actual)", "Non-Latchel Spend"])
 with buildium_spend_tab:
     selected_tab = st.pills('TABS', options=["Overall", "Seasonality"], 
