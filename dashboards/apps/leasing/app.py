@@ -64,6 +64,7 @@ rent_curve_df = rent_curve_data(credentials)
 
 # Application
 st.title("Leasing Dashboard")
+st.button("Refresh All Data", on_click=st.cache_data.clear)
 
 summary_tab, inquiries_tab, tours_tab, leasing_funnel_tab, application_funnel_tab, occupancy_tab, vacancy_curve_tab, competitors_tab= st.tabs(["Summary", 'Inquiries', 'Tours', 'Leasing Funnel', 'Application Funnel', 'Occupancy', 'Vacancy Curve', 'Competitors'])
 with summary_tab:

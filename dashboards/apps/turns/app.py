@@ -33,6 +33,8 @@ line_items_df = line_items_data(credentials)
 
 # Application
 st.title("Turns Dashboard")
+st.button("Refresh All Data", on_click=st.cache_data.clear)
+
 params = st.query_params
 selected_tab = st.pills('TABS', options=["Summary", "Individual Turn Drilldown", "Economic Turn Costs"], 
                         default='Individual Turn Drilldown' if params.get('address') and params.get('move_out_date') else 'Summary',
