@@ -35,6 +35,8 @@ gpr_evictions_data = gpr_evictions_data(credentials)
 
 # Application
 st.title("Collections Dashboard")
+st.button("Refresh All Data", on_click=st.cache_data.clear)
+
 ontime_collections_tab, late_collections_tab, bad_debt_tab, evictions_tab, data_tab = st.tabs(["On-Time Collections", "Late Collections", "Bad Debt", "Evictions", "Data"])
 with ontime_collections_tab:
     ontime_collections_selected_fund = ontime_collections_curve_filters(collections_curve_data)
