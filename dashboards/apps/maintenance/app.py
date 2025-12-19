@@ -30,8 +30,12 @@ st.markdown("""
 credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 
 # Application
-st.title("Maintenance Dashboard")
-st.button("Refresh All Data", on_click=st.cache_data.clear)
+col1, col2 = st.columns([1, 0.04])
+with col1:
+    st.title("Maintenance Dashboard")
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with title
+    st.button("↻", on_click=st.cache_data.clear, help="Refresh All Data")
 
 buildium_spend_tab, latchel_tab, non_latchel_tab = st.tabs(["Buildium Spend", "Latchel Spend (Budget vs Actual)", "Non-Latchel Spend"])
 with buildium_spend_tab:

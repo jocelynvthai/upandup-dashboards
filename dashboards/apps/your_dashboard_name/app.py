@@ -16,4 +16,9 @@ credentials = service_account.Credentials.from_service_account_info(get_service_
 data = get_data(credentials)
 
 # Application
-st.title("Dashboard Name")
+col1, col2 = st.columns([1, 0.04])
+with col1:
+    st.title("_ Dashboard")
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with title
+    st.button("↻", on_click=st.cache_data.clear, help="Refresh All Data")

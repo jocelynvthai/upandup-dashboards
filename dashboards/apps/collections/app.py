@@ -34,8 +34,12 @@ evictions_data = get_evictions_data(credentials)
 gpr_evictions_data = gpr_evictions_data(credentials)
 
 # Application
-st.title("Collections Dashboard")
-st.button("Refresh All Data", on_click=st.cache_data.clear)
+col1, col2 = st.columns([1, 0.04])
+with col1:
+    st.title("Collections Dashboard")
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with title
+    st.button("↻", on_click=st.cache_data.clear, help="Refresh All Data")
 
 ontime_collections_tab, late_collections_tab, bad_debt_tab, evictions_tab, data_tab = st.tabs(["On-Time Collections", "Late Collections", "Bad Debt", "Evictions", "Data"])
 with ontime_collections_tab:

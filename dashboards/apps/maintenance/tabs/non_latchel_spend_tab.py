@@ -65,14 +65,15 @@ def non_latchel_spend_filters(credentials):
 
     # fund filter
     all_funds = filtered_bills_tickets_invoices_df['funds'].apply(
-        lambda x: re.split(r', (?!(?:L\.P\.|LLC))', x)
-    ).explode().unique()
-    selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(all_funds)), default='All', key='non_latchel_spend_fund')
+        lambda x: re.split(r', (?!(?:L\.P\.|LLC))', x) if x is not None and isinstance(x, str) else []
+    ).explode()
+    all_funds = [str(f).strip() for f in all_funds.dropna().unique() if str(f).strip()]
+    selected_funds = st.multiselect("Select a fund", ['All'] + sorted(all_funds), default='All', key='non_latchel_spend_fund')
     if 'All' not in selected_funds:
         # Keep rows where any selected fund is in the 'funds' string
         filtered_bills_tickets_invoices_df = filtered_bills_tickets_invoices_df[
             filtered_bills_tickets_invoices_df['funds'].apply(
-                lambda x: any(fund in x for fund in selected_funds)
+                lambda x: any(fund in x for fund in selected_funds) if x is not None and isinstance(x, str) else False
             )
         ]
 

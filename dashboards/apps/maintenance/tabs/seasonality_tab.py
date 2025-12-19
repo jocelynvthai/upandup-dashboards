@@ -30,26 +30,28 @@ def seasonality_filters(credentials):
                 
     col_category_group, col_vendor = st.columns(2)
     with col_category_group:
-        category_group = st.multiselect("Select a category group", ['All'] + sorted(list(filtered_all_management_expenses_df['category_group'].unique())), default='run_rate', key='seasonality_category_group')
+        category_group_options = [c for c in filtered_all_management_expenses_df['category_group'].unique() if pd.notna(c)]
+        category_group = st.multiselect("Select a category group", ['All'] + sorted(category_group_options), default='run_rate', key='seasonality_category_group')
         if 'All' not in category_group:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['category_group'].isin(category_group)]
             filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['management_category'].isin(category_group)]
     with col_vendor:
-        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(list(filtered_all_management_expenses_df['vendor'].unique())), default='All', key='seasonality_vendor', help="vendor format is 'Company Name (Contact Name)' or 'Contact Name'")
+        vendor_options = [v for v in filtered_all_management_expenses_df['vendor'].unique() if pd.notna(v)]
+        selected_vendors = st.multiselect("Select a vendor", ['All'] + sorted(vendor_options), default='All', key='seasonality_vendor', help="vendor format is 'Company Name (Contact Name)' or 'Contact Name'")
         if 'All' not in selected_vendors:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['vendor'].isin(selected_vendors)]
 
     col_fund, col_market = st.columns(2)
     with col_fund:
-        selected_funds = st.multiselect("Select a fund", ['All'] + sorted(list(filtered_all_management_expenses_df['fund'].unique())), default='All', key='seasonality_fund')
+        fund_options = [f for f in filtered_all_management_expenses_df['fund'].unique() if pd.notna(f)]
+        selected_funds = st.multiselect("Select a fund", ['All'] + sorted(fund_options), default='All', key='seasonality_fund')
         if 'All' not in selected_funds:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['fund'].isin(selected_funds)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['fund'].isin(selected_funds)]
             filtered_budget_by_month_df = filtered_budget_by_month_df[filtered_budget_by_month_df['fund'].isin(selected_funds)]
     with col_market:
-        market_options = list(filtered_all_management_expenses_df['market'].unique())
-        market_sorted = sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower()))
-        selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: (pd.isna(x), str(x).lower())), default='All', key='seasonality_market')
+        market_options = [m for m in filtered_all_management_expenses_df['market'].unique() if pd.notna(m)]
+        selected_markets = st.multiselect("Select a market", ['All'] + sorted(market_options, key=lambda x: str(x).lower()), default='All', key='seasonality_market')
         if 'All' not in selected_markets:
             filtered_all_management_expenses_df = filtered_all_management_expenses_df[filtered_all_management_expenses_df['market'].isin(selected_markets)]
             filtered_owned_homes_df = filtered_owned_homes_df[filtered_owned_homes_df['market'].isin(selected_markets)]

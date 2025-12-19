@@ -36,7 +36,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-
 # Data Retrieval
 credentials = service_account.Credentials.from_service_account_info(get_service_account_info())
 # summary tab data
@@ -63,8 +62,13 @@ rent_curve_df = rent_curve_data(credentials)
 
 
 # Application
-st.title("Leasing Dashboard")
-st.button("Refresh All Data", on_click=st.cache_data.clear)
+col1, col2 = st.columns([1, 0.04])
+with col1:
+    st.title("Leasing Dashboard")
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with title
+    st.button("↻", on_click=st.cache_data.clear, help="Refresh All Data")
+    
 
 summary_tab, inquiries_tab, tours_tab, leasing_funnel_tab, application_funnel_tab, occupancy_tab, vacancy_curve_tab, competitors_tab= st.tabs(["Summary", 'Inquiries', 'Tours', 'Leasing Funnel', 'Application Funnel', 'Occupancy', 'Vacancy Curve', 'Competitors'])
 with summary_tab:

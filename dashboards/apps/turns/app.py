@@ -32,8 +32,12 @@ tickets_df = tickets_data(credentials)
 line_items_df = line_items_data(credentials)
 
 # Application
-st.title("Turns Dashboard")
-st.button("Refresh All Data", on_click=st.cache_data.clear)
+col1, col2 = st.columns([1, 0.04])
+with col1:
+    st.title("Turns Dashboard")
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)  # Add spacing to align with title
+    st.button("↻", on_click=st.cache_data.clear, help="Refresh All Data")
 
 params = st.query_params
 selected_tab = st.pills('TABS', options=["Summary", "Individual Turn Drilldown", "Economic Turn Costs"], 
