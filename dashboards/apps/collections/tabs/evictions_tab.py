@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from datetime import datetime
 
 from tabs.utils import fund_filter, TEAL
 
@@ -29,19 +30,30 @@ def gpr_evictions(filtered_gpr_evictions_data):
         gpr_in_evictions=('gpr', lambda x: x[filtered_evictions_data_status['in_evictions']].sum())
     ).reset_index()
     monthly_gpr_evictions['gpr_in_evictions_percentage'] = monthly_gpr_evictions['gpr_in_evictions'] / monthly_gpr_evictions['total_gpr']
+    monthly_gpr_evictions['year'] = pd.to_datetime(monthly_gpr_evictions['month']).dt.year
+    monthly_gpr_evictions['month_name'] = pd.to_datetime(monthly_gpr_evictions['month']).dt.strftime('%b')
+    monthly_gpr_evictions['month_num'] = pd.to_datetime(monthly_gpr_evictions['month']).dt.month
+    
+    # Filter to only include the last 3 years
+    current_year = datetime.now().year
+    last_three_years = [current_year, current_year - 1, current_year - 2]
+    monthly_gpr_evictions = monthly_gpr_evictions[monthly_gpr_evictions['year'].isin(last_three_years)]
 
-    monthly_gpr_evictions_chart = alt.Chart(monthly_gpr_evictions).mark_line(color=TEAL, point={'color': TEAL}).encode(
-        x=alt.X('month:T', title='Month'), # Renaming x-axis
+    monthly_gpr_evictions_chart = alt.Chart(monthly_gpr_evictions).mark_line(point=True).encode(
+        x=alt.X('month_num:O', title='Month', sort=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], axis=alt.Axis(labelExpr="datum.value == 1 ? 'Jan' : datum.value == 2 ? 'Feb' : datum.value == 3 ? 'Mar' : datum.value == 4 ? 'Apr' : datum.value == 5 ? 'May' : datum.value == 6 ? 'Jun' : datum.value == 7 ? 'Jul' : datum.value == 8 ? 'Aug' : datum.value == 9 ? 'Sep' : datum.value == 10 ? 'Oct' : datum.value == 11 ? 'Nov' : 'Dec'")),
         y=alt.Y('gpr_in_evictions_percentage:Q', title='GPR in Evictions (%)', axis=alt.Axis(format='.1%')), # Renaming y-axis
+        color=alt.Color('year:O', title='Year', scale=alt.Scale(scheme='category20')),
         tooltip=[
             alt.Tooltip('month:T', title='Month', format='%b %Y'),
             alt.Tooltip('gpr_in_evictions:Q', title='GPR in Evictions', format='$,.0f'),
             alt.Tooltip('total_gpr:Q', title='Total GPR', format='$,.0f'),
-            alt.Tooltip('gpr_in_evictions_percentage:Q', title='GPR in Evictions Percentage', format='.1%')
+            alt.Tooltip('gpr_in_evictions_percentage:Q', title='GPR in Evictions Percentage', format='.1%'),
+            alt.Tooltip('year:O', title='Year')
         ]
     ).properties(
         title='GPR in Evictions Percentage Over Time'
     )
+    st.dataframe(monthly_gpr_evictions)
     st.altair_chart(monthly_gpr_evictions_chart, use_container_width=True)
 
 
