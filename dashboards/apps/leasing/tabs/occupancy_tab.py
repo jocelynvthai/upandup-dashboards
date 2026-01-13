@@ -291,7 +291,7 @@ def upcoming_important_dates(rental_df, renewal_df):
             'title': 'Pending Renewals in the Next Month',
             'table': 'renewals',
             'filter_sort_column': 'current_lease_end',
-            'display_columns': ['current_lease_end', 'renewed']
+            'display_columns': ['current_lease_end', 'renewed', 'month_to_month']
         }, 
         'move_ins': {
             'title': 'All Future Move-Ins',
@@ -336,9 +336,14 @@ def upcoming_important_dates(rental_df, renewal_df):
                     if column == 'renewed':
                         if value == 'yes':
                             return '<td style="text-align: center; color: green;">✓</td>'
-                        if value == 'no':
+                        elif value == 'no':
                             return '<td style="text-align: center; color: red;">✗</td>'
-                        if value == 'pending':
+                        else:
+                            return '<td></td>'
+                    if column == 'month_to_month':
+                        if value == 'yes':
+                            return '<td style="text-align: center; color: green;">✓</td>'
+                        else:
                             return '<td></td>'
                     return f'<td>{value}</td>'
                 def address_cell(row):

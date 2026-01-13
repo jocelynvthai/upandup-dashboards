@@ -139,16 +139,17 @@ def renewal_data(_credentials):
             r1._date AS week_start_date, 
             r1.starts_at AS current_lease_start, 
             r1.ends_at AS current_lease_end, 
+            CASE WHEN r1.renewal_months = 1 THEN 'yes' ELSE 'no' END AS month_to_month, 
             r2._date AS current_lease_ended_first_day, 
             r2.starts_at AS new_lease_start, 
             r2.ends_at AS new_lease_end, 
-        CASE 
-            WHEN (r1.move_out_date IS NULL and r2.ends_at > r1.ends_at) 
-                THEN 'yes'
-            WHEN (r1.move_out_date IS NOT NULL)
-                THEN 'no'
-            ELSE 'pending'
-        END AS renewed
+            CASE 
+                WHEN (r1.move_out_date IS NULL and r2.ends_at > r1.ends_at) 
+                    THEN 'yes'
+                WHEN (r1.move_out_date IS NOT NULL)
+                    THEN 'no'
+                ELSE 'pending'
+            END AS renewed
         FROM `homevest-data.dbt_prod.stg_daily_rentals` as r1
         LEFT JOIN `homevest-data.dbt_prod.stg_daily_rentals` AS r2
             ON r1.id = r2.id
