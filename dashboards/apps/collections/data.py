@@ -105,50 +105,6 @@ def get_evictions_data(_credentials):
 @st.cache_data(ttl=CACHE_TTL)
 def gpr_evictions_data(_credentials):
     gpr_evictions_query = """
-        WITH months AS (
-            (
-                SELECT last_day
-                FROM `homevest-data.dbt_prod.dim_min_max_months`
-                WHERE last_day < LAST_DAY(CURRENT_DATE)
-            )
-            UNION ALL
-            (
-                SELECT CURRENT_DATE AS last_day
-            )
-        ), 
-
-        noiy_breakdown_adjusted AS (
-            SELECT *,
-                CASE
-                    WHEN date = LAST_DAY(CURRENT_DATE()) THEN CURRENT_DATE()
-                    ELSE date
-                END AS adjusted_date
-            FROM `homevest-data.dbt_prod_tin.noiy_breakdown__property`
-            WHERE gross_potential_rent_L1M > 0
-        )
-
-        SELECT 
-            dpt._date AS month, 
-            dpt.property_id,
-            dpt.fund, 
-            dpt.pg_occupancy_status, 
-            CAST(noiy.gross_potential_rent_L1M AS FLOAT64) AS gpr, 
-            dr.id AS rental_id,
-            dr.lease_end_reason,
-            dr.move_out_date,
-            dr.status AS rental_status, 
-            dr.eviction_status,
-            dr.in_evictions
-        FROM `homevest-data.dbt_prod.fct_daily_properties_table` AS dpt
-        INNER JOIN months
-            ON  dpt._date = months.last_day
-        LEFT JOIN noiy_breakdown_adjusted AS noiy
-            ON dpt.property_id = noiy.property_id
-            AND dpt._date = noiy.adjusted_date
-        LEFT JOIN `homevest-data.dbt_prod.stg_daily_rentals` AS dr
-            ON dpt.property_id = dr.property_id
-            AND dpt._date = dr._date
-            AND (dr.move_out_date IS NULL or dpt._date <= dr.move_out_date)
-        WHERE dpt.pg_occupancy_status IS NOT NULL
+        SELECT * FROM `homevest-data.dbt_prod_tin.gpr_in_evictions`
     """
     return pd.read_gbq(gpr_evictions_query, credentials=_credentials)
