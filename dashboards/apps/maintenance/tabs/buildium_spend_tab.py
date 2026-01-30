@@ -95,23 +95,32 @@ def buildium_spend_per_home(all_management_expenses_df, owned_homes_df, imputed_
     grouped_expenses_df['type'] = 'Actual'
 
     # merge budget and actual spend
-    budget_df = pd.DataFrame({
-        selected_grouping: 'Budget',
-        'total_spend': imputed_daily_budget_df.agg(budgeted_spend=('amount', 'sum')).iloc[0],
-        'type': 'Budget',
+    budget_base_df = pd.DataFrame({
+        'total_spend': imputed_daily_budget_df.agg(budgeted_spend=('amount_base', 'sum')).iloc[0],
+        selected_grouping: 'Budget (Base)',
+        'type': 'Budget (Base)',
     })
-    grouped_expenses_df = pd.concat([grouped_expenses_df, budget_df])
-    grouped_expenses_df['total_homes_owned'] = owned_homes_df[(owned_homes_df['time_granularity'] == 'week') & (owned_homes_df['date'] == min(owned_homes_df['date']))]['homes_owned'].sum()
+    budget_stretch_df = pd.DataFrame({
+        'total_spend': imputed_daily_budget_df.agg(budgeted_spend=('amount_stretch', 'sum')).iloc[0],
+        selected_grouping: 'Budget (Stretch)',
+        'type': 'Budget (Stretch)',
+    })
+    grouped_expenses_df = pd.concat([grouped_expenses_df, budget_base_df, budget_stretch_df])
+    grouped_expenses_df['total_homes_owned'] = owned_homes_df[
+        (owned_homes_df['time_granularity'] == 'day')
+        & (owned_homes_df['date'] == min(owned_homes_df['date']))
+    ]['homes_owned'].sum()
 
     # format data
     grouped_expenses_df['total_spend_per_home'] = round(grouped_expenses_df['total_spend'] / grouped_expenses_df['total_homes_owned'], 2)
 
+    st.dataframe(grouped_expenses_df)
     # create bar chart
     spend_per_home_chart = alt.Chart(grouped_expenses_df).mark_bar().encode(
-        x=alt.X('type', title=None, sort=['Budget', 'Actual']),
+        x=alt.X('type', title=None, sort=['Budget (Base)', 'Budget (Stretch)', 'Actual']),
         y=alt.Y('total_spend_per_home', title='Total Spend per Home', axis=alt.Axis(format='$,.0f')),
         color=alt.condition(
-            alt.datum.type == 'Budget',
+            alt.datum.type == 'Budget (Base)',
             alt.value(LIGHT_TEAL),
             alt.Color(selected_grouping)
         )

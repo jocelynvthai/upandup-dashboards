@@ -33,7 +33,7 @@ MONTH_ORDER = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ]
 
-CURRENT_YEAR_PROJECTED = '2025 (Projected)'
+CURRENT_YEAR_PROJECTED = '2026 (Projected)'
 
 
 def all_management_expenses_data_clean(all_management_expenses_df):
@@ -131,11 +131,11 @@ def seasonality_chart(seasonality_df, spend_col, spend_title, budget_year=False)
     has_current_month_projected = CURRENT_YEAR_PROJECTED in seasonality_df['year'].unique()
     years = [
         y for y in seasonality_df['year'].unique()
-        if y not in [str(CURRENT_YEAR), 'Budget', CURRENT_YEAR_PROJECTED]
+        if y not in [str(CURRENT_YEAR), 'Budget (Base)', 'Budget (Stretch)', CURRENT_YEAR_PROJECTED]
     ]
     color_scale = alt.Scale(
-        domain=years + [str(CURRENT_YEAR)] + ([CURRENT_YEAR_PROJECTED] if has_current_month_projected else []) + (['Budget'] if budget_year else []) ,
-        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([LIGHT_TEAL] if has_current_month_projected else []) + ([PASTEL_YELLOW] if budget_year else [])
+        domain=years + [str(CURRENT_YEAR)] + ([CURRENT_YEAR_PROJECTED] if has_current_month_projected else []) + (['Budget (Base)', 'Budget (Stretch)'] if budget_year else []) ,
+        range=PASTEL_PALETTE[:len(years)] + [TEAL] + ([LIGHT_TEAL] if has_current_month_projected else []) + ([YELLOW, PASTEL_YELLOW] if budget_year else [])
     )
     seasonality_chart = (
         alt.Chart(seasonality_df)

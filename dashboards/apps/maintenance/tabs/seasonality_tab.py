@@ -70,9 +70,11 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
     # add projected data
     seasonality_df = pd.concat([seasonality_df, projected_df(all_management_expenses_df)], ignore_index=True)
     # add budget data
-    grouped_budget_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount', 'sum'))
-    grouped_budget_by_month_df.loc[grouped_budget_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget'
-    seasonality_df = pd.concat([seasonality_df, grouped_budget_by_month_df], ignore_index=True)
+    grouped_budget_base_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount_base', 'sum'))
+    grouped_budget_base_by_month_df.loc[grouped_budget_base_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget (Base)'
+    grouped_budget_stretch_by_month_df = budget_by_month_df.groupby(['year', 'month'], as_index=False).agg(total_spend=('amount_stretch', 'sum'))
+    grouped_budget_stretch_by_month_df.loc[grouped_budget_stretch_by_month_df['year'] == CURRENT_YEAR, 'year'] = 'Budget (Stretch)'
+    seasonality_df = pd.concat([seasonality_df, grouped_budget_base_by_month_df, grouped_budget_stretch_by_month_df], ignore_index=True)
 
     # add spend per home
     _, col_spend_per_home = st.columns([2, 0.25])
@@ -84,7 +86,11 @@ def buildium_spend_seasonality(all_management_expenses_df, owned_homes_df, budge
         seasonality_df = seasonality_df.merge(grouped_month_owned_homes_df, on=['year', 'month'], how='left')
 
         # impute total homes owned for budget and projected rows
-        budget_and_projected_rows = seasonality_df[(seasonality_df['year'] == 'Budget') | (seasonality_df['year'] == CURRENT_YEAR_PROJECTED)]
+        budget_and_projected_rows = seasonality_df[
+            (seasonality_df['year'] == 'Budget (Base)')
+            | (seasonality_df['year'] == 'Budget (Stretch)')
+            | (seasonality_df['year'] == CURRENT_YEAR_PROJECTED)
+        ]
         for index, row in budget_and_projected_rows.iterrows():
             homes_owned_for_month = grouped_month_owned_homes_df.loc[((grouped_month_owned_homes_df['year'] == CURRENT_YEAR) & (grouped_month_owned_homes_df['month'] == row['month']))]['total_homes_owned'].iloc[0]
             seasonality_df.loc[index, 'total_homes_owned'] = homes_owned_for_month

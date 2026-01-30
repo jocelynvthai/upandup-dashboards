@@ -102,15 +102,17 @@ def economic_occupancy(economic_occupancy_df):
         total_gpr=('total_gpr', 'sum'), 
         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
         total_gpr_occupied=('total_gpr_occupied', 'sum'), 
-        total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+        total_gpr_occupied_budget_base=('total_gpr_occupied_budget_base', 'sum'),
+        total_gpr_occupied_budget_stretch=('total_gpr_occupied_budget_stretch', 'sum')
     ).reset_index()
 
     economic_occupancy_selected['economic_occupancy_best_case'] = economic_occupancy_selected['total_gpr_potentially_occupied'] * 100 / economic_occupancy_selected['total_gpr']
     economic_occupancy_selected['economic_occupancy_worst_case'] = economic_occupancy_selected['total_gpr_occupied'] * 100 / economic_occupancy_selected['total_gpr']
-    economic_occupancy_selected['economic_occupancy_forecast'] = economic_occupancy_selected['total_gpr_occupied_budget'] * 100 / economic_occupancy_selected['total_gpr']
+    economic_occupancy_selected['economic_occupancy_forecast_base'] = economic_occupancy_selected['total_gpr_occupied_budget_base'] * 100 / economic_occupancy_selected['total_gpr']
+    economic_occupancy_selected['economic_occupancy_forecast_stretch'] = economic_occupancy_selected['total_gpr_occupied_budget_stretch'] * 100 / economic_occupancy_selected['total_gpr']
 
     # View week ends in dashboard
-    projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_forecast', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
+    projected_eo_chart = economic_occupancy_chart(economic_occupancy_selected, 'economic_occupancy_forecast_base', 'economic_occupancy_forecast_stretch', ['economic_occupancy_best_case', 'economic_occupancy_worst_case'], selected_time_granularity)
     st.altair_chart(projected_eo_chart)
 
 
@@ -135,7 +137,7 @@ def num_leases_to_target(economic_occupancy_df):
         total_gpr=('total_gpr', 'sum'),
         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
         total_gpr_occupied=('total_gpr_occupied', 'sum'),
-        total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+        total_gpr_occupied_budget=('total_gpr_occupied_budget_base', 'sum')
     ).reset_index()
     week_economic_occupancy['economic_occupancy_best_case'] = week_economic_occupancy['total_gpr_potentially_occupied'] / week_economic_occupancy['total_gpr']
     week_economic_occupancy['economic_occupancy_worst_case'] = week_economic_occupancy['total_gpr_occupied'] / week_economic_occupancy['total_gpr']
@@ -195,7 +197,7 @@ def num_leases_to_target(economic_occupancy_df):
     # Create MultiIndex columns
     occupancy_display_df.columns = pd.MultiIndex.from_tuples([
         ('Fund', ''),  # single-level
-        ('Economic Occupancy', 'Budgeted'),
+        ('Economic Occupancy', 'Budgeted (Base)'),
         ('Economic Occupancy', 'Worst Case'),
         ('Economic Occupancy', 'Best Case'),
         ('Weekly Rent Gained', 'Per Signed Lease'),
@@ -208,7 +210,7 @@ def num_leases_to_target(economic_occupancy_df):
     with st.expander("View target week's metrics"):
         st.dataframe(
             occupancy_display_df.style.format({
-                ('Economic Occupancy', 'Budgeted'): "{:.2%}",
+                ('Economic Occupancy', 'Budgeted (Base)'): "{:.2%}",
                 ('Economic Occupancy', 'Best Case'): "{:.2%}",
                 ('Economic Occupancy', 'Worst Case'): "{:.2%}",
                 ('Weekly Rent Gained', 'Per Signed Lease'): "${:,.2f}",
@@ -403,7 +405,7 @@ def new_projected_economic_occupancy(economic_occupancy_df):
         total_gpr=('total_gpr', 'sum'),
         total_gpr_potentially_occupied=('total_gpr_potentially_occupied', 'sum'),
         total_gpr_occupied=('total_gpr_occupied', 'sum'),
-        total_gpr_occupied_budget=('total_gpr_occupied_budget', 'sum')
+        total_gpr_occupied_budget=('total_gpr_occupied_budget_base', 'sum')
     ).reset_index()
 
     # Select a target week and a number of leases
